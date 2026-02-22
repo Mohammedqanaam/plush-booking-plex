@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { authenticateAdmin, getAdminSession } from "@/lib/adminAuth";
@@ -8,6 +8,7 @@ const AdminLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (getAdminSession()) {
@@ -15,10 +16,13 @@ const AdminLogin = () => {
     }
   }, [navigate]);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const success = authenticateAdmin(username, password);
-    if (success) {
+    setLoading(true);
+    setError(null);
+    const session = await authenticateAdmin(username, password);
+    setLoading(false);
+    if (session) {
       navigate("/admin", { replace: true });
       return;
     }
@@ -59,9 +63,10 @@ const AdminLogin = () => {
           />
           <button
             type="submit"
-            className="w-full max-w-sm mx-auto h-11 rounded-lg gold-gradient text-primary-foreground font-semibold text-sm block"
+            disabled={loading}
+            className="w-full max-w-sm mx-auto h-11 rounded-lg gold-gradient text-primary-foreground font-semibold text-sm block disabled:opacity-50"
           >
-            تسجيل الدخول
+            {loading ? "جاري التحقق..." : "تسجيل الدخول"}
           </button>
         </form>
 
