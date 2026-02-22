@@ -1,94 +1,110 @@
-export type UserRole = "superadmin" | "admin" | "editor" | "viewer";
+export type AdminUser = {
+  username: string;
+  password: string;
+};
 
 export type AdminSession = {
   username: string;
-  role: UserRole;
-  token: string;
+  role: "admin";
 };
 
-const SESSION_KEY = "admin_session";
+const ADMIN_USERS_KEY = "admin_users";
+const ADMIN_SESSION_KEY = "admin_session";
+const DEFAULT_ADMIN_USER: AdminUser = {
+  username: "admin",
+  password: "Worm@2026",
+};
+
+const safeParse = (value: string | null) => {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+const ensureDefaultUser = () => {
+  if (typeof window === "undefined") return;
+  const existing = safeParse(localStorage.getItem(ADMIN_USERS_KEY));
+  if (!Array.isArray(existing)) {
+    localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify([DEFAULT_ADMIN_USER]));
+    return;
+  }
+  const hasAdmin = existing.some(
+    (user) => user?.username === DEFAULT_ADMIN_USER.username
+  );
+  if (!hasAdmin) {
+    localStorage.setItem(
+      ADMIN_USERS_KEY,
+      JSON.stringify([...existing, DEFAULT_ADMIN_USER])
+    );
+  }
+};
+
+export const getAdminUsers = (): AdminUser[] => {
+  if (typeof window === "undefined") return [DEFAULT_ADMIN_USER];
+  ensureDefaultUser();
+  const parsed = safeParse(localStorage.getItem(ADMIN_USERS_KEY));
+  if (!Array.isArray(parsed)) return [DEFAULT_ADMIN_USER];
+  return parsed.filter(
+    (user) => user?.username && user?.password
+  ) as AdminUser[];
+};
+
+export const addAdminUser = (username: string, password: string) => {
+  if (typeof window === "undefined") return false;
+  const normalizedUsername = username.trim();
+  const normalizedPassword = password.trim();
+  if (!normalizedUsername || !normalizedPassword) return false;
+  const users = getAdminUsers();
+  if (users.some((user) => user.username === normalizedUsername)) return false;
+  const nextUsers = [...users, { username: normalizedUsername, password: normalizedPassword }];
+  localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(nextUsers));
+  return true;
+};
+
+const createAdminSession = (username: string) => {
+  if (typeof window === "undefined") return;
+  const session: AdminSession = { username, role: "admin" };
+  localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+};
+
+export const clearAdminSession = () => {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+};
 
 export const getAdminSession = (): AdminSession | null => {
   if (typeof window === "undefined") return null;
-  try {
-    const data = localStorage.getItem(SESSION_KEY);
-    if (!data) return null;
-    const session = JSON.parse(data);
-    if (!session?.username || !session?.role || !session?.token) return null;
-    return session as AdminSession;
-  } catch {
+  ensureDefaultUser();
+  const parsed = safeParse(localStorage.getItem(ADMIN_SESSION_KEY));
+  if (!parsed?.username || parsed?.role !== "admin") return null;
+  const users = getAdminUsers();
+  const isValid = users.some((user) => user.username === parsed.username);
+  if (!isValid) {
+    clearAdminSession();
     return null;
   }
+  return parsed as AdminSession;
 };
 
-export const setAdminSession = (session: AdminSession): void => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+export const authenticateAdmin = (username: string, password: string) => {
+  if (typeof window === "undefined") return false;
+  const normalizedUsername = username.trim();
+  const normalizedPassword = password.trim();
+  if (!normalizedUsername || !normalizedPassword) return false;
+  const users = getAdminUsers();
+  const match = users.find(
+    (user) =>
+      user.username === normalizedUsername && user.password === normalizedPassword
+  );
+  if (!match) return false;
+  createAdminSession(match.username);
+  return true;
 };
 
-export const clearAdminSession = (): void => {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(SESSION_KEY);
-};
-
-export const authenticateAdmin = async (
-  username: string,
-  password: string
-): Promise<AdminSession | null> => {
-  try {
-    const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "login", username, password }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const session: AdminSession = {
-      username: data.username,
-      role: data.role,
-      token: data.token,
-    };
-    setAdminSession(session);
-    return session;
-  } catch {
-    return null;
-  }
-};
-
-export const apiCall = async (
-  url: string,
-  options: RequestInit = {}
-): Promise<Response> => {
-  const session = getAdminSession();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...((options.headers as Record<string, string>) || {}),
-  };
-  if (session?.token) {
-    headers["Authorization"] = `Bearer ${session.token}`;
-  }
-  return fetch(url, { ...options, headers });
-};
-
-export const hasPermission = (
-  role: UserRole | undefined,
-  action: string
-): boolean => {
-  if (!role) return false;
-  const permissions: Record<string, UserRole[]> = {
-    view: ["superadmin", "admin", "editor", "viewer"],
-    upload: ["superadmin", "admin", "editor"],
-    manage_users: ["superadmin", "admin"],
-    manage_contacts: ["superadmin", "admin"],
-    manage_settings: ["superadmin"],
-    delete_users: ["superadmin"],
-  };
-  return permissions[action]?.includes(role) ?? false;
-};
-
-export const roleLabels: Record<UserRole, string> = {
-  superadmin: "مدير أعلى",
-  admin: "مدير",
-  editor: "محرر",
-  viewer: "مشاهد",
+export const adminAuthKeys = {
+  users: ADMIN_USERS_KEY,
+  session: ADMIN_SESSION_KEY,
 };

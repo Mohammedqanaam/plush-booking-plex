@@ -7,7 +7,13 @@ type ProtectedRouteProps = {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const session = getAdminSession();
-  if (!session?.username || !session?.role || !session?.token) {
+  const isAdmin = session?.role === "admin";
+  if (!isAdmin) {
+    console.error("Admin permission required.", {
+      reason: session ? "invalid_role" : "missing_session",
+      username: session?.username,
+      role: session?.role,
+    });
     return <Navigate to="/admin/login" replace />;
   }
   return children;

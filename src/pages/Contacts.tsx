@@ -17,21 +17,9 @@ const Contacts = () => {
     note: "",
   });
   const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-    try {
-      await fetch("/api/contacts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "submit", ...form }),
-      });
-    } catch {
-      // Still show success for UX continuity
-    }
-    setSubmitting(false);
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -125,11 +113,10 @@ const Contacts = () => {
 
           <button
             type="submit"
-            disabled={submitting}
-            className="w-full h-11 rounded-lg gold-gradient text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="w-full h-11 rounded-lg gold-gradient text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
           >
             <Send className="w-4 h-4" />
-            {submitting ? "جاري الإرسال..." : "إرسال الطلب"}
+            إرسال الطلب
           </button>
         </form>
       )}
