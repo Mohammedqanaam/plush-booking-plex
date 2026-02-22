@@ -1,59 +1,109 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck, CalendarX, BarChart3, Hotel } from "lucide-react";
-
-const mockStats = {
-  total: 1247,
-  confirmed: 1089,
-  cancelled: 158,
-  cancelRate: 12.7,
-};
-
-const kpis = [
-  {
-    label: "إجمالي الحجوزات",
-    value: mockStats.total,
-    icon: Hotel,
-    color: "text-primary",
-  },
-  {
-    label: "الحجوزات المؤكدة",
-    value: mockStats.confirmed,
-    icon: CalendarCheck,
-    color: "text-success",
-  },
-  {
-    label: "الإلغاءات",
-    value: mockStats.cancelled,
-    icon: CalendarX,
-    color: "text-destructive",
-  },
-  {
-    label: "نسبة الإلغاء",
-    value: `${mockStats.cancelRate}%`,
-    icon: BarChart3,
-    color: "text-warning",
-  },
-];
+import { api } from "@/lib/api";
 
 type BookingRecord = Record<string, string | number | undefined>;
 
+type BookingStats = {
+  total: number;
+  confirmed: number;
+  cancelled: number;
+  cancelRate: number;
+};
+
+const defaultStats: BookingStats = {
+  total: 0,
+  confirmed: 0,
+  cancelled: 0,
+  cancelRate: 0,
+};
+
+function classifyStatus(
+  status: string
+): "confirmed" | "cancelled" | "not_confirmed" {
+  const s = status.trim().toUpperCase();
+  if (s === "N" || s === "M" || s === "CONFIRMED") return "confirmed";
+  if (s === "C" || s === "NS") return "cancelled";
+  return "not_confirmed";
+}
+
 const Dashboard = () => {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [stats, setStats] = useState<BookingStats>(defaultStats);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = localStorage.getItem("booking_data") ?? localStorage.getItem("bookings_data");
-    if (!stored) return;
-    try {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
-        localStorage.setItem("booking_data", JSON.stringify(parsed));
-        setBookings(parsed);
-      }
-    } catch {
-      setBookings([]);
-    }
+    api
+      .getBookings()
+      .then((data) => {
+        if (data.bookings && Array.isArray(data.bookings)) {
+          setBookings(data.bookings);
+        }
+        if (data.stats) {
+          setStats(data.stats);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
+  const computedStats = useMemo(() => {
+    if (stats.total > 0) return stats;
+    if (!bookings.length) return defaultStats;
+
+    let confirmed = 0;
+    let cancelled = 0;
+
+    bookings.forEach((record) => {
+      const status = String(
+        record.Status ||
+          record.status ||
+          record["Booking Status"] ||
+          record.BookingStatus ||
+          ""
+      );
+      const category = classifyStatus(status);
+      if (category === "confirmed") confirmed++;
+      else if (category === "cancelled") cancelled++;
+    });
+
+    const total = bookings.length;
+    return {
+      total,
+      confirmed,
+      cancelled,
+      cancelRate: total
+        ? parseFloat(((cancelled / total) * 100).toFixed(1))
+        : 0,
+    };
+  }, [bookings, stats]);
+
+  const kpis = [
+    {
+      label: "إجمالي الحجوزات",
+      value: computedStats.total.toLocaleString(),
+      icon: Hotel,
+      color: "text-primary",
+    },
+    {
+      label: "الحجوزات المؤكدة",
+      value: computedStats.confirmed.toLocaleString(),
+      icon: CalendarCheck,
+      color: "text-success",
+    },
+    {
+      label: "الإلغاءات",
+      value: computedStats.cancelled.toLocaleString(),
+      icon: CalendarX,
+      color: "text-destructive",
+    },
+    {
+      label: "نسبة الإلغاء",
+      value: `${computedStats.cancelRate}%`,
+      icon: BarChart3,
+      color: "text-warning",
+    },
+  ];
 
   const employees = useMemo(() => {
     if (!bookings.length) return [];
@@ -61,6 +111,7 @@ const Dashboard = () => {
       string,
       { name: string; total: number; confirmed: number; cancelled: number }
     >();
+
     const getEmployeeName = (record: BookingRecord) =>
       String(
         record["Employee Name"] ||
@@ -82,8 +133,8 @@ const Dashboard = () => {
     bookings.forEach((record) => {
       const name = getEmployeeName(record).trim();
       if (!name) return;
-      const status = getStatus(record).trim().toUpperCase();
-      const isCancelled = status === "C" || status === "NS";
+      const status = getStatus(record);
+      const category = classifyStatus(status);
       const current = map.get(name) || {
         name,
         total: 0,
@@ -91,11 +142,8 @@ const Dashboard = () => {
         cancelled: 0,
       };
       current.total += 1;
-      if (isCancelled) {
-        current.cancelled += 1;
-      } else {
-        current.confirmed += 1;
-      }
+      if (category === "cancelled") current.cancelled += 1;
+      else if (category === "confirmed") current.confirmed += 1;
       map.set(name, current);
     });
 
@@ -132,7 +180,7 @@ const Dashboard = () => {
               <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
             </div>
             <p className={`text-2xl font-bold ${kpi.color} animate-count-up`}>
-              {kpi.value}
+              {loading ? "..." : kpi.value}
             </p>
             <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
           </div>
@@ -141,7 +189,9 @@ const Dashboard = () => {
 
       <div className="glass-card p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold gold-text">موظفي الحجز المركزي</h3>
+          <h3 className="text-sm font-semibold gold-text">
+            موظفي الحجز المركزي
+          </h3>
           <span className="text-xs text-muted-foreground">
             {employees.length ? `${employees.length} موظف` : "لا توجد بيانات"}
           </span>
@@ -152,7 +202,9 @@ const Dashboard = () => {
             <div key={employee.name} className="glass-card p-4 space-y-3">
               <div className="space-y-1">
                 <p className="text-sm font-semibold">{employee.name}</p>
-                <p className="text-xs text-muted-foreground">إجمالي الحجوزات</p>
+                <p className="text-xs text-muted-foreground">
+                  إجمالي الحجوزات
+                </p>
                 <p className="text-xl font-bold text-primary">
                   {employee.total}
                 </p>
