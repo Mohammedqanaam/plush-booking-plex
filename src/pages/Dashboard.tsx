@@ -42,11 +42,12 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored = localStorage.getItem("bookings_data");
+    const stored = localStorage.getItem("booking_data") ?? localStorage.getItem("bookings_data");
     if (!stored) return;
     try {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
+        localStorage.setItem("booking_data", JSON.stringify(parsed));
         setBookings(parsed);
       }
     } catch {

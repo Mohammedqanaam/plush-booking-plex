@@ -5,7 +5,7 @@ export type AdminUser = {
 
 export type AdminSession = {
   username: string;
-  timestamp: number;
+  role: "admin";
 };
 
 const ADMIN_USERS_KEY = "admin_users";
@@ -66,7 +66,7 @@ export const addAdminUser = (username: string, password: string) => {
 
 const createAdminSession = (username: string) => {
   if (typeof window === "undefined") return;
-  const session: AdminSession = { username, timestamp: Date.now() };
+  const session: AdminSession = { username, role: "admin" };
   localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
 };
 
@@ -79,7 +79,7 @@ export const getAdminSession = (): AdminSession | null => {
   if (typeof window === "undefined") return null;
   ensureDefaultUser();
   const parsed = safeParse(localStorage.getItem(ADMIN_SESSION_KEY));
-  if (!parsed?.username) return null;
+  if (!parsed?.username || parsed?.role !== "admin") return null;
   const users = getAdminUsers();
   const isValid = users.some((user) => user.username === parsed.username);
   if (!isValid) {
