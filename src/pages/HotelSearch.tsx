@@ -1,80 +1,128 @@
 import { useState } from "react";
-import { Search as SearchIcon, Phone, MapPin, Coffee, Waves } from "lucide-react";
-
-const mockHotels = [
-  { name: "فندق الريتز كارلتون", group: "ماريوت", location: "الرياض", breakfast: "120 ريال", pool: "نعم", phone: "+966 11 802 8020" },
-  { name: "فندق هيلتون", group: "هيلتون", location: "جدة", breakfast: "95 ريال", pool: "نعم", phone: "+966 12 261 6000" },
-  { name: "فندق شيراتون", group: "ماريوت", location: "الدمام", breakfast: "85 ريال", pool: "لا", phone: "+966 13 834 3333" },
-  { name: "فندق نوفوتيل", group: "أكور", location: "الرياض", breakfast: "75 ريال", pool: "نعم", phone: "+966 11 206 8888" },
-  { name: "فندق كراون بلازا", group: "IHG", location: "المدينة", breakfast: "90 ريال", pool: "لا", phone: "+966 14 838 3800" },
-  { name: "فندق فور سيزونز", group: "فور سيزونز", location: "الرياض", breakfast: "150 ريال", pool: "نعم", phone: "+966 11 499 9999" },
-];
+import { Phone, MapPin, Coffee, Waves, Search as SearchIcon, UtensilsCrossed, Eye, Droplets, Baby, Shirt, TreePalm, ChevronDown } from "lucide-react";
+import { hotelBranches, infoCategories, getProtocolResponse, type InfoCategory, type HotelBranch } from "@/data/hotels";
 
 const HotelSearch = () => {
-  const [query, setQuery] = useState("");
+  const [selectedHotelId, setSelectedHotelId] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<InfoCategory | "">("");
 
-  const filtered = mockHotels.filter(
-    (h) =>
-      h.name.includes(query) ||
-      h.location.includes(query) ||
-      h.group.includes(query)
-  );
+  const selectedHotel = hotelBranches.find((h) => h.id === selectedHotelId);
+
+  const groups = [...new Set(hotelBranches.map((h) => h.group))];
+
+  const protocolResponse =
+    selectedHotel && selectedCategory
+      ? getProtocolResponse(selectedHotel, selectedCategory as InfoCategory)
+      : null;
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-4">
       <div className="space-y-1">
         <h2 className="text-2xl font-bold">البحث عن الفنادق</h2>
-        <p className="text-muted-foreground text-sm">ابحث بالاسم أو المدينة أو المجموعة</p>
+        <p className="text-muted-foreground text-sm">اختر الفندق ونوع الاستفسار</p>
       </div>
 
-      {/* Search Input */}
-      <div className="relative">
-        <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="ابحث هنا..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full h-11 pr-10 pl-4 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
-        />
+      {/* Hotel Select */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">اختر الفندق</label>
+        <div className="relative">
+          <select
+            value={selectedHotelId}
+            onChange={(e) => {
+              setSelectedHotelId(e.target.value);
+              setSelectedCategory("");
+            }}
+            className="w-full h-11 pr-4 pl-10 rounded-lg bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition appearance-none"
+          >
+            <option value="">-- اختر الفندق --</option>
+            {groups.map((group) => (
+              <optgroup key={group} label={`── ${group} ──`}>
+                {hotelBranches
+                  .filter((h) => h.group === group)
+                  .map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.name} - {h.city}
+                    </option>
+                  ))}
+              </optgroup>
+            ))}
+          </select>
+          <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        </div>
       </div>
 
-      {/* Results */}
-      <div className="space-y-3">
-        {filtered.map((hotel, i) => (
-          <div key={i} className="glass-card p-4 space-y-3 animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-semibold text-sm">{hotel.name}</h3>
-                <p className="text-xs text-muted-foreground">{hotel.group}</p>
-              </div>
-              <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                {hotel.location}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" /> {hotel.location}
-              </span>
-              <span className="flex items-center gap-1">
-                <Coffee className="w-3 h-3" /> {hotel.breakfast}
-              </span>
-              <span className="flex items-center gap-1">
-                <Waves className="w-3 h-3" /> مسبح: {hotel.pool}
-              </span>
-              <span className="flex items-center gap-1">
-                <Phone className="w-3 h-3" /> {hotel.phone}
-              </span>
-            </div>
+      {/* Category Select */}
+      {selectedHotel && (
+        <div className="space-y-2 animate-fade-in">
+          <label className="text-sm font-medium">نوع الاستفسار</label>
+          <div className="relative">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value as InfoCategory)}
+              className="w-full h-11 pr-4 pl-10 rounded-lg bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition appearance-none"
+            >
+              <option value="">-- اختر نوع الاستفسار --</option>
+              {infoCategories.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           </div>
-        ))}
-        {filtered.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <SearchIcon className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p>لا توجد نتائج</p>
+        </div>
+      )}
+
+      {/* Protocol Response */}
+      {protocolResponse && selectedHotel && (
+        <div className="glass-card p-5 space-y-3 animate-fade-in">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Phone className="w-4 h-4 text-primary" />
+            </div>
+            <h3 className="text-sm font-semibold gold-text">بروتوكول الرد</h3>
           </div>
-        )}
-      </div>
+          <p className="text-sm leading-7 whitespace-pre-line">{protocolResponse}</p>
+        </div>
+      )}
+
+      {/* Hotel Quick Info Card */}
+      {selectedHotel && !selectedCategory && (
+        <div className="glass-card p-4 space-y-3 animate-fade-in">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-semibold text-sm">{selectedHotel.name}</h3>
+              <p className="text-xs text-muted-foreground">{selectedHotel.group}</p>
+            </div>
+            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+              {selectedHotel.city}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3" /> {selectedHotel.city}
+            </span>
+            <span className="flex items-center gap-1">
+              <Phone className="w-3 h-3" /> {selectedHotel.phone}
+            </span>
+            <span className="flex items-center gap-1">
+              <Waves className="w-3 h-3" /> {selectedHotel.pool.includes("لا يوجد") ? "لا يوجد مسبح" : "يوجد مسبح"}
+            </span>
+            <span className="flex items-center gap-1">
+              <Coffee className="w-3 h-3" /> {selectedHotel.coffeeShop.includes("لا يوجد") ? "لا يوجد" : "يوجد كوفي"}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">اختر نوع الاستفسار أعلاه لعرض بروتوكول الرد</p>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!selectedHotelId && (
+        <div className="text-center py-12 text-muted-foreground">
+          <SearchIcon className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>اختر فندقاً من القائمة للبدء</p>
+        </div>
+      )}
     </div>
   );
 };

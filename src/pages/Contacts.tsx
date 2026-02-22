@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Send, CheckCircle2 } from "lucide-react";
+import { Send, CheckCircle2, ChevronDown } from "lucide-react";
+import { hotelBranches } from "@/data/hotels";
 
 interface ContactForm {
   branchName: string;
@@ -19,7 +20,6 @@ const Contacts = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock submission
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -29,6 +29,8 @@ const Contacts = () => {
 
   const inputClass =
     "w-full h-11 px-4 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition";
+
+  const groups = [...new Set(hotelBranches.map((h) => h.group))];
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-6">
@@ -49,14 +51,28 @@ const Contacts = () => {
         <form onSubmit={handleSubmit} className="glass-card p-5 space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">اسم الفرع</label>
-            <input
-              required
-              type="text"
-              placeholder="مثال: فرع الرياض"
-              value={form.branchName}
-              onChange={(e) => setForm({ ...form, branchName: e.target.value })}
-              className={inputClass}
-            />
+            <div className="relative">
+              <select
+                required
+                value={form.branchName}
+                onChange={(e) => setForm({ ...form, branchName: e.target.value })}
+                className={`${inputClass} appearance-none pl-10`}
+              >
+                <option value="">-- اختر الفرع --</option>
+                {groups.map((group) => (
+                  <optgroup key={group} label={`── ${group} ──`}>
+                    {hotelBranches
+                      .filter((h) => h.group === group)
+                      .map((h) => (
+                        <option key={h.id} value={h.name}>
+                          {h.name} - {h.city}
+                        </option>
+                      ))}
+                  </optgroup>
+                ))}
+              </select>
+              <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -109,8 +125,8 @@ const Contacts = () => {
       <div className="space-y-2">
         <h3 className="text-sm font-semibold gold-text">آخر الطلبات</h3>
         {[
-          { branch: "فرع الرياض", customer: "أحمد محمد", status: "new" as const, time: "منذ ساعة" },
-          { branch: "فرع جدة", customer: "سارة أحمد", status: "done" as const, time: "منذ 3 ساعات" },
+          { branch: "بريرا العليا", customer: "أحمد محمد", status: "new" as const, time: "منذ ساعة" },
+          { branch: "بودل الصحافة", customer: "سارة أحمد", status: "done" as const, time: "منذ 3 ساعات" },
         ].map((req, i) => (
           <div key={i} className="glass-card p-3 flex items-center justify-between">
             <div>
