@@ -5,7 +5,7 @@ import RiyadhClock from "./RiyadhClock";
 import { api } from "@/lib/api";
 
 const Layout = () => {
-  const [siteTitle, setSiteTitle] = useState("WORM-AI");
+  const [siteTitle, setSiteTitle] = useState("Worm-AI");
   const [bannerText, setBannerText] = useState("");
 
   useEffect(() => {

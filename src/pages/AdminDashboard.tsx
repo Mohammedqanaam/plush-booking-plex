@@ -411,7 +411,7 @@ const AdminDashboard = () => {
               </label>
               <input
                 type="text"
-                placeholder="WORM-AI"
+                placeholder="Worm-AI"
                 dir="ltr"
                 value={siteTitle}
                 onChange={(e) => setSiteTitle(e.target.value)}

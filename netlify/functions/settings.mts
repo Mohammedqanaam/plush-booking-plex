@@ -3,7 +3,7 @@ import { getStore } from "@netlify/blobs";
 type Session = { username: string; role: string };
 type SiteSettings = { siteTitle: string; bannerText: string };
 
-const DEFAULT_SETTINGS: SiteSettings = { siteTitle: "WORM-AI", bannerText: "" };
+const DEFAULT_SETTINGS: SiteSettings = { siteTitle: "Worm-AI", bannerText: "" };
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
