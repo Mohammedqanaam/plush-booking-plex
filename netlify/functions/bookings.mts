@@ -75,9 +75,8 @@ function getRecordValue(record: Record<string, string>, keys: string[]): string 
 
 function classifyStatus(status: string): "confirmed" | "cancelled" | "not_confirmed" {
   const s = status.trim().toUpperCase();
-  if (s === "N" || s === "M" || s === "CONFIRMED" || s === "OK" || s === "CNF") return "confirmed";
-  if (s === "C" || s === "NS" || s === "CANCELLED" || s === "CANCELED") return "cancelled";
-  return "not_confirmed";
+  if (s === "C" || s === "NS") return "cancelled";
+  return "confirmed";
 }
 
 function getBookingStatus(record: Record<string, string>): string {

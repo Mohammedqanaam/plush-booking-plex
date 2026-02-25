@@ -1,17 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Bed,
-  Car,
-  Hotel,
-  Phone,
-  Search,
-  Send,
-  ShieldAlert,
-  Sparkles,
-  Utensils,
-  Waves,
-} from "lucide-react";
-import { managers, masterHotels, systemsLinks } from "@/data/hotelMasterData";
+import { Bed, Car, Hotel, Phone, Search, Send, Sparkles, Utensils, Waves } from "lucide-react";
+import { managers, masterHotels, systemsLinks, type MasterHotel } from "@/data/hotelMasterData";
 
 type Message = {
   id: number;
@@ -19,8 +8,99 @@ type Message = {
   text: string;
 };
 
+type IntentKey =
+  | "breakfast"
+  | "pool"
+  | "coffee"
+  | "restaurant"
+  | "view"
+  | "parking"
+  | "meeting"
+  | "wedding"
+  | "gym"
+  | "laundry"
+  | "outdoor"
+  | "spa"
+  | "jacuzzi"
+  | "kids"
+  | "rooms"
+  | "phone"
+  | "managers"
+  | "systems"
+  | "list";
+
 const initialMessage =
-  "أهلاً بك محمد الدوسري. 👋\nأنا مساعد Worm-AI. تم تحديثي بكامل بيانات الفروع والخدمات.\nيمكنك السؤال عن الإفطار، المسبح، السبا، القاعات، بكج العرسان، الغرف، وأرقام التواصل.";
+  "أهلاً بك 👋\nأنا مساعد Worm-AI (نسخة بحث ذكية).\nاكتب اسم أي فرع مع نوع الخدمة مثل: فطور، مسبح، سبا، قاعة، بكج عرسان، غرف، رقم.";
+
+const normalizeArabic = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[\u064B-\u0652]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const tokenize = (value: string) => normalizeArabic(value).split(" ").filter(Boolean);
+
+const INTENT_KEYWORDS: Record<IntentKey, string[]> = {
+  breakfast: ["فطور", "افطار", "بوفيه", "سحور"],
+  pool: ["مسبح", "مسابح", "سباحه"],
+  coffee: ["كوفي", "قهوه", "شيشه", "لاونج"],
+  restaurant: ["مطعم", "عشاء", "غداء", "منيو"],
+  view: ["اطلاله", "اطلالة", "بلكونه", "بلكونة"],
+  parking: ["موقف", "مواقف", "سياره", "سيارات"],
+  meeting: ["قاعه", "قاعة", "اجتماع", "اجتماعات"],
+  wedding: ["عرسان", "زواج", "باقه", "بكج"],
+  gym: ["نادي", "جيم", "fitness"],
+  laundry: ["غسيل", "مغسله", "مغسلة", "laundry"],
+  outdoor: ["جلسات", "خارجيه", "خارجيه"],
+  spa: ["سبا", "spa"],
+  jacuzzi: ["جاكوزي", "بانيو"],
+  kids: ["اطفال", "الاطفال", "قسم الاطفال"],
+  rooms: ["غرف", "غرفة", "مساحه", "مساحة", "room"],
+  phone: ["رقم", "تلفون", "اتصال", "واتساب"],
+  managers: ["مدير", "مدراء", "اداره", "الاداره"],
+  systems: ["اوبرا", "نظام", "رابط", "روابط"],
+  list: ["قائمه", "قائمة", "فنادق", "فروع"],
+};
+
+const detectIntent = (query: string): IntentKey | null => {
+  const normalized = normalizeArabic(query);
+  for (const [intent, keywords] of Object.entries(INTENT_KEYWORDS) as [IntentKey, string[]][]) {
+    if (keywords.some((word) => normalized.includes(normalizeArabic(word)))) {
+      return intent;
+    }
+  }
+  return null;
+};
+
+const scoreHotelMatch = (query: string, hotel: MasterHotel) => {
+  const queryTokens = tokenize(query);
+  const nameTokens = tokenize(`${hotel.name} ${hotel.brand} ${hotel.city}`);
+  const joined = normalizeArabic(`${hotel.name} ${hotel.brand}`);
+
+  let score = 0;
+  queryTokens.forEach((token) => {
+    if (nameTokens.includes(token)) score += 3;
+    if (joined.includes(token)) score += 1;
+  });
+
+  if (normalizeArabic(query).includes(normalizeArabic(hotel.name))) score += 10;
+  return score;
+};
+
+const findBestHotel = (query: string) => {
+  const ranked = masterHotels
+    .map((hotel) => ({ hotel, score: scoreHotelMatch(query, hotel) }))
+    .sort((a, b) => b.score - a.score);
+  return ranked[0]?.score > 1 ? ranked[0].hotel : null;
+};
+
+const formatHotelFull = (hotel: MasterHotel) =>
+  `🏨 **${hotel.name}**\n\n🍳 الإفطار: ${hotel.breakfast}\n🏊 المسبح: ${hotel.pool}\n☕ الكوفي شوب: ${hotel.coffeeShop}\n🍽️ المطعم: ${hotel.restaurant}\n🌇 الإطلالة/البلكونة: ${hotel.viewBalcony}\n🚗 المواقف: ${hotel.parking}\n🏛️ القاعة: ${hotel.meetingHall}\n💍 بكج العرسان: ${hotel.weddingPackage}\n🏋️ النادي: ${hotel.gym}\n🧺 الغسيل: ${hotel.laundry}\n🌴 الجلسات الخارجية: ${hotel.outdoorSeating}\n🧖 السبا: ${hotel.spa}\n🛁 الجاكوزي/البانيو: ${hotel.jacuzzi}\n🧒 قسم الأطفال: ${hotel.kidsSection}\n📞 الاستقبال: ${hotel.hotelPhone ?? "غير متوفر"}`;
 
 const HotelSearch = () => {
   const [messages, setMessages] = useState<Message[]>([{ id: 1, type: "bot", text: initialMessage }]);
@@ -33,67 +113,57 @@ const HotelSearch = () => {
   }, [messages]);
 
   const generateResponse = (query: string) => {
-    const q = query.toLowerCase();
+    const intent = detectIntent(query);
 
-    if (q.includes("مدير") || q.includes("مدراء") || q.includes("تواصل الادارة") || q.includes("ادارة")) {
-      let response = "📋 **تقرير المدراء (لا يعطى الرقم للعميل):**\n\n";
-      managers.forEach((admin) => {
-        response += `👤 ${admin.name} (${admin.role})\n📞 ${admin.phone}\n\n`;
-      });
-      response += "⚠️ تنبيه: هذه الأرقام للاستخدام الداخلي فقط.";
-      return response;
+    if (intent === "managers") {
+      const contacts = managers
+        .map((admin) => `👤 ${admin.name} (${admin.role})\n📞 ${admin.phone}`)
+        .join("\n\n");
+      return `📋 **تقرير المدراء (داخلي):**\n\n${contacts}\n\n⚠️ لا يتم مشاركة هذه الأرقام مع العميل.`;
     }
 
-    const foundHotel = masterHotels.find((hotel) => q.includes(hotel.name) || q.includes(hotel.brand));
-
-    if (foundHotel) {
-      if (q.includes("رقم") || q.includes("تلفون") || q.includes("اتصال")) {
-        return `📞 **${foundHotel.name}**\n\nالاستقبال: ${foundHotel.hotelPhone ?? "غير متوفر"}\nالمبيعات: ${foundHotel.salesPhone ?? "غير متوفر"}`;
-      }
-
-      if (q.includes("غرف") || q.includes("مساحة") || q.includes("room")) {
-        return `🛏️ **${foundHotel.name} - أنواع ومساحات الغرف**\n\n${foundHotel.roomTypes ?? "لا تتوفر حالياً بيانات تفصيلية للغرف لهذا الفرع."}`;
-      }
-
-      if (q.includes("فطور") || q.includes("إفطار")) return `🍳 **${foundHotel.name}**\n${foundHotel.breakfast}`;
-      if (q.includes("مسبح")) return `🏊 **${foundHotel.name}**\n${foundHotel.pool}`;
-      if (q.includes("كوفي")) return `☕ **${foundHotel.name}**\n${foundHotel.coffeeShop}`;
-      if (q.includes("مطعم")) return `🍽️ **${foundHotel.name}**\n${foundHotel.restaurant}`;
-      if (q.includes("اطلالة") || q.includes("بلكونة")) return `🌇 **${foundHotel.name}**\n${foundHotel.viewBalcony}`;
-      if (q.includes("مواقف")) return `🚗 **${foundHotel.name}**\n${foundHotel.parking}`;
-      if (q.includes("قاعة") || q.includes("اجتماعات")) return `🏛️ **${foundHotel.name}**\n${foundHotel.meetingHall}`;
-      if (q.includes("عرسان") || q.includes("بكج")) return `💍 **${foundHotel.name}**\n${foundHotel.weddingPackage}`;
-      if (q.includes("نادي") || q.includes("جيم")) return `🏋️ **${foundHotel.name}**\n${foundHotel.gym}`;
-      if (q.includes("غسيل")) return `🧺 **${foundHotel.name}**\n${foundHotel.laundry}`;
-      if (q.includes("جلسات")) return `🌴 **${foundHotel.name}**\n${foundHotel.outdoorSeating}`;
-      if (q.includes("سبا")) return `🧖 **${foundHotel.name}**\n${foundHotel.spa}`;
-      if (q.includes("جاكوزي") || q.includes("بانيو")) return `🛁 **${foundHotel.name}**\n${foundHotel.jacuzzi}`;
-      if (q.includes("اطفال") || q.includes("الأطفال")) return `🧒 **${foundHotel.name}**\n${foundHotel.kidsSection}`;
-
-      return `🏨 **${foundHotel.name}**\n\n🍳 الإفطار: ${foundHotel.breakfast}\n🏊 المسبح: ${foundHotel.pool}\n☕ الكوفي شوب: ${foundHotel.coffeeShop}\n🍽️ المطعم: ${foundHotel.restaurant}\n🌇 الإطلالة/البلكونة: ${foundHotel.viewBalcony}\n🚗 المواقف: ${foundHotel.parking}\n🏛️ قاعة الاجتماعات: ${foundHotel.meetingHall}\n💍 بكج العرسان: ${foundHotel.weddingPackage}\n🏋️ النادي: ${foundHotel.gym}\n🧺 غسيل الملابس: ${foundHotel.laundry}\n🌴 الجلسات الخارجية: ${foundHotel.outdoorSeating}\n🧖 السبا: ${foundHotel.spa}\n🛁 الجاكوزي/البانيو: ${foundHotel.jacuzzi}\n🧒 قسم الأطفال: ${foundHotel.kidsSection}\n📞 الاستقبال: ${foundHotel.hotelPhone ?? "غير متوفر"}`;
-    }
-
-    if (q.includes("اوبرا") || q.includes("رابط") || q.includes("نظام")) {
+    if (intent === "systems") {
       return `🔗 **روابط الأنظمة:**\n\n${systemsLinks[0].name}: ${systemsLinks[0].url}\n\n${systemsLinks[1].name}: ${systemsLinks[1].url}`;
     }
 
-    if (q.includes("قائمة") || q.includes("فنادق") || q.includes("فروع")) {
-      return `لدينا حالياً ${masterHotels.length} فرع في قاعدة البيانات. اختر من القائمة الجانبية للحصول على التفاصيل.`;
+    if (intent === "list") {
+      return `لدينا ${masterHotels.length} فرع في قاعدة البيانات. يمكنك اختيار فرع من القائمة أو كتابة اسمه مباشرة.`;
     }
 
-    return "عذراً، لم أفهم طلبك بدقة. اكتب اسم الفرع متبوعاً بنوع الطلب (فطور، مسبح، سبا، قاعة، بكج عرسان، غرف، رقم).";
+    const hotel = findBestHotel(query);
+    if (!hotel) {
+      return "لم أتعرف على الفرع بدقة. اكتب اسم الفرع بشكل أوضح (مثال: بريرا العليا) مع نوع الطلب.";
+    }
+
+    if (intent === "phone") return `📞 **${hotel.name}**\nالاستقبال: ${hotel.hotelPhone ?? "غير متوفر"}\nالمبيعات: ${hotel.salesPhone ?? "غير متوفر"}`;
+    if (intent === "rooms") return `🛏️ **${hotel.name}**\n${hotel.roomTypes ?? "لا توجد تفاصيل غرف مرفقة حالياً."}`;
+    if (intent === "breakfast") return `🍳 **${hotel.name}**\n${hotel.breakfast}`;
+    if (intent === "pool") return `🏊 **${hotel.name}**\n${hotel.pool}`;
+    if (intent === "coffee") return `☕ **${hotel.name}**\n${hotel.coffeeShop}`;
+    if (intent === "restaurant") return `🍽️ **${hotel.name}**\n${hotel.restaurant}`;
+    if (intent === "view") return `🌇 **${hotel.name}**\n${hotel.viewBalcony}`;
+    if (intent === "parking") return `🚗 **${hotel.name}**\n${hotel.parking}`;
+    if (intent === "meeting") return `🏛️ **${hotel.name}**\n${hotel.meetingHall}`;
+    if (intent === "wedding") return `💍 **${hotel.name}**\n${hotel.weddingPackage}`;
+    if (intent === "gym") return `🏋️ **${hotel.name}**\n${hotel.gym}`;
+    if (intent === "laundry") return `🧺 **${hotel.name}**\n${hotel.laundry}`;
+    if (intent === "outdoor") return `🌴 **${hotel.name}**\n${hotel.outdoorSeating}`;
+    if (intent === "spa") return `🧖 **${hotel.name}**\n${hotel.spa}`;
+    if (intent === "jacuzzi") return `🛁 **${hotel.name}**\n${hotel.jacuzzi}`;
+    if (intent === "kids") return `🧒 **${hotel.name}**\n${hotel.kidsSection}`;
+
+    return formatHotelFull(hotel);
   };
 
   const submitMessage = (text: string) => {
     if (!text.trim()) return;
-
     const userMessage: Message = { id: Date.now(), type: "user", text };
     setMessages((prev) => [...prev, userMessage]);
 
     setTimeout(() => {
       const response = generateResponse(text);
       setMessages((prev) => [...prev, { id: Date.now() + 1, type: "bot", text: response }]);
-    }, 450);
+    }, 350);
   };
 
   const handleSendMessage = () => {
@@ -101,85 +171,110 @@ const HotelSearch = () => {
     setInputValue("");
   };
 
-  const filteredHotels = useMemo(
-    () => masterHotels.filter((hotel) => hotel.name.includes(searchQuery.trim()) || hotel.brand.includes(searchQuery.trim())),
-    [searchQuery],
-  );
+  const filteredHotels = useMemo(() => {
+    const q = normalizeArabic(searchQuery);
+    if (!q) return masterHotels;
+    return masterHotels.filter((hotel) => normalizeArabic(`${hotel.name} ${hotel.brand} ${hotel.city}`).includes(q));
+  }, [searchQuery]);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden rounded-2xl border border-[#3D2B5E] bg-[#0A0514] text-gray-100">
-      <aside className="hidden w-80 flex-col border-l border-[#3D2B5E] bg-[#140C24] lg:flex">
-        <div className="border-b border-[#3D2B5E] bg-[#251842]/70 p-6">
-          <h2 className="flex items-center gap-2 text-xl font-bold text-purple-300">
-            <Hotel className="text-purple-400" />
-            <span>دليل الفروع الكامل</span>
-          </h2>
-          <div className="group relative mt-4">
-            <Search className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 transition-colors group-focus-within:text-purple-400" />
-            <input type="text" placeholder="بحث سريع..." className="w-full rounded-xl border border-[#3D2B5E] bg-[#0A0514] py-2 pl-3 pr-10 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} />
-          </div>
-        </div>
-
-        <div className="custom-scrollbar flex-1 space-y-3 overflow-y-auto p-4">
-          {filteredHotels.map((hotel) => (
-            <button key={hotel.id} onClick={() => submitMessage(hotel.name)} className="w-full rounded-xl border border-[#3D2B5E] bg-[#1A102E] p-4 text-right transition-all hover:-translate-x-1 hover:border-purple-500/70 hover:bg-[#251842]">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-bold text-gray-100">{hotel.name}</h3>
-                <span className="rounded bg-[#0A0514] px-2 py-0.5 text-[10px] text-gray-400">{hotel.brand}</span>
-              </div>
-              <div className="mt-2 flex gap-3 text-xs text-gray-400">
-                <span className="flex items-center gap-1"><Waves className="h-3 w-3" /> مسبح</span>
-                <span className="flex items-center gap-1"><Utensils className="h-3 w-3" /> إفطار</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      <main className="relative flex flex-1 flex-col bg-[#0A0514]">
-        <header className="glass-panel z-10 flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <span className="relative inline-flex h-3 w-3"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-70" /><span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" /></span>
-            <div>
-              <h1 className="flex items-center gap-2 text-lg font-bold">Worm-AI <span className="rounded-full bg-purple-600 px-2 py-0.5 text-[10px]">V2.1</span></h1>
-              <p className="text-[11px] text-gray-400">قاعدة بيانات الفروع + دليل الرد السريع</p>
+    <div className="p-4 max-w-6xl mx-auto">
+      <div className="flex h-[calc(100vh-6.5rem)] overflow-hidden rounded-2xl border border-border bg-card/40">
+        <aside className="hidden w-80 flex-col border-l border-border bg-card/50 lg:flex">
+          <div className="border-b border-border p-4">
+            <h2 className="flex items-center gap-2 text-lg font-bold gold-text">
+              <Hotel className="w-5 h-5 text-primary" />
+              دليل الفروع
+            </h2>
+            <div className="relative mt-3">
+              <Search className="absolute right-3 top-2.5 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="بحث عن فرع..."
+                className="w-full h-10 rounded-lg bg-secondary border border-border pr-9 pl-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
             </div>
           </div>
-          <button className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-[#251842] hover:text-white" type="button"><ShieldAlert className="h-5 w-5" /></button>
-        </header>
 
-        <div className="custom-scrollbar z-10 flex-1 space-y-6 overflow-y-auto p-4 md:p-8">
-          {messages.map((message) => (
-            <div key={message.id} className={`animate-fade-in-up flex ${message.type === "user" ? "justify-start" : "justify-end"}`}>
-              <div className={`relative max-w-[85%] rounded-2xl p-5 text-sm leading-relaxed shadow-xl md:max-w-[72%] ${message.type === "user" ? "rounded-tr-none border border-[#3D2B5E] bg-[#1A102E]" : "rounded-tl-none border border-purple-500/40 bg-gradient-to-br from-purple-600 to-purple-800"}`}>
-                {message.type === "bot" ? <Sparkles className="absolute -left-2 -top-2 h-4 w-4 text-yellow-300" /> : null}
-                <p className="whitespace-pre-line">{message.text}</p>
-                <span className="mt-3 block text-left font-mono text-[10px] opacity-60">{new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
-              </div>
-            </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
-
-        <div className="no-scrollbar z-10 flex gap-2 overflow-x-auto px-4 py-2 md:px-8">
-          {[
-            { icon: <Utensils className="h-3 w-3" />, label: "أسعار الإفطار", query: "افطار بريرا العليا" },
-            { icon: <Waves className="h-3 w-3" />, label: "المسابح", query: "مسبح نارسس رويال" },
-            { icon: <Phone className="h-3 w-3" />, label: "أرقام المدراء", query: "قائمة المدراء" },
-            { icon: <Car className="h-3 w-3" />, label: "المواقف", query: "مواقف بودل قريش" },
-            { icon: <Bed className="h-3 w-3" />, label: "مساحة الغرف", query: "غرف عابر التخصصي" },
-          ].map((button) => (
-            <button key={button.label} type="button" onClick={() => submitMessage(button.query)} className="whitespace-nowrap rounded-full border border-[#3D2B5E] bg-[#140C24] px-4 py-2 text-xs transition-all hover:border-purple-500 hover:bg-[#1A102E]"><span className="flex items-center gap-2">{button.icon}{button.label}</span></button>
-          ))}
-        </div>
-
-        <div className="z-10 border-t border-[#3D2B5E] bg-[#0A0514] p-4 md:p-6">
-          <div className="flex items-center gap-3 rounded-2xl border border-[#3D2B5E] bg-[#140C24] p-2 focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500">
-            <input type="text" value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") handleSendMessage(); }} placeholder="اكتب استفسارك (مثال: بريرا قرطبه قاعة اجتماعات)" className="flex-1 bg-transparent px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none" />
-            <button onClick={handleSendMessage} type="button" className="rounded-xl bg-purple-600 p-3 text-white transition-transform hover:scale-105 hover:bg-purple-500"><Send className="h-5 w-5 rotate-180" /></button>
+          <div className="custom-scrollbar flex-1 overflow-y-auto p-3 space-y-2">
+            {filteredHotels.map((hotel) => (
+              <button
+                key={hotel.id}
+                onClick={() => submitMessage(hotel.name)}
+                className="w-full text-right rounded-xl border border-border bg-secondary/60 p-3 hover:bg-secondary transition"
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <h3 className="font-semibold text-sm">{hotel.name}</h3>
+                  <span className="text-[10px] rounded-full px-2 py-0.5 bg-primary/10 text-primary">{hotel.brand}</span>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">{hotel.city}</p>
+              </button>
+            ))}
           </div>
-        </div>
-      </main>
+        </aside>
+
+        <main className="flex-1 flex flex-col">
+          <header className="border-b border-border px-4 py-3 flex items-center justify-between bg-background/70">
+            <h1 className="font-bold">Worm-AI</h1>
+            <span className="text-xs text-muted-foreground">بحث ذكي للفروع</span>
+          </header>
+
+          <div className="custom-scrollbar flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+            {messages.map((message) => (
+              <div key={message.id} className={`flex animate-fade-in-up ${message.type === "user" ? "justify-start" : "justify-end"}`}>
+                <div
+                  className={`max-w-[90%] md:max-w-[75%] rounded-2xl p-4 text-sm whitespace-pre-line ${
+                    message.type === "user"
+                      ? "bg-secondary border border-border rounded-tr-none"
+                      : "gold-gradient text-primary-foreground rounded-tl-none"
+                  }`}
+                >
+                  {message.type === "bot" ? <Sparkles className="w-3 h-3 mb-1" /> : null}
+                  {message.text}
+                </div>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+
+          <div className="no-scrollbar px-4 py-2 overflow-x-auto flex gap-2 border-t border-border">
+            {[
+              { icon: <Utensils className="w-3 h-3" />, label: "الإفطار", query: "فطور بريرا العليا" },
+              { icon: <Waves className="w-3 h-3" />, label: "المسبح", query: "مسبح نارسس رويال" },
+              { icon: <Phone className="w-3 h-3" />, label: "المدراء", query: "قائمة المدراء" },
+              { icon: <Car className="w-3 h-3" />, label: "المواقف", query: "مواقف بودل قريش" },
+              { icon: <Bed className="w-3 h-3" />, label: "الغرف", query: "غرف عابر التخصصي" },
+            ].map((button) => (
+              <button
+                key={button.label}
+                onClick={() => submitMessage(button.query)}
+                type="button"
+                className="px-3 py-1.5 text-xs rounded-full border border-border bg-secondary/70 hover:bg-secondary"
+              >
+                <span className="flex items-center gap-1.5">{button.icon}{button.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="p-3 border-t border-border bg-background/60">
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-2">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(event) => setInputValue(event.target.value)}
+                onKeyDown={(event) => event.key === "Enter" && handleSendMessage()}
+                placeholder="اكتب سؤالك..."
+                className="flex-1 bg-transparent py-2 px-2 text-sm focus:outline-none"
+              />
+              <button onClick={handleSendMessage} type="button" className="p-2 rounded-lg bg-primary text-primary-foreground">
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
