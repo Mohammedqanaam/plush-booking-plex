@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 
 const DEFAULT_ADMIN = {
   username: "admin",
-  password: "112233",
+  password: "123",
   role: "superadmin",
 };
 

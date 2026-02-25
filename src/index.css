@@ -7,48 +7,48 @@
 @layer base {
   :root {
     --background: 270 60% 5%;
-    --foreground: 40 20% 92%;
+    --foreground: 0 0% 98%;
 
     --card: 270 40% 8%;
-    --card-foreground: 40 20% 92%;
+    --card-foreground: 0 0% 98%;
 
     --popover: 270 40% 8%;
-    --popover-foreground: 40 20% 92%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 42 90% 55%;
-    --primary-foreground: 270 60% 5%;
+    --primary: 270 85% 62%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 270 30% 14%;
-    --secondary-foreground: 40 20% 88%;
+    --secondary-foreground: 0 0% 94%;
 
     --muted: 270 25% 12%;
     --muted-foreground: 260 10% 55%;
 
-    --accent: 42 80% 48%;
-    --accent-foreground: 270 60% 5%;
+    --accent: 270 75% 58%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 270 20% 16%;
     --input: 270 20% 16%;
-    --ring: 42 90% 55%;
+    --ring: 270 85% 62%;
 
     --radius: 0.75rem;
 
     --sidebar-background: 270 40% 6%;
-    --sidebar-foreground: 40 20% 92%;
-    --sidebar-primary: 42 90% 55%;
-    --sidebar-primary-foreground: 270 60% 5%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 270 85% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 270 30% 14%;
-    --sidebar-accent-foreground: 40 20% 88%;
+    --sidebar-accent-foreground: 0 0% 94%;
     --sidebar-border: 270 20% 16%;
-    --sidebar-ring: 42 90% 55%;
+    --sidebar-ring: 270 85% 62%;
 
     /* Custom tokens */
-    --gold: 42 90% 55%;
-    --gold-dim: 42 60% 35%;
-    --gold-glow: 42 100% 65%;
+    --gold: 270 85% 62%;
+    --gold-dim: 270 55% 42%;
+    --gold-glow: 280 95% 74%;
     --surface-glass: 270 40% 10%;
     --success: 152 60% 45%;
     --success-foreground: 0 0% 100%;
