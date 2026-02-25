@@ -159,6 +159,21 @@ export default async (req: Request) => {
     }
   }
 
+
+  if (method === "DELETE") {
+    const session = await validateSession(req);
+    if (!session) return json({ error: "Unauthorized" }, 401);
+
+    if (!["superadmin", "admin"].includes(session.role)) {
+      return json({ error: "Permission Denied" }, 403);
+    }
+
+    await store.setJSON("data", []);
+    await store.setJSON("stats", { total: 0, confirmed: 0, cancelled: 0, cancelRate: 0 });
+
+    return json({ ok: true });
+  }
+
   if (method === "POST") {
     const session = await validateSession(req);
     if (!session) return json({ error: "Unauthorized" }, 401);

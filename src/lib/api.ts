@@ -103,6 +103,16 @@ export const api = {
     return res.json();
   },
 
+
+  async resetBookings() {
+    const res = await fetch(`${API_BASE}/bookings`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to reset bookings");
+    return res.json();
+  },
+
   async getBookings() {
     const res = await fetch(`${API_BASE}/bookings`);
     if (!res.ok) throw new Error("Failed to fetch bookings");

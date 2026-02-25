@@ -44,6 +44,7 @@ const AdminDashboard = () => {
 
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const [siteTitle, setSiteTitle] = useState("");
   const [bannerText, setBannerText] = useState("");
@@ -136,6 +137,24 @@ const AdminDashboard = () => {
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+
+  const handleResetDashboard = async () => {
+    if (!checkPermission("edit_settings")) {
+      setUploadMessage("صلاحية مرفوضة - Permission Denied");
+      return;
+    }
+
+    setResetting(true);
+    try {
+      await api.resetBookings();
+      setUploadMessage("تم تصفير بيانات الداشبورد بنجاح (0 حجوزات).");
+    } catch {
+      setUploadMessage("تعذر تصفير بيانات الداشبورد.");
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -285,6 +304,14 @@ const AdminDashboard = () => {
           >
             <FileText className="w-4 h-4" />
             {uploading ? "جاري الرفع..." : "اختيار ملف CSV"}
+          </button>
+
+          <button
+            onClick={handleResetDashboard}
+            disabled={resetting}
+            className="w-full h-11 rounded-lg border border-destructive/40 text-destructive font-semibold text-sm disabled:opacity-50"
+          >
+            {resetting ? "جاري التصفير..." : "تصفير الداشبورد"}
           </button>
 
           {uploadMessage && (
