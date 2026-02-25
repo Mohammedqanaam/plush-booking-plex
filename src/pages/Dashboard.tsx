@@ -22,9 +22,18 @@ function classifyStatus(
   status: string
 ): "confirmed" | "cancelled" | "not_confirmed" {
   const s = status.trim().toUpperCase();
-  if (s === "N" || s === "M" || s === "CONFIRMED") return "confirmed";
-  if (s === "C" || s === "NS") return "cancelled";
+  if (s === "N" || s === "M" || s === "CONFIRMED" || s === "OK" || s === "CNF") return "confirmed";
+  if (s === "C" || s === "NS" || s === "CANCELLED" || s === "CANCELED") return "cancelled";
   return "not_confirmed";
+}
+
+
+function getAnyValue(record: BookingRecord, keys: string[]): string {
+  for (const key of keys) {
+    const value = record[key];
+    if (value !== undefined && String(value).trim()) return String(value);
+  }
+  return "";
 }
 
 const Dashboard = () => {
@@ -55,13 +64,14 @@ const Dashboard = () => {
     let cancelled = 0;
 
     bookings.forEach((record) => {
-      const status = String(
-        record.Status ||
-          record.status ||
-          record["Booking Status"] ||
-          record.BookingStatus ||
-          ""
-      );
+      const status = getAnyValue(record, [
+        "Status",
+        "status",
+        "Booking Status",
+        "BookingStatus",
+        "حالة الحجز",
+        "الحالة",
+      ]);
       const category = classifyStatus(status);
       if (category === "confirmed") confirmed++;
       else if (category === "cancelled") cancelled++;
@@ -113,22 +123,27 @@ const Dashboard = () => {
     >();
 
     const getEmployeeName = (record: BookingRecord) =>
-      String(
-        record["Employee Name"] ||
-          record.EmployeeName ||
-          record.employee_name ||
-          record.Employee ||
-          record.employee ||
-          ""
-      );
+      getAnyValue(record, [
+        "Employee Name",
+        "EmployeeName",
+        "employee_name",
+        "Employee",
+        "employee",
+        "اسم الموظف",
+        "الموظف",
+        "موظف الحجز",
+        "CRO",
+      ]);
+
     const getStatus = (record: BookingRecord) =>
-      String(
-        record.Status ||
-          record.status ||
-          record["Booking Status"] ||
-          record.BookingStatus ||
-          ""
-      );
+      getAnyValue(record, [
+        "Status",
+        "status",
+        "Booking Status",
+        "BookingStatus",
+        "حالة الحجز",
+        "الحالة",
+      ]);
 
     bookings.forEach((record) => {
       const name = getEmployeeName(record).trim();
@@ -198,6 +213,9 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {!employees.length && !loading ? (
+            <p className="col-span-full text-xs text-muted-foreground">لم يتم العثور على أسماء موظفين داخل ملف الحجوزات. تأكد من وجود عمود مثل: Employee Name أو اسم الموظف.</p>
+          ) : null}
           {employees.map((employee) => (
             <div key={employee.name} className="glass-card p-4 space-y-3">
               <div className="space-y-1">
