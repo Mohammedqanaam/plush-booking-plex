@@ -26,12 +26,41 @@ function classifyStatus(
   return "confirmed";
 }
 
+const normalizeKey = (value: string) =>
+  value
+    .replace(/^﻿/, "")
+    .toLowerCase()
+    .replace(/[ً-ْ]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[\s_\-\/]+/g, "")
+    .trim();
 
 function getAnyValue(record: BookingRecord, keys: string[]): string {
   for (const key of keys) {
     const value = record[key];
     if (value !== undefined && String(value).trim()) return String(value);
   }
+
+  const entries = Object.entries(record as Record<string, string | number | undefined>);
+  const normalizedTargets = keys.map(normalizeKey);
+
+  for (const [rawKey, rawValue] of entries) {
+    if (rawValue === undefined || !String(rawValue).trim()) continue;
+    const normalized = normalizeKey(rawKey);
+
+    if (normalizedTargets.includes(normalized)) return String(rawValue);
+
+    if (
+      normalizedTargets.some(
+        (target) => normalized.includes(target) || target.includes(normalized),
+      )
+    ) {
+      return String(rawValue);
+    }
+  }
+
   return "";
 }
 
@@ -132,6 +161,12 @@ const Dashboard = () => {
         "الموظف",
         "موظف الحجز",
         "CRO",
+        "Agent",
+        "agent",
+        "Agent Name",
+        "Created By",
+        "created by",
+        "اسم الكرو",
       ]);
 
     const getStatus = (record: BookingRecord) =>

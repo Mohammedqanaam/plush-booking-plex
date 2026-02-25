@@ -22,6 +22,17 @@ async function validateSession(req: Request): Promise<Session | null> {
   }
 }
 
+const normalizeKey = (value: string) =>
+  value
+    .replace(/^\uFEFF/, "")
+    .toLowerCase()
+    .replace(/[\u064B-\u0652]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[\s_\-\/]+/g, "")
+    .trim();
+
 function parseCSV(text: string): Record<string, string>[] {
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) return [];
@@ -51,7 +62,8 @@ function parseCSV(text: string): Record<string, string>[] {
     return fields;
   };
 
-  const headers = parseRow(lines[0]);
+  const headers = parseRow(lines[0]).map((header) => header.replace(/^\uFEFF/, "").trim());
+
   return lines
     .slice(1)
     .filter((line) => line.trim())
@@ -65,11 +77,27 @@ function parseCSV(text: string): Record<string, string>[] {
     });
 }
 
-
 function getRecordValue(record: Record<string, string>, keys: string[]): string {
   for (const key of keys) {
     if (record[key] && String(record[key]).trim()) return String(record[key]);
   }
+
+  const normalizedTargets = keys.map(normalizeKey);
+  for (const [rawKey, rawValue] of Object.entries(record)) {
+    if (!String(rawValue).trim()) continue;
+    const normalized = normalizeKey(rawKey);
+
+    if (normalizedTargets.includes(normalized)) return String(rawValue);
+
+    if (
+      normalizedTargets.some(
+        (target) => normalized.includes(target) || target.includes(normalized),
+      )
+    ) {
+      return String(rawValue);
+    }
+  }
+
   return "";
 }
 
