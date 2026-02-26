@@ -20,6 +20,7 @@ type BookingStats = {
 
 type EmployeeStat = {
   name: string;
+  normalizedName: string;
   total: number;
   confirmed: number;
   cancelled: number;
@@ -33,10 +34,12 @@ const defaultStats: BookingStats = {
   cancelRate: 0,
 };
 
-function classifyStatus(status: string): "confirmed" | "cancelled" {
-  const s = status.trim().toUpperCase();
-  if (s === "C" || s === "NS") return "cancelled";
-  return "confirmed";
+function classifyStatus(status: string): "confirmed" | "cancelled" | "other" {
+  const s = status.trim().toLowerCase();
+  if (!s) return "other";
+  if (s.includes("conf")) return "confirmed";
+  if (s === "c" || s === "ns") return "cancelled";
+  return "other";
 }
 
 const normalizeKey = (value: string) =>
@@ -72,6 +75,18 @@ function getAnyValue(record: BookingRecord, keys: string[]): string {
 
   return "";
 }
+
+const normalizeAgentName = (value: string) =>
+  value
+    .replace(/[\u064B-\u0652]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+const formatAgentName = (value: string) => value.replace(/\s+/g, " ").trim();
 
 const MONTH_NAMES_AR = [
   "يناير",
@@ -109,7 +124,6 @@ const parsePossibleDate = (value: string): Date | null => {
 
 const Dashboard = () => {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
-  const [stats, setStats] = useState<BookingStats>(defaultStats);
   const [loading, setLoading] = useState(true);
   const [hiddenEmployees, setHiddenEmployees] = useState<string[]>([]);
   const [reportMonth, setReportMonth] = useState("");
@@ -121,10 +135,6 @@ const Dashboard = () => {
         if (Array.isArray(data.bookings)) {
           setBookings(data.bookings);
         }
-        if (data.stats) {
-          setStats(data.stats);
-        }
-
         if (Array.isArray(settings.hiddenEmployees)) {
           setHiddenEmployees(settings.hiddenEmployees);
         }
@@ -133,81 +143,77 @@ const Dashboard = () => {
       })
       .catch(() => {
         setBookings([]);
-        setStats(defaultStats);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const computedStats = useMemo(() => {
-    if (!bookings.length) return defaultStats;
-
-    let confirmed = 0;
-    let cancelled = 0;
-
-    bookings.forEach((record) => {
-      const status = getAnyValue(record, ["Status", "status", "Booking Status", "BookingStatus", "حالة الحجز", "الحالة"]);
-      const category = classifyStatus(status);
-      if (category === "confirmed") confirmed++;
-      else cancelled++;
-    });
-
-    const total = bookings.length;
-    return {
-      total,
-      confirmed,
-      cancelled,
-      cancelRate: total ? parseFloat(((cancelled / total) * 100).toFixed(1)) : 0,
-    };
-  }, [bookings, stats]);
-
-  const allEmployees = useMemo<EmployeeStat[]>(() => {
+  const groupedEmployees = useMemo<EmployeeStat[]>(() => {
     if (!bookings.length) return [];
 
-    const map = new Map<string, { total: number; confirmed: number; cancelled: number }>();
+    const map = new Map<string, { name: string; total: number; confirmed: number; cancelled: number }>();
 
     bookings.forEach((record) => {
-      const name = getAnyValue(record, [
-        "Employee Name",
-        "EmployeeName",
-        "employee_name",
-        "Employee",
-        "employee",
-        "اسم الموظف",
-        "الموظف",
-        "موظف الحجز",
-        "CRO",
-        "Agent",
-        "agent",
-        "Agent Name",
-        "Created By",
-        "created by",
-        "اسم الكرو",
-      ]).trim();
+      const rawName = getAnyValue(record, ["Agent name", "Agent Name", "agent name"]);
+      const normalizedName = normalizeAgentName(rawName);
+      if (!normalizedName) return;
 
-      if (!name) return;
-
-      const status = getAnyValue(record, ["Status", "status", "Booking Status", "BookingStatus", "حالة الحجز", "الحالة"]);
+      const displayName = formatAgentName(rawName);
+      const status = getAnyValue(record, ["All stute", "All Stute", "all stute"]);
       const category = classifyStatus(status);
-      const current = map.get(name) || { total: 0, confirmed: 0, cancelled: 0 };
+
+      const current = map.get(normalizedName) || {
+        name: displayName,
+        total: 0,
+        confirmed: 0,
+        cancelled: 0,
+      };
+
+      if (!current.name && displayName) {
+        current.name = displayName;
+      }
+
       current.total += 1;
+      if (category === "confirmed") current.confirmed += 1;
       if (category === "cancelled") current.cancelled += 1;
-      else current.confirmed += 1;
-      map.set(name, current);
+      map.set(normalizedName, current);
     });
 
     return Array.from(map.entries())
-      .map(([name, value]) => ({
-        name,
-        ...value,
+      .map(([normalizedName, value]) => ({
+        name: value.name,
+        normalizedName,
+        total: value.total,
+        confirmed: value.confirmed,
+        cancelled: value.cancelled,
         cancelRate: value.total ? (value.cancelled / value.total) * 100 : 0,
       }))
       .sort((a, b) => b.total - a.total);
   }, [bookings]);
 
-  const employees = useMemo(
-    () => allEmployees.filter((employee) => !hiddenEmployees.includes(employee.name)),
-    [allEmployees, hiddenEmployees],
+  const hiddenEmployeeKeys = useMemo(
+    () => hiddenEmployees.map((name) => normalizeAgentName(name)).filter(Boolean),
+    [hiddenEmployees],
   );
+
+  const employees = useMemo(
+    () => groupedEmployees.filter((employee) => !hiddenEmployeeKeys.includes(employee.normalizedName)),
+    [groupedEmployees, hiddenEmployeeKeys],
+  );
+
+  const computedStats = useMemo<BookingStats>(() => {
+    if (!employees.length) return defaultStats;
+
+    const total = employees.reduce((sum, employee) => sum + employee.total, 0);
+    const confirmed = employees.reduce((sum, employee) => sum + employee.confirmed, 0);
+    const cancelled = employees.reduce((sum, employee) => sum + employee.cancelled, 0);
+
+    return {
+      total,
+      confirmed,
+      cancelled,
+      cancelRate: total === 0 ? 0 : parseFloat(((cancelled / total) * 100).toFixed(1)),
+    };
+  }, [employees]);
 
   const monthSummary = useMemo(() => {
     const dateKeys = ["Date", "Booking Date", "booking_date", "Created At", "تاريخ الحجز", "التاريخ"];
@@ -292,7 +298,7 @@ const Dashboard = () => {
         <div className="space-y-2">
           {!employees.length && !loading ? (
             <p className="text-xs text-muted-foreground">
-              لم يتم العثور على أسماء موظفين داخل ملف الحجوزات. تأكد من وجود عمود مثل: Employee Name أو اسم الموظف.
+              لم يتم العثور على أسماء موظفين داخل ملف الحجوزات. تأكد من وجود عمود Agent name وعمود All stute.
             </p>
           ) : null}
 

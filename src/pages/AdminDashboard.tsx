@@ -95,44 +95,36 @@ const AdminDashboard = () => {
       const data = await api.getBookings();
       const bookings = Array.isArray(data.bookings) ? (data.bookings as BookingRecord[]) : [];
 
+      const normalizeAgentName = (value: string) =>
+        value
+          .replace(/[ً-ْ]/g, "")
+          .replace(/[أإآ]/g, "ا")
+          .replace(/ة/g, "ه")
+          .replace(/ى/g, "ي")
+          .replace(/\s+/g, " ")
+          .trim()
+          .toLowerCase();
+
       const getEmployeeName = (record: BookingRecord) =>
-        String(
-          record["Employee Name"] ||
-            record.EmployeeName ||
-            record.employee_name ||
-            record.Employee ||
-            record.employee ||
-            record["اسم الموظف"] ||
-            record["الموظف"] ||
-            record["موظف الحجز"] ||
-            record.CRO ||
-            record["Created By"] ||
-            "",
-        ).trim();
+        String(record["Agent name"] || record["Agent Name"] || record["agent name"] || "").replace(/\s+/g, " ").trim();
 
       const getStatus = (record: BookingRecord) =>
-        String(
-          record.Status ||
-            record.status ||
-            record["Booking Status"] ||
-            record.BookingStatus ||
-            record["حالة الحجز"] ||
-            record["الحالة"] ||
-            "",
-        )
+        String(record["All stute"] || record["All Stute"] || record["all stute"] || "")
           .trim()
-          .toUpperCase();
+          .toLowerCase();
 
       const map = new Map<string, EmployeeRow>();
 
       bookings.forEach((record) => {
         const name = getEmployeeName(record);
-        if (!name) return;
+        const normalizedName = normalizeAgentName(name);
+        if (!normalizedName) return;
+
         const status = getStatus(record);
-        const current = map.get(name) || { name, total: 0, confirmed: 0 };
+        const current = map.get(normalizedName) || { name, total: 0, confirmed: 0 };
         current.total += 1;
-        if (status !== "C" && status !== "NS") current.confirmed += 1;
-        map.set(name, current);
+        if (status.includes("conf")) current.confirmed += 1;
+        map.set(normalizedName, current);
       });
 
       setEmployeeOptions(Array.from(map.values()).sort((a, b) => b.total - a.total));
