@@ -1,9 +1,21 @@
 import { getStore } from "@netlify/blobs";
 
 type Session = { username: string; role: string };
-type SiteSettings = { siteTitle: string; bannerText: string };
+type SiteSettings = {
+  siteTitle: string;
+  bannerText: string;
+  reportMonth: string;
+  reportYear: string;
+  hiddenEmployees: string[];
+};
 
-const DEFAULT_SETTINGS: SiteSettings = { siteTitle: "Worm-AI", bannerText: "" };
+const DEFAULT_SETTINGS: SiteSettings = {
+  siteTitle: "Worm-AI",
+  bannerText: "",
+  reportMonth: "",
+  reportYear: "",
+  hiddenEmployees: [],
+};
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -63,6 +75,11 @@ export default async (req: Request) => {
     const updated: SiteSettings = {
       siteTitle: body.siteTitle !== undefined ? body.siteTitle : current.siteTitle,
       bannerText: body.bannerText !== undefined ? body.bannerText : current.bannerText,
+      reportMonth: body.reportMonth !== undefined ? String(body.reportMonth) : current.reportMonth,
+      reportYear: body.reportYear !== undefined ? String(body.reportYear) : current.reportYear,
+      hiddenEmployees: Array.isArray(body.hiddenEmployees)
+        ? body.hiddenEmployees.map((v) => String(v))
+        : current.hiddenEmployees,
     };
 
     await store.setJSON("site", updated);

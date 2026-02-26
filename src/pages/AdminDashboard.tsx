@@ -24,12 +24,30 @@ type User = {
   role: UserRole;
 };
 
+type BookingRecord = Record<string, string | number | undefined>;
+
 const ROLE_LABELS: Record<UserRole, string> = {
   superadmin: "مدير عام",
   admin: "مسؤول",
   editor: "محرر",
   viewer: "مشاهد",
 };
+
+const MONTH_OPTIONS = [
+  "",
+  "يناير",
+  "فبراير",
+  "مارس",
+  "أبريل",
+  "مايو",
+  "يونيو",
+  "يوليو",
+  "أغسطس",
+  "سبتمبر",
+  "أكتوبر",
+  "نوفمبر",
+  "ديسمبر",
+];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -48,6 +66,10 @@ const AdminDashboard = () => {
 
   const [siteTitle, setSiteTitle] = useState("");
   const [bannerText, setBannerText] = useState("");
+  const [reportMonth, setReportMonth] = useState("");
+  const [reportYear, setReportYear] = useState("");
+  const [employeeOptions, setEmployeeOptions] = useState<string[]>([]);
+  const [hiddenEmployeesSettings, setHiddenEmployeesSettings] = useState<string[]>([]);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<"upload" | "users" | "settings">(
@@ -57,7 +79,40 @@ const AdminDashboard = () => {
   useEffect(() => {
     loadUsers();
     loadSettings();
+    loadBookingsForSettings();
   }, []);
+
+
+  const loadBookingsForSettings = async () => {
+    try {
+      const data = await api.getBookings();
+      const bookings = Array.isArray(data.bookings) ? (data.bookings as BookingRecord[]) : [];
+      const names = Array.from(
+        new Set(
+          bookings
+            .map((record) =>
+              String(
+                record["Employee Name"] ||
+                  record.EmployeeName ||
+                  record.employee_name ||
+                  record.Employee ||
+                  record.employee ||
+                  record["اسم الموظف"] ||
+                  record["الموظف"] ||
+                  record["موظف الحجز"] ||
+                  record.CRO ||
+                  record["Created By"] ||
+                  "",
+              ).trim(),
+            )
+            .filter(Boolean),
+        ),
+      );
+      setEmployeeOptions(names);
+    } catch {
+      setEmployeeOptions([]);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -73,6 +128,9 @@ const AdminDashboard = () => {
       const data = await api.getSettings();
       setSiteTitle(data.siteTitle || "");
       setBannerText(data.bannerText || "");
+      setReportMonth(data.reportMonth || "");
+      setReportYear(data.reportYear || "");
+      setHiddenEmployeesSettings(Array.isArray(data.hiddenEmployees) ? data.hiddenEmployees : []);
     } catch {}
   };
 
@@ -158,13 +216,19 @@ const AdminDashboard = () => {
     }
   };
 
+  const toggleEmployeeVisibilitySetting = (name: string) => {
+    setHiddenEmployeesSettings((prev) =>
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
+    );
+  };
+
   const handleSaveSettings = async () => {
     if (!checkPermission("edit_settings")) {
       setSettingsMessage("صلاحية مرفوضة - Permission Denied");
       return;
     }
     try {
-      await api.updateSettings({ siteTitle, bannerText });
+      await api.updateSettings({ siteTitle, bannerText, reportMonth, reportYear, hiddenEmployees: hiddenEmployeesSettings });
       setSettingsMessage("تم حفظ الإعدادات بنجاح.");
     } catch {
       setSettingsMessage("فشل حفظ الإعدادات.");
@@ -426,7 +490,7 @@ const AdminDashboard = () => {
             <div>
               <h3 className="text-sm font-semibold">إعدادات الموقع</h3>
               <p className="text-xs text-muted-foreground">
-                تعديل عنوان الموقع ونص البانر
+                تعديل العنوان + إعدادات الشهر/السنة + إخفاء موظفين الداشبورد
               </p>
             </div>
           </div>
@@ -457,6 +521,58 @@ const AdminDashboard = () => {
                 className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground text-sm"
               />
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">شهر التقرير</label>
+                <select
+                  value={reportMonth}
+                  onChange={(e) => setReportMonth(e.target.value)}
+                  className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-foreground text-sm"
+                >
+                  {MONTH_OPTIONS.map((month) => (
+                    <option key={month || "all"} value={month}>
+                      {month || "تلقائي حسب البيانات"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">السنة (نص)</label>
+                <input
+                  type="text"
+                  placeholder="2025"
+                  value={reportYear}
+                  onChange={(e) => setReportYear(e.target.value)}
+                  className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="glass-card p-3 space-y-2">
+              <p className="text-xs text-muted-foreground">إخفاء/إظهار الموظفين داخل الداشبورد:</p>
+              <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-2">
+                {employeeOptions.length ? (
+                  employeeOptions.map((name) => {
+                    const hidden = hiddenEmployeesSettings.includes(name);
+                    return (
+                      <div key={name} className="flex items-center justify-between border border-border rounded-md px-3 py-2 text-xs">
+                        <span>{name}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleEmployeeVisibilitySetting(name)}
+                          className={`rounded px-2 py-1 ${hidden ? "bg-destructive/20 text-destructive" : "bg-success/20 text-success"}`}
+                        >
+                          {hidden ? "❌ مخفي" : "✅ ظاهر"}
+                        </button>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-muted-foreground">لا توجد أسماء موظفين بعد. ارفع ملف حجوزات أولاً.</p>
+                )}
+              </div>
+            </div>
+
             <button
               onClick={handleSaveSettings}
               className="w-full h-11 rounded-lg gold-gradient text-primary-foreground font-semibold text-sm"

@@ -1,3 +1,11 @@
+type AppSettings = {
+  siteTitle?: string;
+  bannerText?: string;
+  reportMonth?: string;
+  reportYear?: string;
+  hiddenEmployees?: string[];
+};
+
 const API_BASE = "/.netlify/functions";
 
 const getToken = (): string | null => {
@@ -119,7 +127,7 @@ export const api = {
     return res.json();
   },
 
-  async getSettings() {
+  async getSettings(): Promise<AppSettings> {
     try {
       const res = await fetch(`${API_BASE}/settings`);
       if (!res.ok) return { siteTitle: "Worm-AI", bannerText: "" };
@@ -129,7 +137,7 @@ export const api = {
     }
   },
 
-  async updateSettings(settings: { siteTitle?: string; bannerText?: string }) {
+  async updateSettings(settings: AppSettings) {
     const res = await fetch(`${API_BASE}/settings`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", ...authHeaders() },

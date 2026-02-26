@@ -4,10 +4,7 @@ import {
   CalendarCheck,
   CalendarDays,
   CalendarX,
-  Eye,
-  EyeOff,
   Hotel,
-  Save,
   UserRound,
 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -115,30 +112,24 @@ const Dashboard = () => {
   const [stats, setStats] = useState<BookingStats>(defaultStats);
   const [loading, setLoading] = useState(true);
   const [hiddenEmployees, setHiddenEmployees] = useState<string[]>([]);
-  const [saveMessage, setSaveMessage] = useState<string>("");
+  const [reportMonth, setReportMonth] = useState("");
+  const [reportYear, setReportYear] = useState("");
 
   useEffect(() => {
-    const stored = localStorage.getItem("dashboard_hidden_employees");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) setHiddenEmployees(parsed);
-      } catch {
-        setHiddenEmployees([]);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    api
-      .getBookings()
-      .then((data) => {
+    Promise.all([api.getBookings(), api.getSettings()])
+      .then(([data, settings]) => {
         if (Array.isArray(data.bookings)) {
           setBookings(data.bookings);
         }
         if (data.stats) {
           setStats(data.stats);
         }
+
+        if (Array.isArray(settings.hiddenEmployees)) {
+          setHiddenEmployees(settings.hiddenEmployees);
+        }
+        if (settings.reportMonth) setReportMonth(settings.reportMonth);
+        if (settings.reportYear) setReportYear(settings.reportYear);
       })
       .catch(() => {
         setBookings([]);
@@ -230,11 +221,19 @@ const Dashboard = () => {
       monthMap.set(label, (monthMap.get(label) || 0) + 1);
     });
 
-    return Array.from(monthMap.entries())
+    let rows = Array.from(monthMap.entries())
       .map(([month, total]) => ({ month, total }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 6);
-  }, [bookings]);
+      .sort((a, b) => b.total - a.total);
+
+    if (reportMonth) {
+      rows = rows.filter((row) => row.month.includes(reportMonth));
+    }
+    if (reportYear) {
+      rows = rows.filter((row) => row.month.includes(reportYear));
+    }
+
+    return rows.slice(0, 6);
+  }, [bookings, reportMonth, reportYear]);
 
   const kpis = [
     { label: "إجمالي الحجوزات", value: computedStats.total.toLocaleString(), icon: Hotel, color: "text-primary" },
@@ -243,15 +242,6 @@ const Dashboard = () => {
     { label: "نسبة الإلغاء", value: `${computedStats.cancelRate}%`, icon: BarChart3, color: "text-warning" },
   ];
 
-  const toggleHidden = (name: string) => {
-    setHiddenEmployees((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
-  };
-
-  const handleSaveEmployeesView = () => {
-    localStorage.setItem("dashboard_hidden_employees", JSON.stringify(hiddenEmployees));
-    setSaveMessage("تم حفظ إعدادات إخفاء الموظفين بنجاح.");
-    setTimeout(() => setSaveMessage(""), 2500);
-  };
 
   return (
     <div className="p-4 max-w-5xl mx-auto space-y-6">
@@ -278,6 +268,9 @@ const Dashboard = () => {
           نشاط الحجوزات حسب الأشهر
         </h3>
         <div className="flex flex-wrap gap-2">
+          {(reportMonth || reportYear) ? (
+            <p className="w-full text-xs text-muted-foreground">الفلترة من الإعدادات: {reportMonth || "كل الشهور"} {reportYear || ""}</p>
+          ) : null}
           {monthSummary.length ? (
             monthSummary.map((item) => (
               <span key={item.month} className="text-xs rounded-full bg-secondary px-3 py-1 border border-border">
@@ -294,36 +287,6 @@ const Dashboard = () => {
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold gold-text">موظفي الحجز المركزي</h3>
           <span className="text-xs text-muted-foreground">{employees.length ? `${employees.length} موظف ظاهر` : "لا توجد بيانات"}</span>
-        </div>
-
-        <div className="glass-card p-3 space-y-3">
-          <p className="text-xs text-muted-foreground">إخفاء/إظهار الموظفين (✅ ظاهر / ❌ مخفي) ثم حفظ التحديث:</p>
-          <div className="max-h-44 overflow-y-auto custom-scrollbar space-y-2">
-            {allEmployees.map((employee) => {
-              const hidden = hiddenEmployees.includes(employee.name);
-              return (
-                <label key={employee.name} className="flex items-center justify-between text-xs border border-border rounded-md px-3 py-2">
-                  <span>{employee.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => toggleHidden(employee.name)}
-                    className={`rounded px-2 py-1 text-[11px] ${hidden ? "bg-destructive/20 text-destructive" : "bg-success/20 text-success"}`}
-                  >
-                    {hidden ? "❌ مخفي" : "✅ ظاهر"}
-                  </button>
-                </label>
-              );
-            })}
-          </div>
-          <button
-            type="button"
-            onClick={handleSaveEmployeesView}
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs gold-gradient text-primary-foreground"
-          >
-            <Save className="w-4 h-4" />
-            حفظ التحديث
-          </button>
-          {saveMessage ? <p className="text-xs text-success">{saveMessage}</p> : null}
         </div>
 
         <div className="space-y-2">
@@ -349,7 +312,7 @@ const Dashboard = () => {
                 <span className="text-success">مؤكد: {employee.confirmed}</span>
                 <span className="text-destructive">ملغي: {employee.cancelled}</span>
                 <span className="text-warning">نسبة الإلغاء: {employee.cancelRate.toFixed(1)}%</span>
-                {hiddenEmployees.includes(employee.name) ? <EyeOff className="w-4 h-4 text-destructive" /> : <Eye className="w-4 h-4 text-success" />}
+                
               </div>
             </div>
           ))}
