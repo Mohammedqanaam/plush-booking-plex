@@ -28,8 +28,8 @@ const Layout = () => {
 
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-4 h-14 max-w-4xl mx-auto">
-          <h1 className="text-lg font-bold gold-text">{siteTitle}</h1>
+        <div className="flex items-center justify-between px-4 h-16 max-w-4xl mx-auto gap-2">
+          <h1 className="text-xl sm:text-lg font-bold gold-text leading-none">{siteTitle}</h1>
           <RiyadhClock />
         </div>
       </header>

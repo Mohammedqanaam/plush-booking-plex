@@ -343,18 +343,18 @@ const Dashboard = () => {
           ) : null}
 
           {employees.map((employee) => (
-            <div key={employee.name} className="glass-card p-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center">
+            <div key={employee.name} className="glass-card p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
+                <div className="w-9 h-9 shrink-0 rounded-full bg-primary/20 text-primary flex items-center justify-center">
                   <UserRound className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold truncate">{employee.name}</p>
-                  <p className="text-xs text-muted-foreground">إجمالي: {employee.total}</p>
+                  <p className="text-base sm:text-sm font-semibold leading-6 text-foreground break-words">{employee.name}</p>
+                  <p className="text-sm sm:text-xs text-foreground/80">إجمالي: {employee.total}</p>
                 </div>
               </div>
 
-              <div className="text-xs flex items-center gap-3">
+              <div className="text-sm sm:text-xs grid grid-cols-3 sm:flex items-center gap-x-3 gap-y-1 pr-12 sm:pr-0">
                 <span className="text-success">مؤكد: {employee.confirmed}</span>
                 <span className="text-destructive">ملغي: {employee.cancelled}</span>
                 <span className="text-warning">نسبة الإلغاء: {employee.cancelRate.toFixed(1)}%</span>
