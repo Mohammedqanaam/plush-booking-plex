@@ -40,6 +40,16 @@ const ROLE_LABELS: Record<UserRole, string> = {
   viewer: "مشاهد",
 };
 
+const normalizeEmployeeName = (value: string) =>
+  value
+    .replace(/[ً-ْ]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
 const MONTH_OPTIONS = [
   "",
   "يناير",
@@ -105,11 +115,55 @@ const AdminDashboard = () => {
           .trim()
           .toLowerCase();
 
+      const normalizeKey = (value: string) =>
+        value
+          .replace(/^\uFEFF/, "")
+          .toLowerCase()
+          .replace(/[ً-ْ]/g, "")
+          .replace(/[أإآ]/g, "ا")
+          .replace(/ة/g, "ه")
+          .replace(/ى/g, "ي")
+          .replace(/[\s_/-]+/g, "")
+          .trim();
+
+      const getAnyValue = (record: BookingRecord, keys: string[]) => {
+        for (const key of keys) {
+          const value = record[key];
+          if (value !== undefined && String(value).trim()) return String(value);
+        }
+
+        const entries = Object.entries(record as Record<string, string | number | undefined>);
+        const normalizedTargets = keys.map(normalizeKey);
+
+        for (const [rawKey, rawValue] of entries) {
+          if (rawValue === undefined || !String(rawValue).trim()) continue;
+          const normalized = normalizeKey(rawKey);
+
+          if (normalizedTargets.includes(normalized)) return String(rawValue);
+
+          if (normalizedTargets.some((target) => normalized.includes(target) || target.includes(normalized))) {
+            return String(rawValue);
+          }
+        }
+
+        return "";
+      };
+
       const getEmployeeName = (record: BookingRecord) =>
-        String(record["Agent name"] || record["Agent Name"] || record["agent name"] || "").replace(/\s+/g, " ").trim();
+        getAnyValue(record, ["Agent name", "Agent Name", "agent name"]).replace(/\s+/g, " ").trim();
 
       const getStatus = (record: BookingRecord) =>
-        String(record["All stute"] || record["All Stute"] || record["all stute"] || "")
+        getAnyValue(record, [
+          "All stute",
+          "All Stute",
+          "all stute",
+          "Status",
+          "status",
+          "Booking Status",
+          "BookingStatus",
+          "حالة الحجز",
+          "الحالة",
+        ])
           .trim()
           .toLowerCase();
 
@@ -123,7 +177,7 @@ const AdminDashboard = () => {
         const status = getStatus(record);
         const current = map.get(normalizedName) || { name, total: 0, confirmed: 0 };
         current.total += 1;
-        if (status.includes("conf")) current.confirmed += 1;
+        if (status.includes("conf") || status.includes("confirmed") || status.includes("مؤكد") || status === "n" || status === "m") current.confirmed += 1;
         map.set(normalizedName, current);
       });
 
@@ -237,7 +291,7 @@ const AdminDashboard = () => {
 
   const handleDownloadReport = () => {
     const visible = employeeOptions.filter(
-      (employee) => !hiddenEmployeesSettings.includes(employee.name),
+      (employee) => !hiddenEmployeesSettings.some((name) => normalizeEmployeeName(name) === normalizeEmployeeName(employee.name)),
     );
 
     const lines = [
@@ -261,9 +315,12 @@ const AdminDashboard = () => {
   };
 
   const toggleEmployeeVisibilitySetting = (name: string) => {
-    setHiddenEmployeesSettings((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
-    );
+    const target = normalizeEmployeeName(name);
+    setHiddenEmployeesSettings((prev) => {
+      const exists = prev.some((n) => normalizeEmployeeName(n) === target);
+      if (exists) return prev.filter((n) => normalizeEmployeeName(n) !== target);
+      return [...prev, name];
+    });
   };
 
   const handleSaveSettings = async () => {
@@ -597,7 +654,7 @@ const AdminDashboard = () => {
               <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-2">
                 {employeeOptions.length ? (
                   employeeOptions.map((employee) => {
-                    const hidden = hiddenEmployeesSettings.includes(employee.name);
+                    const hidden = hiddenEmployeesSettings.some((name) => normalizeEmployeeName(name) === normalizeEmployeeName(employee.name));
                     return (
                       <div key={employee.name} className="flex items-center justify-between border border-border rounded-md px-3 py-2 text-xs gap-2">
                         <div>
