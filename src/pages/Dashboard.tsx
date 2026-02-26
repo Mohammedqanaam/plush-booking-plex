@@ -37,8 +37,15 @@ const defaultStats: BookingStats = {
 function classifyStatus(status: string): "confirmed" | "cancelled" | "other" {
   const s = status.trim().toLowerCase();
   if (!s) return "other";
-  if (s.includes("conf")) return "confirmed";
-  if (s === "c" || s === "ns") return "cancelled";
+
+  if (["c", "ns", "cancel", "cancelled", "ملغي", "إلغاء", "الغاء"].includes(s)) {
+    return "cancelled";
+  }
+
+  if (s.includes("conf") || s === "n" || s === "m" || s.includes("confirmed") || s.includes("مؤكد")) {
+    return "confirmed";
+  }
+
   return "other";
 }
 
@@ -50,7 +57,7 @@ const normalizeKey = (value: string) =>
     .replace(/[أإآ]/g, "ا")
     .replace(/ة/g, "ه")
     .replace(/ى/g, "ي")
-    .replace(/[\s_\-\/]+/g, "")
+    .replace(/[\s_/-]+/g, "")
     .trim();
 
 function getAnyValue(record: BookingRecord, keys: string[]): string {
@@ -110,7 +117,7 @@ const parsePossibleDate = (value: string): Date | null => {
   const native = new Date(v);
   if (!Number.isNaN(native.getTime())) return native;
 
-  const match = v.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  const match = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
   if (!match) return null;
 
   const day = Number(match[1]);
@@ -158,7 +165,7 @@ const Dashboard = () => {
       if (!normalizedName) return;
 
       const displayName = formatAgentName(rawName);
-      const status = getAnyValue(record, ["All stute", "All Stute", "all stute"]);
+      const status = getAnyValue(record, ["All stute", "All Stute", "all stute", "Status", "status", "Booking Status", "BookingStatus", "حالة الحجز", "الحالة"]);
       const category = classifyStatus(status);
 
       const current = map.get(normalizedName) || {
