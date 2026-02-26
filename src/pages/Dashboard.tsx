@@ -27,6 +27,20 @@ type EmployeeStat = {
   cancelRate: number;
 };
 
+const AGENT_NAME_KEYS = [
+  "Agent name",
+  "Agent Name",
+  "agent name",
+  "Agent",
+  "Employee",
+  "Employee Name",
+  "User Name",
+  "اسم الموظف",
+  "اسم المندوب",
+  "الموظف",
+  "المندوب",
+];
+
 const defaultStats: BookingStats = {
   total: 0,
   confirmed: 0,
@@ -37,8 +51,28 @@ const defaultStats: BookingStats = {
 function classifyStatus(status: string): "confirmed" | "cancelled" | "other" {
   const s = status.trim().toLowerCase();
   if (!s) return "other";
-  if (s.includes("conf")) return "confirmed";
-  if (s === "c" || s === "ns") return "cancelled";
+
+  if (
+    s === "c" ||
+    s === "ns" ||
+    s.includes("cancel") ||
+    s.includes("ملغي") ||
+    s.includes("إلغاء") ||
+    s.includes("الغاء")
+  ) {
+    return "cancelled";
+  }
+
+  if (
+    s === "n" ||
+    s === "m" ||
+    s.includes("conf") ||
+    s.includes("confirmed") ||
+    s.includes("مؤكد")
+  ) {
+    return "confirmed";
+  }
+
   return "other";
 }
 
@@ -50,7 +84,7 @@ const normalizeKey = (value: string) =>
     .replace(/[أإآ]/g, "ا")
     .replace(/ة/g, "ه")
     .replace(/ى/g, "ي")
-    .replace(/[\s_\-\/]+/g, "")
+    .replace(/[\s_/-]+/g, "")
     .trim();
 
 function getAnyValue(record: BookingRecord, keys: string[]): string {
@@ -110,7 +144,7 @@ const parsePossibleDate = (value: string): Date | null => {
   const native = new Date(v);
   if (!Number.isNaN(native.getTime())) return native;
 
-  const match = v.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  const match = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
   if (!match) return null;
 
   const day = Number(match[1]);
@@ -153,12 +187,12 @@ const Dashboard = () => {
     const map = new Map<string, { name: string; total: number; confirmed: number; cancelled: number }>();
 
     bookings.forEach((record) => {
-      const rawName = getAnyValue(record, ["Agent name", "Agent Name", "agent name"]);
+      const rawName = getAnyValue(record, AGENT_NAME_KEYS);
       const normalizedName = normalizeAgentName(rawName);
       if (!normalizedName) return;
 
       const displayName = formatAgentName(rawName);
-      const status = getAnyValue(record, ["All stute", "All Stute", "all stute"]);
+      const status = getAnyValue(record, ["All stute", "All Stute", "all stute", "Status", "status", "Booking Status", "BookingStatus", "حالة الحجز", "الحالة"]);
       const category = classifyStatus(status);
 
       const current = map.get(normalizedName) || {
@@ -191,12 +225,12 @@ const Dashboard = () => {
   }, [bookings]);
 
   const hiddenEmployeeKeys = useMemo(
-    () => hiddenEmployees.map((name) => normalizeAgentName(name)).filter(Boolean),
+    () => new Set(hiddenEmployees.map((name) => normalizeAgentName(name)).filter(Boolean)),
     [hiddenEmployees],
   );
 
   const employees = useMemo(
-    () => groupedEmployees.filter((employee) => !hiddenEmployeeKeys.includes(employee.normalizedName)),
+    () => groupedEmployees.filter((employee) => !hiddenEmployeeKeys.has(employee.normalizedName)),
     [groupedEmployees, hiddenEmployeeKeys],
   );
 
@@ -296,9 +330,15 @@ const Dashboard = () => {
         </div>
 
         <div className="space-y-2">
-          {!employees.length && !loading ? (
+          {!employees.length && groupedEmployees.length > 0 && !loading ? (
             <p className="text-xs text-muted-foreground">
-              لم يتم العثور على أسماء موظفين داخل ملف الحجوزات. تأكد من وجود عمود Agent name وعمود All stute.
+              جميع الموظفين مخفيين حالياً من إعدادات الأدمن.
+            </p>
+          ) : null}
+
+          {!employees.length && groupedEmployees.length === 0 && !loading ? (
+            <p className="text-xs text-muted-foreground">
+              لم يتم العثور على أسماء موظفين داخل ملف الحجوزات. تأكد من وجود عمود اسم موظف مثل Agent name أو اسم الموظف، وعمود حالة مثل All stute أو Status.
             </p>
           ) : null}
 

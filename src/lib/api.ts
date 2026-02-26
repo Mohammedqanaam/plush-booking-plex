@@ -6,6 +6,20 @@ type AppSettings = {
   hiddenEmployees?: string[];
 };
 
+export type ContactRequest = {
+  id: string;
+  branchName: string;
+  customerName: string;
+  phone: string;
+  note: string;
+  status: "new" | "done";
+  createdAt: string;
+};
+
+type ContactsResponse = {
+  requests: ContactRequest[];
+};
+
 const API_BASE = "/.netlify/functions";
 
 const getToken = (): string | null => {
@@ -125,6 +139,37 @@ export const api = {
     const res = await fetch(`${API_BASE}/bookings`);
     if (!res.ok) throw new Error("Failed to fetch bookings");
     return res.json();
+  },
+
+  async createContactRequest(payload: { branchName: string; customerName: string; phone: string; note?: string }) {
+    const res = await fetch(`${API_BASE}/contacts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to submit request");
+    }
+    return res.json() as Promise<{ request: ContactRequest }>;
+  },
+
+  async getContactRequests() {
+    const res = await fetch(`${API_BASE}/contacts`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to fetch contact requests");
+    return res.json() as Promise<ContactsResponse>;
+  },
+
+  async updateContactRequestStatus(id: string, status: "new" | "done") {
+    const res = await fetch(`${API_BASE}/contacts`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ id, status }),
+    });
+    if (!res.ok) throw new Error("Failed to update contact request");
+    return res.json() as Promise<{ request: ContactRequest }>;
   },
 
   async getSettings(): Promise<AppSettings> {

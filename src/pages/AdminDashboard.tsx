@@ -10,6 +10,8 @@ import {
   Trash2,
   Users,
   Download,
+  MessageSquareMore,
+  CheckCircle2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -18,7 +20,7 @@ import {
   hasPermission,
   type UserRole,
 } from "@/lib/adminAuth";
-import { api } from "@/lib/api";
+import { api, type ContactRequest } from "@/lib/api";
 
 type User = {
   username: string;
@@ -39,6 +41,30 @@ const ROLE_LABELS: Record<UserRole, string> = {
   editor: "محرر",
   viewer: "مشاهد",
 };
+
+const normalizeEmployeeName = (value: string) =>
+  value
+    .replace(/[ً-ْ]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+const AGENT_NAME_KEYS = [
+  "Agent name",
+  "Agent Name",
+  "agent name",
+  "Agent",
+  "Employee",
+  "Employee Name",
+  "User Name",
+  "اسم الموظف",
+  "اسم المندوب",
+  "الموظف",
+  "المندوب",
+];
 
 const MONTH_OPTIONS = [
   "",
@@ -79,7 +105,11 @@ const AdminDashboard = () => {
   const [hiddenEmployeesSettings, setHiddenEmployeesSettings] = useState<string[]>([]);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"upload" | "users" | "settings">(
+  const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsMessage, setRequestsMessage] = useState<string | null>(null);
+
+  const [activeTab, setActiveTab] = useState<"upload" | "users" | "settings" | "requests">(
     "upload"
   );
 
@@ -89,6 +119,15 @@ const AdminDashboard = () => {
     loadBookingsForSettings();
   }, []);
 
+
+
+  useEffect(() => {
+    if (activeTab !== "requests") return;
+
+    loadContactRequests();
+    const timer = window.setInterval(loadContactRequests, 10000);
+    return () => window.clearInterval(timer);
+  }, [activeTab]);
 
   const loadBookingsForSettings = async () => {
     try {
@@ -105,11 +144,55 @@ const AdminDashboard = () => {
           .trim()
           .toLowerCase();
 
+      const normalizeKey = (value: string) =>
+        value
+          .replace(/^\uFEFF/, "")
+          .toLowerCase()
+          .replace(/[ً-ْ]/g, "")
+          .replace(/[أإآ]/g, "ا")
+          .replace(/ة/g, "ه")
+          .replace(/ى/g, "ي")
+          .replace(/[\s_/-]+/g, "")
+          .trim();
+
+      const getAnyValue = (record: BookingRecord, keys: string[]) => {
+        for (const key of keys) {
+          const value = record[key];
+          if (value !== undefined && String(value).trim()) return String(value);
+        }
+
+        const entries = Object.entries(record as Record<string, string | number | undefined>);
+        const normalizedTargets = keys.map(normalizeKey);
+
+        for (const [rawKey, rawValue] of entries) {
+          if (rawValue === undefined || !String(rawValue).trim()) continue;
+          const normalized = normalizeKey(rawKey);
+
+          if (normalizedTargets.includes(normalized)) return String(rawValue);
+
+          if (normalizedTargets.some((target) => normalized.includes(target) || target.includes(normalized))) {
+            return String(rawValue);
+          }
+        }
+
+        return "";
+      };
+
       const getEmployeeName = (record: BookingRecord) =>
-        String(record["Agent name"] || record["Agent Name"] || record["agent name"] || "").replace(/\s+/g, " ").trim();
+        getAnyValue(record, AGENT_NAME_KEYS).replace(/\s+/g, " ").trim();
 
       const getStatus = (record: BookingRecord) =>
-        String(record["All stute"] || record["All Stute"] || record["all stute"] || "")
+        getAnyValue(record, [
+          "All stute",
+          "All Stute",
+          "all stute",
+          "Status",
+          "status",
+          "Booking Status",
+          "BookingStatus",
+          "حالة الحجز",
+          "الحالة",
+        ])
           .trim()
           .toLowerCase();
 
@@ -123,7 +206,15 @@ const AdminDashboard = () => {
         const status = getStatus(record);
         const current = map.get(normalizedName) || { name, total: 0, confirmed: 0 };
         current.total += 1;
-        if (status.includes("conf")) current.confirmed += 1;
+        if (
+          status === "n" ||
+          status === "m" ||
+          status.includes("conf") ||
+          status.includes("confirmed") ||
+          status.includes("مؤكد")
+        ) {
+          current.confirmed += 1;
+        }
         map.set(normalizedName, current);
       });
 
@@ -237,7 +328,7 @@ const AdminDashboard = () => {
 
   const handleDownloadReport = () => {
     const visible = employeeOptions.filter(
-      (employee) => !hiddenEmployeesSettings.includes(employee.name),
+      (employee) => !hiddenEmployeesSettings.some((name) => normalizeEmployeeName(name) === normalizeEmployeeName(employee.name)),
     );
 
     const lines = [
@@ -261,9 +352,12 @@ const AdminDashboard = () => {
   };
 
   const toggleEmployeeVisibilitySetting = (name: string) => {
-    setHiddenEmployeesSettings((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
-    );
+    const target = normalizeEmployeeName(name);
+    setHiddenEmployeesSettings((prev) => {
+      const exists = prev.some((n) => normalizeEmployeeName(n) === target);
+      if (exists) return prev.filter((n) => normalizeEmployeeName(n) !== target);
+      return [...prev, name];
+    });
   };
 
   const handleSaveSettings = async () => {
@@ -276,6 +370,33 @@ const AdminDashboard = () => {
       setSettingsMessage("تم حفظ الإعدادات بنجاح.");
     } catch {
       setSettingsMessage("فشل حفظ الإعدادات.");
+    }
+  };
+
+
+  const loadContactRequests = async () => {
+    if (!checkPermission("view")) return;
+    setRequestsLoading(true);
+    try {
+      const data = await api.getContactRequests();
+      setContactRequests(Array.isArray(data.requests) ? data.requests : []);
+      setRequestsMessage(null);
+    } catch {
+      setRequestsMessage("تعذر تحميل الطلبات.");
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const handleToggleRequestStatus = async (request: ContactRequest) => {
+    try {
+      const nextStatus = request.status === "new" ? "done" : "new";
+      const data = await api.updateContactRequestStatus(request.id, nextStatus);
+      setContactRequests((prev) =>
+        prev.map((item) => (item.id === request.id ? data.request : item)),
+      );
+    } catch {
+      setRequestsMessage("تعذر تحديث حالة الطلب.");
     }
   };
 
@@ -303,6 +424,12 @@ const AdminDashboard = () => {
       label: "الإعدادات",
       icon: Settings,
       permission: "edit_settings",
+    },
+    {
+      id: "requests" as const,
+      label: "الطلبات",
+      icon: MessageSquareMore,
+      permission: "view",
     },
   ];
 
@@ -524,6 +651,54 @@ const AdminDashboard = () => {
         </div>
       )}
 
+
+      {/* Requests Tab */}
+      {activeTab === "requests" && (
+        <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <MessageSquareMore className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">طلبات التواصل</h3>
+              <p className="text-xs text-muted-foreground">قسم متزامن لعرض الطلبات الواردة من صفحة طلبات التواصل.</p>
+            </div>
+          </div>
+
+          {requestsMessage && <p className="text-xs text-muted-foreground">{requestsMessage}</p>}
+
+          <div className="space-y-2">
+            {!contactRequests.length && !requestsLoading ? (
+              <p className="text-xs text-muted-foreground">لا توجد طلبات حالياً.</p>
+            ) : null}
+
+            {contactRequests.map((request) => (
+              <div key={request.id} className="glass-card p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{request.customerName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{request.branchName} · {request.phone}</p>
+                  {request.note ? <p className="text-xs mt-1 text-muted-foreground truncate">{request.note}</p> : null}
+                  <p className="text-[11px] text-muted-foreground mt-1">{new Date(request.createdAt).toLocaleString("ar-SA")}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleRequestStatus(request)}
+                  className={`rounded px-3 py-1.5 text-xs inline-flex items-center gap-1 ${
+                    request.status === "new"
+                      ? "bg-primary/20 text-primary"
+                      : "bg-success/20 text-success"
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {request.status === "new" ? "تحديد كـ تم" : "إرجاع كـ جديد"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Settings Tab */}
       {activeTab === "settings" && (
         <div className="glass-card p-5 space-y-4">
@@ -597,7 +772,7 @@ const AdminDashboard = () => {
               <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-2">
                 {employeeOptions.length ? (
                   employeeOptions.map((employee) => {
-                    const hidden = hiddenEmployeesSettings.includes(employee.name);
+                    const hidden = hiddenEmployeesSettings.some((name) => normalizeEmployeeName(name) === normalizeEmployeeName(employee.name));
                     return (
                       <div key={employee.name} className="flex items-center justify-between border border-border rounded-md px-3 py-2 text-xs gap-2">
                         <div>
@@ -615,7 +790,7 @@ const AdminDashboard = () => {
                     );
                   })
                 ) : (
-                  <p className="text-xs text-muted-foreground">لا توجد أسماء موظفين بعد. ارفع ملف حجوزات أولاً.</p>
+                  <p className="text-xs text-muted-foreground">لا توجد أسماء موظفين ظاهرة حالياً. قد تكون كل الأسماء مخفية من الإعدادات أو لا يوجد عمود اسم موظف مطابق.</p>
                 )}
               </div>
             </div>

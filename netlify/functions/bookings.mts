@@ -102,13 +102,38 @@ function getRecordValue(record: Record<string, string>, keys: string[]): string 
 }
 
 function classifyStatus(status: string): "confirmed" | "cancelled" | "not_confirmed" {
-  const s = status.trim().toUpperCase();
-  if (s === "C" || s === "NS") return "cancelled";
-  return "confirmed";
+  const s = status.trim().toLowerCase();
+  if (!s) return "not_confirmed";
+
+  if (
+    s === "c" ||
+    s === "ns" ||
+    s.includes("cancel") ||
+    s.includes("ملغي") ||
+    s.includes("إلغاء") ||
+    s.includes("الغاء")
+  ) {
+    return "cancelled";
+  }
+
+  if (
+    s === "n" ||
+    s === "m" ||
+    s.includes("conf") ||
+    s.includes("confirmed") ||
+    s.includes("مؤكد")
+  ) {
+    return "confirmed";
+  }
+
+  return "not_confirmed";
 }
 
 function getBookingStatus(record: Record<string, string>): string {
   return getRecordValue(record, [
+    "All stute",
+    "All Stute",
+    "all stute",
     "Status",
     "status",
     "Booking Status",
