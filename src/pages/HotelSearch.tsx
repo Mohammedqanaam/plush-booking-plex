@@ -8,99 +8,124 @@ type Message = {
   text: string;
 };
 
-type IntentKey =
-  | "breakfast"
-  | "pool"
-  | "coffee"
-  | "restaurant"
-  | "view"
-  | "parking"
-  | "meeting"
-  | "wedding"
-  | "gym"
-  | "laundry"
-  | "outdoor"
-  | "spa"
-  | "jacuzzi"
-  | "kids"
-  | "rooms"
-  | "phone"
-  | "managers"
-  | "systems"
-  | "list";
 
 const initialMessage =
   "أهلاً بك 👋\nأنا مساعد Worm-AI (نسخة بحث ذكية).\nاكتب اسم أي فرع مع نوع الخدمة مثل: فطور، مسبح، سبا، قاعة، بكج عرسان، غرف، رقم.";
 
-const normalizeArabic = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/[\u064B-\u0652]/g, "")
+const normalize = (text: string) =>
+  text
     .replace(/[أإآ]/g, "ا")
     .replace(/ة/g, "ه")
     .replace(/ى/g, "ي")
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
-    .trim();
-
-const tokenize = (value: string) => normalizeArabic(value).split(" ").filter(Boolean);
-
-const INTENT_KEYWORDS: Record<IntentKey, string[]> = {
-  breakfast: ["فطور", "افطار", "بوفيه", "سحور"],
-  pool: ["مسبح", "مسابح", "سباحه"],
-  coffee: ["كوفي", "قهوه", "شيشه", "لاونج"],
-  restaurant: ["مطعم", "عشاء", "غداء", "منيو"],
-  view: ["اطلاله", "اطلالة", "بلكونه", "بلكونة"],
-  parking: ["موقف", "مواقف", "سياره", "سيارات"],
-  meeting: ["قاعه", "قاعة", "اجتماع", "اجتماعات"],
-  wedding: ["عرسان", "زواج", "باقه", "بكج"],
-  gym: ["نادي", "جيم", "fitness"],
-  laundry: ["غسيل", "مغسله", "مغسلة", "laundry"],
-  outdoor: ["جلسات", "خارجيه", "خارجيه"],
-  spa: ["سبا", "spa"],
-  jacuzzi: ["جاكوزي", "بانيو"],
-  kids: ["اطفال", "الاطفال", "قسم الاطفال"],
-  rooms: ["غرف", "غرفة", "مساحه", "مساحة", "room"],
-  phone: ["رقم", "تلفون", "اتصال", "واتساب"],
-  managers: ["مدير", "مدراء", "اداره", "الاداره"],
-  systems: ["اوبرا", "نظام", "رابط", "روابط"],
-  list: ["قائمه", "قائمة", "فنادق", "فروع"],
-};
-
-const detectIntent = (query: string): IntentKey | null => {
-  const normalized = normalizeArabic(query);
-  for (const [intent, keywords] of Object.entries(INTENT_KEYWORDS) as [IntentKey, string[]][]) {
-    if (keywords.some((word) => normalized.includes(normalizeArabic(word)))) {
-      return intent;
-    }
-  }
-  return null;
-};
-
-const scoreHotelMatch = (query: string, hotel: MasterHotel) => {
-  const queryTokens = tokenize(query);
-  const nameTokens = tokenize(`${hotel.name} ${hotel.brand} ${hotel.city}`);
-  const joined = normalizeArabic(`${hotel.name} ${hotel.brand}`);
-
-  let score = 0;
-  queryTokens.forEach((token) => {
-    if (nameTokens.includes(token)) score += 3;
-    if (joined.includes(token)) score += 1;
-  });
-
-  if (normalizeArabic(query).includes(normalizeArabic(hotel.name))) score += 10;
-  return score;
-};
-
-const findBestHotel = (query: string) => {
-  const ranked = masterHotels
-    .map((hotel) => ({ hotel, score: scoreHotelMatch(query, hotel) }))
-    .sort((a, b) => b.score - a.score);
-  return ranked[0]?.score > 1 ? ranked[0].hotel : null;
-};
+    .trim()
+    .toLowerCase();
 
 const formatHotelFull = (hotel: MasterHotel) =>
   `🏨 **${hotel.name}**\n\n🍳 الإفطار: ${hotel.breakfast}\n🏊 المسبح: ${hotel.pool}\n☕ الكوفي شوب: ${hotel.coffeeShop}\n🍽️ المطعم: ${hotel.restaurant}\n🌇 الإطلالة/البلكونة: ${hotel.viewBalcony}\n🚗 المواقف: ${hotel.parking}\n🏛️ القاعة: ${hotel.meetingHall}\n💍 بكج العرسان: ${hotel.weddingPackage}\n🏋️ النادي: ${hotel.gym}\n🧺 الغسيل: ${hotel.laundry}\n🌴 الجلسات الخارجية: ${hotel.outdoorSeating}\n🧖 السبا: ${hotel.spa}\n🛁 الجاكوزي/البانيو: ${hotel.jacuzzi}\n🧒 قسم الأطفال: ${hotel.kidsSection}\n📞 الاستقبال: ${hotel.hotelPhone ?? "غير متوفر"}`;
+
+const generateResponse = (query: string) => {
+  const q = normalize(query);
+
+  const brands = ["بريرا", "بودل", "نارسس", "عابر"];
+  const cities = ["الرياض", "جده", "ابها", "القصيم", "جازان", "مكه"];
+
+  const matchedBrand = brands.find((brand) => q.includes(normalize(brand)));
+  const matchedCity = cities.find((city) => q.includes(normalize(city)));
+
+  // 1) المدراء
+  if (q.includes("مدير") || q.includes("مدراء") || q.includes("ارقام")) {
+    let results = managers;
+
+    if (matchedBrand) {
+      const normalizedBrand = normalize(matchedBrand);
+      results = results.filter((admin) => normalize(admin.role).includes(normalizedBrand));
+    }
+
+    if (results.length === 0) {
+      return "لا يوجد مدراء مطابقين للبحث.";
+    }
+
+    return (
+      "📋 قائمة المدراء:\n\n" +
+      results
+        .map((admin) => `👤 ${admin.name}\n🏢 ${admin.role}\n📞 ${admin.phone}\n`)
+        .join("\n") +
+      "\nاستاذي حاب احجز لك او اخدمك خدمة اخرى؟"
+    );
+  }
+
+  // 2) المسابح حسب براند + مدينة
+  if (q.includes("مسبح")) {
+    let hotels = masterHotels.filter((hotel) => hotel.pool && hotel.pool !== "-");
+
+    if (matchedBrand) {
+      hotels = hotels.filter((hotel) => normalize(hotel.brand).includes(normalize(matchedBrand)));
+    }
+
+    if (matchedCity) {
+      hotels = hotels.filter((hotel) => normalize(hotel.city).includes(normalize(matchedCity)));
+    }
+
+    if (hotels.length === 0) {
+      return "لا توجد مسابح مطابقة للطلب.";
+    }
+
+    return (
+      "🏊 المسابح المتوفرة:\n\n" +
+      hotels.map((hotel) => `🏨 ${hotel.name}\n🕒 ${hotel.pool}\n`).join("\n") +
+      "\nاستاذي حاب احجز لك او اخدمك خدمة اخرى؟"
+    );
+  }
+
+  // 3) الإفطار حسب براند
+  if (q.includes("افطار") || q.includes("فطور")) {
+    let hotels = masterHotels.filter((hotel) => hotel.breakfast && hotel.breakfast !== "-");
+
+    if (matchedBrand) {
+      hotels = hotels.filter((hotel) => normalize(hotel.brand).includes(normalize(matchedBrand)));
+    }
+
+    if (matchedCity) {
+      hotels = hotels.filter((hotel) => normalize(hotel.city).includes(normalize(matchedCity)));
+    }
+
+    if (hotels.length === 0) {
+      return "لا توجد تفاصيل إفطار مطابقة للطلب.";
+    }
+
+    return (
+      "🍳 تفاصيل الإفطار:\n\n" +
+      hotels.map((hotel) => `🏨 ${hotel.name}\n💰 ${hotel.breakfast}\n`).join("\n") +
+      "\nاستاذي حاب احجز لك او اخدمك خدمة اخرى؟"
+    );
+  }
+
+  if (q.includes("اوبرا") || q.includes("رابط") || q.includes("نظام")) {
+    return `🔗 **روابط الأنظمة:**\n\n${systemsLinks[0].name}: ${systemsLinks[0].url}\n\n${systemsLinks[1].name}: ${systemsLinks[1].url}`;
+  }
+
+  if (q.includes("فنادق") || q.includes("فروع") || q.includes("قائمه") || q.includes("قائمة")) {
+    return `لدينا ${masterHotels.length} فرع في قاعدة البيانات. اختر البراند أو المدينة وسيتم عرض النتائج.`;
+  }
+
+  const exact = masterHotels.find((hotel) => q.includes(normalize(hotel.name)));
+  if (exact) {
+    return formatHotelFull(exact);
+  }
+
+  // 4) اقتراحات ذكية (تقريبية)
+  const suggestions = masterHotels
+    .map((hotel) => hotel.name)
+    .filter((name) => normalize(name).includes(q.slice(0, 4)))
+    .slice(0, 4);
+
+  if (suggestions.length > 0) {
+    return `هل تقصد:\n\n${suggestions.map((suggestion) => `• ${suggestion}`).join("\n")}`;
+  }
+
+  return "عذراً لم يتم العثور على نتيجة مطابقة.";
+};
 
 const HotelSearch = () => {
   const [messages, setMessages] = useState<Message[]>([{ id: 1, type: "bot", text: initialMessage }]);
@@ -112,48 +137,6 @@ const HotelSearch = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const generateResponse = (query: string) => {
-    const intent = detectIntent(query);
-
-    if (intent === "managers") {
-      const contacts = managers
-        .map((admin) => `👤 ${admin.name} (${admin.role})\n📞 ${admin.phone}`)
-        .join("\n\n");
-      return `📋 **تقرير المدراء (داخلي):**\n\n${contacts}\n\n⚠️ لا يتم مشاركة هذه الأرقام مع العميل.`;
-    }
-
-    if (intent === "systems") {
-      return `🔗 **روابط الأنظمة:**\n\n${systemsLinks[0].name}: ${systemsLinks[0].url}\n\n${systemsLinks[1].name}: ${systemsLinks[1].url}`;
-    }
-
-    if (intent === "list") {
-      return `لدينا ${masterHotels.length} فرع في قاعدة البيانات. يمكنك اختيار فرع من القائمة أو كتابة اسمه مباشرة.`;
-    }
-
-    const hotel = findBestHotel(query);
-    if (!hotel) {
-      return "لم أتعرف على الفرع بدقة. اكتب اسم الفرع بشكل أوضح (مثال: بريرا العليا) مع نوع الطلب.";
-    }
-
-    if (intent === "phone") return `📞 **${hotel.name}**\nالاستقبال: ${hotel.hotelPhone ?? "غير متوفر"}\nالمبيعات: ${hotel.salesPhone ?? "غير متوفر"}`;
-    if (intent === "rooms") return `🛏️ **${hotel.name}**\n${hotel.roomTypes ?? "لا توجد تفاصيل غرف مرفقة حالياً."}`;
-    if (intent === "breakfast") return `🍳 **${hotel.name}**\n${hotel.breakfast}`;
-    if (intent === "pool") return `🏊 **${hotel.name}**\n${hotel.pool}`;
-    if (intent === "coffee") return `☕ **${hotel.name}**\n${hotel.coffeeShop}`;
-    if (intent === "restaurant") return `🍽️ **${hotel.name}**\n${hotel.restaurant}`;
-    if (intent === "view") return `🌇 **${hotel.name}**\n${hotel.viewBalcony}`;
-    if (intent === "parking") return `🚗 **${hotel.name}**\n${hotel.parking}`;
-    if (intent === "meeting") return `🏛️ **${hotel.name}**\n${hotel.meetingHall}`;
-    if (intent === "wedding") return `💍 **${hotel.name}**\n${hotel.weddingPackage}`;
-    if (intent === "gym") return `🏋️ **${hotel.name}**\n${hotel.gym}`;
-    if (intent === "laundry") return `🧺 **${hotel.name}**\n${hotel.laundry}`;
-    if (intent === "outdoor") return `🌴 **${hotel.name}**\n${hotel.outdoorSeating}`;
-    if (intent === "spa") return `🧖 **${hotel.name}**\n${hotel.spa}`;
-    if (intent === "jacuzzi") return `🛁 **${hotel.name}**\n${hotel.jacuzzi}`;
-    if (intent === "kids") return `🧒 **${hotel.name}**\n${hotel.kidsSection}`;
-
-    return formatHotelFull(hotel);
-  };
 
   const submitMessage = (text: string) => {
     if (!text.trim()) return;
@@ -172,9 +155,9 @@ const HotelSearch = () => {
   };
 
   const filteredHotels = useMemo(() => {
-    const q = normalizeArabic(searchQuery);
+    const q = normalize(searchQuery);
     if (!q) return masterHotels;
-    return masterHotels.filter((hotel) => normalizeArabic(`${hotel.name} ${hotel.brand} ${hotel.city}`).includes(q));
+    return masterHotels.filter((hotel) => normalize(`${hotel.name} ${hotel.brand} ${hotel.city}`).includes(q));
   }, [searchQuery]);
 
   return (
