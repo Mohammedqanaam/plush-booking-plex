@@ -9,6 +9,7 @@ import {
   Shield,
   Trash2,
   Users,
+  Download,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -25,6 +26,12 @@ type User = {
 };
 
 type BookingRecord = Record<string, string | number | undefined>;
+
+type EmployeeRow = {
+  name: string;
+  total: number;
+  confirmed: number;
+};
 
 const ROLE_LABELS: Record<UserRole, string> = {
   superadmin: "مدير عام",
@@ -68,7 +75,7 @@ const AdminDashboard = () => {
   const [bannerText, setBannerText] = useState("");
   const [reportMonth, setReportMonth] = useState("");
   const [reportYear, setReportYear] = useState("");
-  const [employeeOptions, setEmployeeOptions] = useState<string[]>([]);
+  const [employeeOptions, setEmployeeOptions] = useState<EmployeeRow[]>([]);
   const [hiddenEmployeesSettings, setHiddenEmployeesSettings] = useState<string[]>([]);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
 
@@ -87,28 +94,48 @@ const AdminDashboard = () => {
     try {
       const data = await api.getBookings();
       const bookings = Array.isArray(data.bookings) ? (data.bookings as BookingRecord[]) : [];
-      const names = Array.from(
-        new Set(
-          bookings
-            .map((record) =>
-              String(
-                record["Employee Name"] ||
-                  record.EmployeeName ||
-                  record.employee_name ||
-                  record.Employee ||
-                  record.employee ||
-                  record["اسم الموظف"] ||
-                  record["الموظف"] ||
-                  record["موظف الحجز"] ||
-                  record.CRO ||
-                  record["Created By"] ||
-                  "",
-              ).trim(),
-            )
-            .filter(Boolean),
-        ),
-      );
-      setEmployeeOptions(names);
+
+      const getEmployeeName = (record: BookingRecord) =>
+        String(
+          record["Employee Name"] ||
+            record.EmployeeName ||
+            record.employee_name ||
+            record.Employee ||
+            record.employee ||
+            record["اسم الموظف"] ||
+            record["الموظف"] ||
+            record["موظف الحجز"] ||
+            record.CRO ||
+            record["Created By"] ||
+            "",
+        ).trim();
+
+      const getStatus = (record: BookingRecord) =>
+        String(
+          record.Status ||
+            record.status ||
+            record["Booking Status"] ||
+            record.BookingStatus ||
+            record["حالة الحجز"] ||
+            record["الحالة"] ||
+            "",
+        )
+          .trim()
+          .toUpperCase();
+
+      const map = new Map<string, EmployeeRow>();
+
+      bookings.forEach((record) => {
+        const name = getEmployeeName(record);
+        if (!name) return;
+        const status = getStatus(record);
+        const current = map.get(name) || { name, total: 0, confirmed: 0 };
+        current.total += 1;
+        if (status !== "C" && status !== "NS") current.confirmed += 1;
+        map.set(name, current);
+      });
+
+      setEmployeeOptions(Array.from(map.values()).sort((a, b) => b.total - a.total));
     } catch {
       setEmployeeOptions([]);
     }
@@ -214,6 +241,31 @@ const AdminDashboard = () => {
     } finally {
       setResetting(false);
     }
+  };
+
+  const handleDownloadReport = () => {
+    const visible = employeeOptions.filter(
+      (employee) => !hiddenEmployeesSettings.includes(employee.name),
+    );
+
+    const lines = [
+      "Central Reservations Report",
+      `Month: ${reportMonth || "Auto"}`,
+      `Year: ${reportYear || "Auto"}`,
+      "",
+      ...visible.map(
+        (employee) =>
+          `${employee.name} | Confirmed: ${employee.confirmed} | Total: ${employee.total}`,
+      ),
+    ];
+
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Reservations_Report_${reportYear || "auto"}_${reportMonth || "auto"}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const toggleEmployeeVisibilitySetting = (name: string) => {
@@ -552,14 +604,17 @@ const AdminDashboard = () => {
               <p className="text-xs text-muted-foreground">إخفاء/إظهار الموظفين داخل الداشبورد:</p>
               <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-2">
                 {employeeOptions.length ? (
-                  employeeOptions.map((name) => {
-                    const hidden = hiddenEmployeesSettings.includes(name);
+                  employeeOptions.map((employee) => {
+                    const hidden = hiddenEmployeesSettings.includes(employee.name);
                     return (
-                      <div key={name} className="flex items-center justify-between border border-border rounded-md px-3 py-2 text-xs">
-                        <span>{name}</span>
+                      <div key={employee.name} className="flex items-center justify-between border border-border rounded-md px-3 py-2 text-xs gap-2">
+                        <div>
+                          <p className="font-semibold">{employee.name}</p>
+                          <p className="text-muted-foreground">{employee.confirmed} مؤكد / {employee.total} إجمالي</p>
+                        </div>
                         <button
                           type="button"
-                          onClick={() => toggleEmployeeVisibilitySetting(name)}
+                          onClick={() => toggleEmployeeVisibilitySetting(employee.name)}
                           className={`rounded px-2 py-1 ${hidden ? "bg-destructive/20 text-destructive" : "bg-success/20 text-success"}`}
                         >
                           {hidden ? "❌ مخفي" : "✅ ظاهر"}
@@ -572,6 +627,14 @@ const AdminDashboard = () => {
                 )}
               </div>
             </div>
+
+            <button
+              onClick={handleDownloadReport}
+              className="w-full h-11 rounded-lg border border-primary/40 text-primary font-semibold text-sm inline-flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              تحميل تقرير الموظفين (TXT)
+            </button>
 
             <button
               onClick={handleSaveSettings}

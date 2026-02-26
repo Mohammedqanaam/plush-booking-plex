@@ -63,6 +63,19 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        dark: {
+          900: "#0B0715",
+          800: "#120A22",
+          700: "#1B1230",
+          600: "#23183D",
+          border: "#3A2B5F",
+        },
+        lavender: {
+          soft: "#C4B5FD",
+          main: "#A78BFA",
+          glow: "#8B5CF6",
+          deep: "#6D28D9",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
