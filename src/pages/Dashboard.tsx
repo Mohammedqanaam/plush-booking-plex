@@ -70,11 +70,6 @@ function classifyStatus(status: string): "confirmed" | "cancelled" | "other" {
     s.includes("confirmed") ||
     s.includes("مؤكد")
   ) {
-  if (["c", "ns", "cancel", "cancelled", "ملغي", "إلغاء", "الغاء"].includes(s)) {
-    return "cancelled";
-  }
-
-  if (s.includes("conf") || s === "n" || s === "m" || s.includes("confirmed") || s.includes("مؤكد")) {
     return "confirmed";
   }
 
