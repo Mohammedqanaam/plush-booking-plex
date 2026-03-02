@@ -124,10 +124,10 @@ export const api = {
   async getSettings() {
     try {
       const res = await fetch(`${API_BASE}/settings`);
-      if (!res.ok) return { siteTitle: "WORM-AI", bannerText: "" };
+      if (!res.ok) return { siteTitle: "RES-DASHBORD.COM", bannerText: "" };
       return res.json();
     } catch {
-      return { siteTitle: "WORM-AI", bannerText: "" };
+      return { siteTitle: "RES-DASHBORD.COM", bannerText: "" };
     }
   },
 
