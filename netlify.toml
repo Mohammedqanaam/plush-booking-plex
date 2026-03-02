@@ -3,6 +3,10 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+  enabled = false
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
