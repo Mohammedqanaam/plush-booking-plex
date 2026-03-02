@@ -195,6 +195,7 @@ const AdminDashboard = () => {
 
       const getEmployeeName = (record: BookingRecord) =>
         getAnyValue(record, AGENT_NAME_KEYS).replace(/\s+/g, " ").trim();
+        getAnyValue(record, ["Agent name", "Agent Name", "agent name"]).replace(/\s+/g, " ").trim();
 
       const getStatus = (record: BookingRecord) =>
         getAnyValue(record, [
@@ -230,6 +231,7 @@ const AdminDashboard = () => {
         ) {
           current.confirmed += 1;
         }
+        if (status.includes("conf") || status.includes("confirmed") || status.includes("مؤكد") || status === "n" || status === "m") current.confirmed += 1;
         map.set(normalizedName, current);
       });
 
