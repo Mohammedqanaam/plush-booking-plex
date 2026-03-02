@@ -20,6 +20,30 @@ type ContactsResponse = {
   requests: ContactRequest[];
 };
 
+export type DiscountItem = {
+  id: string;
+  sector_name: string;
+  discount_percentage: number;
+  created_at: string;
+};
+
+export type ComplaintRecord = {
+  id: string;
+  brand: string;
+  branch: string;
+  category: string;
+  urgency?: string;
+  guest_name: string;
+  booking_mobile?: string;
+  contact_mobile?: string;
+  suite_number?: string;
+  checkin_date?: string;
+  guest_in_house?: boolean;
+  notes?: string;
+  status: "Open" | "In Progress" | "Closed";
+  created_at: string;
+};
+
 const API_BASE = "/.netlify/functions";
 
 const getToken = (): string | null => {
@@ -170,6 +194,40 @@ export const api = {
     });
     if (!res.ok) throw new Error("Failed to update contact request");
     return res.json() as Promise<{ request: ContactRequest }>;
+  },
+
+  async getDiscounts(brand: string) {
+    const res = await fetch(`/api/discounts?brand=${encodeURIComponent(brand)}`);
+    if (!res.ok) throw new Error("Failed to fetch discounts");
+    return res.json() as Promise<DiscountItem[]>;
+  },
+
+  async createDiscount(payload: { brand: string; sector_name: string; discount_percentage: number }) {
+    const res = await fetch(`/api/discounts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Failed to create discount");
+    return res.json() as Promise<{ success: boolean; item: DiscountItem }>;
+  },
+
+  async submitComplaint(payload: Omit<ComplaintRecord, "id" | "status" | "created_at">) {
+    const res = await fetch(`/api/complaints`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Failed to submit complaint");
+    return res.json() as Promise<{ complaint_number: string }>;
+  },
+
+  async getAdminComplaints() {
+    const res = await fetch(`/api/admin/complaints`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to fetch admin complaints");
+    return res.json() as Promise<ComplaintRecord[]>;
   },
 
   async getSettings(): Promise<AppSettings> {
