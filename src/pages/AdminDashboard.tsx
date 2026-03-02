@@ -12,6 +12,8 @@ import {
   Download,
   MessageSquareMore,
   CheckCircle2,
+  CircleAlert,
+  BadgePercent,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -110,18 +112,18 @@ const AdminDashboard = () => {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsMessage, setRequestsMessage] = useState<string | null>(null);
 
-  type AdminTab = "upload" | "users" | "settings" | "requests";
+  type AdminTab = "upload" | "users" | "settings" | "requests" | "complaints" | "discounts";
 
   const getInitialTab = (): AdminTab => {
     const tab = (searchParams.get("tab") || "upload") as AdminTab;
-    return ["upload", "users", "settings", "requests"].includes(tab) ? tab : "upload";
+    return ["upload", "users", "settings", "requests", "complaints", "discounts"].includes(tab) ? tab : "upload";
   };
 
   const [activeTab, setActiveTab] = useState<AdminTab>(getInitialTab);
 
   useEffect(() => {
     const tab = (searchParams.get("tab") || "upload") as AdminTab;
-    if (["upload", "users", "settings", "requests"].includes(tab) && tab !== activeTab) {
+    if (["upload", "users", "settings", "requests", "complaints", "discounts"].includes(tab) && tab !== activeTab) {
       setActiveTab(tab);
     }
   }, [searchParams, activeTab]);
@@ -444,6 +446,18 @@ const AdminDashboard = () => {
       icon: MessageSquareMore,
       permission: "view",
     },
+    {
+      id: "complaints" as const,
+      label: "الشكاوى",
+      icon: CircleAlert,
+      permission: "view",
+    },
+    {
+      id: "discounts" as const,
+      label: "الخصومات",
+      icon: BadgePercent,
+      permission: "view",
+    },
   ];
 
   return (
@@ -712,6 +726,46 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+
+      {/* Complaints Tab */}
+      {activeTab === "complaints" && (
+        <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <CircleAlert className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">قسم الشكاوى</h3>
+              <p className="text-xs text-muted-foreground">تمت إضافة القسم في لوحة الأدمن. يمكن ربطه بواجهة/باك-إند الشكاوى حسب آلية العمل لديكم.</p>
+            </div>
+          </div>
+
+          <div className="glass-card p-4 text-xs text-muted-foreground">
+            لا توجد بيانات شكاوى بعد.
+          </div>
+        </div>
+      )}
+
+      {/* Discounts Tab */}
+      {activeTab === "discounts" && (
+        <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <BadgePercent className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">قسم الخصومات</h3>
+              <p className="text-xs text-muted-foreground">تمت إضافة القسم في لوحة الأدمن. يمكن ربطه لاحقًا بإدارة أكواد الخصم أو العروض.</p>
+            </div>
+          </div>
+
+          <div className="glass-card p-4 text-xs text-muted-foreground">
+            لا توجد بيانات خصومات بعد.
+          </div>
+        </div>
+      )}
+
 
       {/* Settings Tab */}
       {activeTab === "settings" && (

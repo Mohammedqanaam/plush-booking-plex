@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Search, Shield, Upload, Users, Settings } from "lucide-react";
+import { Home, MessageSquare, Search, Shield, Upload, Users, CircleAlert, BadgePercent } from "lucide-react";
 
 const mainNavItems = [
   { path: "/", label: "الرئيسية", icon: Home },
@@ -12,7 +12,8 @@ const adminNavItems = [
   { key: "upload", path: "/admin?tab=upload", label: "الرفع", icon: Upload },
   { key: "users", path: "/admin?tab=users", label: "المستخدمين", icon: Users },
   { key: "requests", path: "/admin?tab=requests", label: "الطلبات", icon: MessageSquare },
-  { key: "settings", path: "/admin?tab=settings", label: "الإعدادات", icon: Settings },
+  { key: "complaints", path: "/admin?tab=complaints", label: "الشكاوى", icon: CircleAlert },
+  { key: "discounts", path: "/admin?tab=discounts", label: "الخصومات", icon: BadgePercent },
 ];
 
 const BottomNav = () => {
@@ -25,7 +26,7 @@ const BottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/85 backdrop-blur-xl safe-area-bottom">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
         {items.map((item) => {
           const isActive = isAdminArea
             ? item.key === activeAdminTab
