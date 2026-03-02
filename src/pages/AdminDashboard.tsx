@@ -18,6 +18,7 @@ import {
   type UserRole,
 } from "@/lib/adminAuth";
 import { api } from "@/lib/api";
+import EnterpriseControlCenter from "@/components/admin/EnterpriseControlCenter";
 
 type User = {
   username: string;
@@ -441,6 +442,8 @@ const AdminDashboard = () => {
           {settingsMessage && (
             <p className="text-xs text-muted-foreground">{settingsMessage}</p>
           )}
+
+          <EnterpriseControlCenter />
         </div>
       )}
     </div>

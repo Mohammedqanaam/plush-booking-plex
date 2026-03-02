@@ -10,6 +10,9 @@ import Contacts from "./pages/Contacts";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
+import Complaints from "./pages/Complaints";
+import Discounts from "./pages/Discounts";
+import ErrorDashboard from "./pages/ErrorDashboard";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -25,6 +28,9 @@ const App = () => (
           <Route path="/" element={<Dashboard />} />
           <Route path="/search" element={<HotelSearch />} />
           <Route path="/contacts" element={<Contacts />} />
+          <Route path="/complaints" element={<Complaints />} />
+          <Route path="/discounts" element={<Discounts />} />
+          <Route path="/admin/errors" element={<ErrorDashboard />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"
