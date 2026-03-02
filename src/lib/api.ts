@@ -10,6 +10,18 @@ const authHeaders = (): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+const logApiError = async (source: string, message: string, context?: unknown) => {
+  try {
+    await fetch(`${API_BASE}/errors`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source, message, context }),
+    });
+  } catch {
+    // no-op logging fallback
+  }
+};
+
 export const api = {
   async login(username: string, password: string) {
     const res = await fetch(`${API_BASE}/auth`, {
@@ -119,13 +131,81 @@ export const api = {
     }
   },
 
-  async updateSettings(settings: { siteTitle?: string; bannerText?: string }) {
+  async updateSettings(settings: { siteTitle?: string; bannerText?: string; enterprise?: unknown }) {
     const res = await fetch(`${API_BASE}/settings`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(settings),
     });
     if (!res.ok) throw new Error("Failed to update settings");
+    return res.json();
+  },
+
+  async submitComplaint(payload: Record<string, unknown>) {
+    const res = await fetch(`${API_BASE}/complaints`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const message = await res.text();
+      await logApiError("complaints.submit", message, payload);
+      throw new Error("Complaint submission failed");
+    }
+    return res.json();
+  },
+
+  async listDiscounts() {
+    const res = await fetch(`${API_BASE}/discounts`, { headers: authHeaders() });
+    if (!res.ok) {
+      await logApiError("discounts.list", `status-${res.status}`);
+      throw new Error("Failed to fetch discounts");
+    }
+    return res.json();
+  },
+
+  async createDiscount(payload: Record<string, unknown>) {
+    const res = await fetch(`${API_BASE}/discounts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      await logApiError("discounts.create", `status-${res.status}`, payload);
+      throw new Error("Failed to create discount");
+    }
+    return res.json();
+  },
+
+  async updateDiscount(payload: Record<string, unknown>) {
+    const res = await fetch(`${API_BASE}/discounts`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      await logApiError("discounts.update", `status-${res.status}`, payload);
+      throw new Error("Failed to update discount");
+    }
+    return res.json();
+  },
+
+  async deleteDiscount(id: string) {
+    const res = await fetch(`${API_BASE}/discounts`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      await logApiError("discounts.delete", `status-${res.status}`, { id });
+      throw new Error("Failed to delete discount");
+    }
+    return res.json();
+  },
+
+  async getErrors() {
+    const res = await fetch(`${API_BASE}/errors`, { headers: authHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch errors");
     return res.json();
   },
 };
