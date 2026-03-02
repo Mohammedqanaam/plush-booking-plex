@@ -1,27 +1,42 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Search, Shield } from "lucide-react";
+import { Home, MessageSquare, Search, Shield, Upload, Users, CircleAlert, BadgePercent } from "lucide-react";
 
-const navItems = [
+const mainNavItems = [
   { path: "/", label: "الرئيسية", icon: Home },
   { path: "/contacts", label: "طلبات التواصل", icon: MessageSquare },
   { path: "/search", label: "البحث", icon: Search },
   { path: "/admin", label: "Admin", icon: Shield },
 ];
 
+const adminNavItems = [
+  { key: "upload", path: "/admin?tab=upload", label: "الرفع", icon: Upload },
+  { key: "users", path: "/admin?tab=users", label: "المستخدمين", icon: Users },
+  { key: "requests", path: "/admin?tab=requests", label: "الطلبات", icon: MessageSquare },
+  { key: "complaints", path: "/admin?tab=complaints", label: "الشكاوى", icon: CircleAlert },
+  { key: "discounts", path: "/admin?tab=discounts", label: "الخصومات", icon: BadgePercent },
+];
+
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const isAdminArea = location.pathname === "/admin";
+  const activeAdminTab = new URLSearchParams(location.search).get("tab") || "upload";
+  const items = isAdminArea ? adminNavItems : mainNavItems;
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/80 backdrop-blur-xl safe-area-bottom">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/85 backdrop-blur-xl safe-area-bottom">
+      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
+        {items.map((item) => {
+          const isActive = isAdminArea
+            ? item.key === activeAdminTab
+            : location.pathname === item.path;
+
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200 ${
+              className={`relative flex flex-col items-center gap-1 px-2 py-2 rounded-lg transition-all duration-200 ${
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
