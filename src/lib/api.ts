@@ -88,7 +88,9 @@ export const api = {
         method: "DELETE",
         headers: authHeaders(),
       });
-    } catch {}
+    } catch {
+      // ignore network errors during logout
+    }
     sessionStorage.removeItem("admin_token");
     sessionStorage.removeItem("admin_session");
   },
