@@ -6,50 +6,50 @@
 
 @layer base {
   :root {
-    --background: 258 44% 9%;
-    --foreground: 258 20% 94%;
+    --background: 270 60% 5%;
+    --foreground: 0 0% 98%;
 
-    --card: 258 35% 14%;
-    --card-foreground: 40 20% 92%;
+    --card: 270 40% 8%;
+    --card-foreground: 0 0% 98%;
 
     --popover: 270 40% 8%;
-    --popover-foreground: 40 20% 92%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 268 86% 62%;
-    --primary-foreground: 258 44% 9%;
+    --primary: 270 85% 62%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 258 28% 18%;
-    --secondary-foreground: 40 20% 88%;
+    --secondary: 270 30% 14%;
+    --secondary-foreground: 0 0% 94%;
 
     --muted: 258 22% 16%;
     --muted-foreground: 260 10% 55%;
 
-    --accent: 286 75% 60%;
-    --accent-foreground: 270 60% 5%;
+    --accent: 270 75% 58%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 263 28% 24%;
-    --input: 263 28% 24%;
-    --ring: 268 86% 62%;
+    --border: 270 20% 16%;
+    --input: 270 20% 16%;
+    --ring: 270 85% 62%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 258 38% 10%;
-    --sidebar-foreground: 40 20% 92%;
-    --sidebar-primary: 268 86% 62%;
-    --sidebar-primary-foreground: 270 60% 5%;
-    --sidebar-accent: 258 28% 18%;
-    --sidebar-accent-foreground: 40 20% 88%;
-    --sidebar-border: 263 28% 24%;
-    --sidebar-ring: 268 86% 62%;
+    --sidebar-background: 270 40% 6%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 270 85% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 270 30% 14%;
+    --sidebar-accent-foreground: 0 0% 94%;
+    --sidebar-border: 270 20% 16%;
+    --sidebar-ring: 270 85% 62%;
 
     /* Custom tokens */
-    --gold: 268 86% 62%;
-    --gold-dim: 262 40% 42%;
-    --gold-glow: 286 75% 66%;
-    --surface-glass: 258 35% 16%;
+    --gold: 270 85% 62%;
+    --gold-dim: 270 55% 42%;
+    --gold-glow: 280 95% 74%;
+    --surface-glass: 270 40% 10%;
     --success: 152 60% 45%;
     --success-foreground: 0 0% 100%;
     --warning: 35 90% 50%;
