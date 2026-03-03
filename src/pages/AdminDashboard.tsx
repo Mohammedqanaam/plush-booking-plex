@@ -806,6 +806,53 @@ const AdminDashboard = () => {
       {/* Settings Tab */}
       {activeTab === "settings" && (
         <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <MessageSquareMore className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">طلبات التواصل</h3>
+              <p className="text-xs text-muted-foreground">قسم متزامن لعرض الطلبات الواردة من صفحة طلبات التواصل.</p>
+            </div>
+          </div>
+
+          {requestsMessage && <p className="text-xs text-muted-foreground">{requestsMessage}</p>}
+
+          <div className="space-y-2">
+            {!contactRequests.length && !requestsLoading ? (
+              <p className="text-xs text-muted-foreground">لا توجد طلبات حالياً.</p>
+            ) : null}
+
+            {contactRequests.map((request) => (
+              <div key={request.id} className="glass-card p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{request.customerName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{request.branchName} · {request.phone}</p>
+                  {request.note ? <p className="text-xs mt-1 text-muted-foreground truncate">{request.note}</p> : null}
+                  <p className="text-[11px] text-muted-foreground mt-1">{new Date(request.createdAt).toLocaleString("ar-SA")}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleRequestStatus(request)}
+                  className={`rounded px-3 py-1.5 text-xs inline-flex items-center gap-1 ${
+                    request.status === "new"
+                      ? "bg-primary/20 text-primary"
+                      : "bg-success/20 text-success"
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {request.status === "new" ? "تحديد كـ تم" : "إرجاع كـ جديد"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Settings Tab */}
+      {activeTab === "settings" && (
+        <div className="glass-card p-5 space-y-4">
           <div className="flex items-center gap-3"><Edit3 className="w-5 h-5 text-primary" /><h3 className="text-sm font-semibold">إعدادات الموقع والأقسام</h3></div>
           <input type="text" placeholder="عنوان الموقع" dir="ltr" value={siteTitle} onChange={(e) => setSiteTitle(e.target.value)} className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-sm" />
           <input type="text" placeholder="نص البانر العلوي" value={bannerText} onChange={(e) => setBannerText(e.target.value)} className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-sm" />
