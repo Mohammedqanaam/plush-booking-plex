@@ -15,14 +15,14 @@ type Complaint = {
   subCategory: string;
   urgency: boolean;
   guestName: string;
-  bookingMobile: string;
+  bookingMobile?: string;
   contactMobile: string;
   suiteNumber: string;
   checkInDate: string;
   inHouse: "Yes" | "No";
   notes: string;
   createdAt: string;
-import type { Context } from "@netlify/functions";
+};
 
 type ComplaintStatus = "Open" | "In Progress" | "Closed";
 
@@ -43,13 +43,6 @@ type ComplaintRecord = {
   created_at: string;
 };
 
-const prefixMap: Record<string, string> = {
-  Boudl: "BO",
-  Braira: "BR",
-  Narcissus: "NA",
-  Aber: "AB",
-};
-
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -64,6 +57,50 @@ async function nextComplaintNo(brand: keyof typeof BRAND_PREFIX) {
   const next = current + 1;
   await counters.setJSON(key, next);
   return `${BRAND_PREFIX[brand]}-${String(next).padStart(5, "0")}`;
+}
+
+const GROUP_TO_BRAND: Record<string, keyof typeof BRAND_PREFIX> = {
+  بودل: "Boudl",
+  بريرا: "Braira",
+  نارسس: "Narcissus",
+  عابر: "Aber",
+};
+
+function resolveBrandFromBranch(branch: unknown, fallback?: unknown): keyof typeof BRAND_PREFIX {
+  const normalizedBranch = String(branch || "").trim();
+  const matchedBranch = hotelBranches.find((item) => `${item.name} - ${item.city}` === normalizedBranch);
+  if (matchedBranch?.group && GROUP_TO_BRAND[matchedBranch.group]) {
+    return GROUP_TO_BRAND[matchedBranch.group];
+  }
+
+  const fallbackBrand = String(fallback || "").trim() as keyof typeof BRAND_PREFIX;
+  return BRAND_PREFIX[fallbackBrand] ? fallbackBrand : "Boudl";
+}
+
+function buildAdminRecord(complaint: Complaint): ComplaintRecord {
+  return {
+    id: complaint.complaintNo,
+    brand: complaint.brand,
+    branch: complaint.branch,
+    category: `${complaint.mainCategory}${complaint.subCategory ? ` / ${complaint.subCategory}` : ""}`,
+    urgency: complaint.urgency ? "Urgent" : "Normal",
+    guest_name: complaint.guestName,
+      booking_mobile: complaint.bookingMobile || undefined,
+    contact_mobile: complaint.contactMobile || undefined,
+    suite_number: complaint.suiteNumber || undefined,
+    checkin_date: complaint.checkInDate || undefined,
+    guest_in_house: complaint.inHouse === "Yes",
+    notes: complaint.notes || undefined,
+    status: "Open",
+    created_at: complaint.createdAt,
+  };
+}
+
+async function persistAdminComplaint(complaint: Complaint) {
+  const store = getStore("complaints_store");
+  const all = ((await store.get("all", { type: "json" })) as ComplaintRecord[] | null) || [];
+  all.push(buildAdminRecord(complaint));
+  await store.setJSON("all", all);
 }
 
 async function sendComplaintEmailCopy(complaint: Complaint, html: string) {
@@ -100,7 +137,7 @@ export default async (req: Request) => {
 
   if (req.method === "POST") {
     const body = (await req.json().catch(() => ({}))) as Partial<Complaint>;
-    const brand = (body.brand || "Boudl") as keyof typeof BRAND_PREFIX;
+    const brand = resolveBrandFromBranch(body.branch, body.brand);
     const complaintNo = await nextComplaintNo(brand);
 
     const complaint: Complaint = {
@@ -111,7 +148,7 @@ export default async (req: Request) => {
       subCategory: String(body.subCategory || "").trim(),
       urgency: Boolean(body.urgency),
       guestName: String(body.guestName || "").trim(),
-      bookingMobile: String(body.bookingMobile || "").trim(),
+      bookingMobile: String(body.bookingMobile || "").trim() || undefined,
       contactMobile: String(body.contactMobile || "").trim(),
       suiteNumber: String(body.suiteNumber || "").trim(),
       checkInDate: String(body.checkInDate || "").trim(),
@@ -123,6 +160,7 @@ export default async (req: Request) => {
     const items = ((await store.get("items", { type: "json" })) as Complaint[] | null) || [];
     items.unshift(complaint);
     await store.setJSON("items", items.slice(0, 5000));
+    await persistAdminComplaint(complaint);
 
     const values = {
       complaintNo: complaint.complaintNo,
@@ -131,7 +169,6 @@ export default async (req: Request) => {
       mainCategory: complaint.mainCategory,
       subCategory: complaint.subCategory,
       guestName: complaint.guestName,
-      bookingMobile: complaint.bookingMobile,
       suiteNumber: complaint.suiteNumber,
       checkInDate: complaint.checkInDate,
       inHouse: complaint.inHouse,
@@ -154,107 +191,18 @@ export default async (req: Request) => {
 
     const emailResult = await sendComplaintEmailCopy(complaint, emailHtml);
 
-    return json({ complaint, whatsappMessage, whatsappUrl, emailResult }, 201);
+    return json(
+      {
+        complaint,
+        complaintNo: complaint.complaintNo,
+        complaint_number: complaint.complaintNo,
+        whatsappMessage,
+        whatsappUrl,
+        emailResult,
+      },
+      201,
+    );
   }
 
   return json({ error: "Method not allowed" }, 405);
-function generateComplaintNumber(prefix: string) {
-  const random = Math.floor(10000 + Math.random() * 90000);
-  return `${prefix}-${random}`;
-}
-
-async function notifyAdminsByEmail(complaint: ComplaintRecord, adminEmails: string[]) {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  if (!resendApiKey || !adminEmails.length) return;
-
-  const to = adminEmails.map((v) => v.trim()).filter(Boolean);
-  if (!to.length) return;
-
-  const subject = `شكوى جديدة ${complaint.id} - ${complaint.brand}`;
-  const html = `
-    <h3>شكوى جديدة</h3>
-    <p><strong>الرقم:</strong> ${complaint.id}</p>
-    <p><strong>العلامة:</strong> ${complaint.brand}</p>
-    <p><strong>الفرع:</strong> ${complaint.branch}</p>
-    <p><strong>العميل:</strong> ${complaint.guest_name}</p>
-    <p><strong>الفئة:</strong> ${complaint.category}</p>
-    <p><strong>الأولوية:</strong> ${complaint.urgency || "-"}</p>
-    <p><strong>الملاحظات:</strong> ${complaint.notes || "-"}</p>
-    <p><strong>وقت الإنشاء:</strong> ${complaint.created_at}</p>
-  `;
-
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM || "Complaints <onboarding@resend.dev>",
-      to,
-      subject,
-      html,
-    }),
-  }).catch(() => null);
-}
-
-export default async (req: Request, context: Context) => {
-  const store = context.blobs.getStore("complaints_store");
-
-  if (req.method !== "POST") {
-    return json({ error: "Method Not Allowed" }, 405);
-  }
-
-  let body: Partial<ComplaintRecord>;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: "Invalid request body" }, 400);
-  }
-
-  const brand = String(body.brand || "").trim();
-  const branch = String(body.branch || "").trim();
-  const category = String(body.category || "").trim();
-  const guestName = String(body.guest_name || "").trim();
-
-  if (!brand || !branch || !category || !guestName) {
-    return json({ error: "Missing required fields" }, 400);
-  }
-
-  const prefix = prefixMap[brand] || "CM";
-  const number = generateComplaintNumber(prefix);
-
-  const complaint: ComplaintRecord = {
-    id: number,
-    brand,
-    branch,
-    category,
-    urgency: body.urgency ? String(body.urgency) : undefined,
-    guest_name: guestName,
-    booking_mobile: body.booking_mobile ? String(body.booking_mobile) : undefined,
-    contact_mobile: body.contact_mobile ? String(body.contact_mobile) : undefined,
-    suite_number: body.suite_number ? String(body.suite_number) : undefined,
-    checkin_date: body.checkin_date ? String(body.checkin_date) : undefined,
-    guest_in_house: body.guest_in_house === true,
-    notes: body.notes ? String(body.notes) : undefined,
-    status: "Open",
-    created_at: new Date().toISOString(),
-  };
-
-  const all = ((await store.get("all", { type: "json" })) as ComplaintRecord[] | null) || [];
-  all.push(complaint);
-  await store.setJSON("all", all);
-
-  const adminEmails = (process.env.ADMIN_EMAILS || "")
-    .split(",")
-    .map((v) => v.trim())
-    .filter(Boolean);
-
-  await notifyAdminsByEmail(complaint, adminEmails);
-
-  return json({ complaint_number: number }, 201);
-};
-
-export const config = {
-  path: "/api/complaints",
 };

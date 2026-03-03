@@ -214,7 +214,7 @@ export const api = {
     return res.json() as Promise<DiscountItem[]>;
   },
 
-  async createDiscount(payload: { brand: string; sector_name: string; discount_percentage: number }) {
+  async createBrandDiscount(payload: { brand: string; sector_name: string; discount_percentage: number }) {
     const res = await fetch(`/api/discounts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -224,7 +224,7 @@ export const api = {
     return res.json() as Promise<{ success: boolean; item: DiscountItem }>;
   },
 
-  async submitComplaint(payload: Omit<ComplaintRecord, "id" | "status" | "created_at">) {
+  async submitPublicComplaint(payload: Omit<ComplaintRecord, "id" | "status" | "created_at">) {
     const res = await fetch(`/api/complaints`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -1,16 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MessageSquareWarning, Copy, ExternalLink } from "lucide-react";
 import { enterpriseApi } from "@/lib/enterpriseApi";
 import { COMPLAINT_CATEGORIES } from "@/lib/enterpriseProtocol";
 
 type ComplaintForm = {
-  brand: "Boudl" | "Braira" | "Narcissus" | "Aber";
   branch: string;
   mainCategory: string;
   subCategory: string;
   urgency: boolean;
   guestName: string;
-  bookingMobile: string;
   contactMobile: string;
   suiteNumber: string;
   checkInDate: string;
@@ -19,13 +17,11 @@ type ComplaintForm = {
 };
 
 const initialForm: ComplaintForm = {
-  brand: "Boudl",
   branch: "",
   mainCategory: Object.keys(COMPLAINT_CATEGORIES)[0],
   subCategory: COMPLAINT_CATEGORIES[Object.keys(COMPLAINT_CATEGORIES)[0]][0],
   urgency: false,
   guestName: "",
-  bookingMobile: "",
   contactMobile: "",
   suiteNumber: "",
   checkInDate: "",
@@ -38,24 +34,35 @@ const Complaints = () => {
   const [branches, setBranches] = useState<string[]>([]);
   const [result, setResult] = useState<{ complaintNo: string; whatsappMessage: string; whatsappUrl: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useState(() => {
+  useEffect(() => {
     enterpriseApi.getComplaints().then((d) => setBranches(d.branches || [])).catch(() => setBranches([]));
-  });
+  }, []);
 
   const subCategories = useMemo(() => COMPLAINT_CATEGORIES[form.mainCategory] || [], [form.mainCategory]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       const data = await enterpriseApi.createComplaint(form);
+      const complaintNo =
+        data?.complaint?.complaintNo || data?.complaintNo || data?.complaint_number || "";
+
+      if (!complaintNo) {
+        throw new Error("رقم الشكوى غير متوفر في الاستجابة");
+      }
+
       setResult({
-        complaintNo: data.complaint?.complaintNo,
+        complaintNo,
         whatsappMessage: data.whatsappMessage,
         whatsappUrl: data.whatsappUrl,
       });
       setForm(initialForm);
+    } catch {
+      setError("تعذر إرسال الشكوى حالياً. حاول مرة أخرى.");
     } finally {
       setLoading(false);
     }
@@ -65,21 +72,17 @@ const Complaints = () => {
     <div className="p-4 max-w-4xl mx-auto space-y-4">
       <h2 className="text-2xl font-bold">نظام الشكاوى</h2>
       <form onSubmit={submit} className="glass-card p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <select value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as ComplaintForm["brand"] })} className="h-11 rounded-lg bg-secondary border border-border px-3">
-          {["Boudl", "Braira", "Narcissus", "Aber"].map((b) => <option key={b}>{b}</option>)}
-        </select>
         <select value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} className="h-11 rounded-lg bg-secondary border border-border px-3" required>
           <option value="">اختر الفرع</option>
           {branches.map((b) => <option key={b} value={b}>{b}</option>)}
         </select>
-        <select value={form.mainCategory} onChange={(e) => setForm({ ...form, mainCategory: e.target.value, subCategory: COMPLAINT_CATEGORIES[e.target.value][0] })} className="h-11 rounded-lg bg-secondary border border-border px-3">
+        <select value={form.mainCategory} onChange={(e) => setForm({ ...form, mainCategory: e.target.value, subCategory: COMPLAINT_CATEGORIES[e.target.value][0] || "" })} className="h-11 rounded-lg bg-secondary border border-border px-3">
           {Object.keys(COMPLAINT_CATEGORIES).map((c) => <option key={c}>{c}</option>)}
         </select>
         <select value={form.subCategory} onChange={(e) => setForm({ ...form, subCategory: e.target.value })} className="h-11 rounded-lg bg-secondary border border-border px-3">
           {subCategories.map((s) => <option key={s}>{s}</option>)}
         </select>
         <input className="h-11 rounded-lg bg-secondary border border-border px-3" placeholder="اسم الضيف" value={form.guestName} onChange={(e) => setForm({ ...form, guestName: e.target.value })} required />
-        <input className="h-11 rounded-lg bg-secondary border border-border px-3" placeholder="جوال الحجز" value={form.bookingMobile} onChange={(e) => setForm({ ...form, bookingMobile: e.target.value })} required />
         <input className="h-11 rounded-lg bg-secondary border border-border px-3" placeholder="جوال التواصل" value={form.contactMobile} onChange={(e) => setForm({ ...form, contactMobile: e.target.value })} required />
         <input className="h-11 rounded-lg bg-secondary border border-border px-3" placeholder="رقم الجناح" value={form.suiteNumber} onChange={(e) => setForm({ ...form, suiteNumber: e.target.value })} />
         <input type="date" className="h-11 rounded-lg bg-secondary border border-border px-3" value={form.checkInDate} onChange={(e) => setForm({ ...form, checkInDate: e.target.value })} />
@@ -91,6 +94,7 @@ const Complaints = () => {
         <textarea className="md:col-span-2 rounded-lg bg-secondary border border-border p-3" rows={4} placeholder="ملاحظات" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
         <button className="md:col-span-2 h-11 rounded-lg gold-gradient text-primary-foreground font-semibold" disabled={loading}>{loading ? "جاري الإرسال..." : "إرسال الشكوى"}</button>
       </form>
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
       {result && (
         <div className="glass-card p-4 space-y-3">
