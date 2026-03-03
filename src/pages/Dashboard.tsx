@@ -122,6 +122,9 @@ const normalizeAgentName = (value: string) =>
 
 const formatAgentName = (value: string) => value.replace(/\s+/g, " ").trim();
 
+
+const hasLetters = (value: string) => /[A-Za-z؀-ۿ]/.test(value);
+
 const MONTH_NAMES_AR = [
   "يناير",
   "فبراير",
@@ -179,6 +182,13 @@ const Dashboard = () => {
         setBookings([]);
       })
       .finally(() => setLoading(false));
+
+    api.getSettings().then((settings) => {
+      const names = (settings.enterprise?.employees || [])
+        .filter((item: any) => item.active)
+        .map((item: any) => item.name);
+      setDirectoryEmployees(names);
+    }).catch(() => {});
   }, []);
 
   const groupedEmployees = useMemo<EmployeeStat[]>(() => {
@@ -192,6 +202,7 @@ const Dashboard = () => {
       if (!normalizedName) return;
 
       const displayName = formatAgentName(rawName);
+      if (!displayName || !hasLetters(displayName)) return;
       const status = getAnyValue(record, ["All stute", "All Stute", "all stute", "Status", "status", "Booking Status", "BookingStatus", "حالة الحجز", "الحالة"]);
       const category = classifyStatus(status);
 
