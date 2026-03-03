@@ -14,16 +14,19 @@ const RiyadhClock = () => {
       });
       setTime(now);
     };
+
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, []);
 
   return (
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <span className="inline-block w-2 h-2 rounded-full bg-success animate-pulse" />
-      <span>الرياض</span>
-      <span className="font-mono tabular-nums text-foreground">{time}</span>
+    <div className="flex items-center gap-2 text-lavender-soft drop-shadow-[0_0_10px_rgba(167,139,250,0.45)]">
+      <span className="inline-block w-2 h-2 rounded-full bg-lavender-glow animate-pulse" />
+      <span className="text-[13px] font-medium text-foreground/90">الرياض</span>
+      <span dir="ltr" className="font-semibold tabular-nums tracking-wide text-[15px] text-white/95">
+        {time}
+      </span>
     </div>
   );
 };

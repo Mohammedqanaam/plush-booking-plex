@@ -1,3 +1,25 @@
+type AppSettings = {
+  siteTitle?: string;
+  bannerText?: string;
+  reportMonth?: string;
+  reportYear?: string;
+  hiddenEmployees?: string[];
+};
+
+export type ContactRequest = {
+  id: string;
+  branchName: string;
+  customerName: string;
+  phone: string;
+  note: string;
+  status: "new" | "done";
+  createdAt: string;
+};
+
+type ContactsResponse = {
+  requests: ContactRequest[];
+};
+
 const API_BASE = "/.netlify/functions";
 
 const getToken = (): string | null => {
@@ -115,23 +137,64 @@ export const api = {
     return res.json();
   },
 
+
+  async resetBookings() {
+    const res = await fetch(`${API_BASE}/bookings`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to reset bookings");
+    return res.json();
+  },
+
   async getBookings() {
     const res = await fetch(`${API_BASE}/bookings`);
     if (!res.ok) throw new Error("Failed to fetch bookings");
     return res.json();
   },
 
-  async getSettings() {
+  async createContactRequest(payload: { branchName: string; customerName: string; phone: string; note?: string }) {
+    const res = await fetch(`${API_BASE}/contacts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to submit request");
+    }
+    return res.json() as Promise<{ request: ContactRequest }>;
+  },
+
+  async getContactRequests() {
+    const res = await fetch(`${API_BASE}/contacts`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to fetch contact requests");
+    return res.json() as Promise<ContactsResponse>;
+  },
+
+  async updateContactRequestStatus(id: string, status: "new" | "done") {
+    const res = await fetch(`${API_BASE}/contacts`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ id, status }),
+    });
+    if (!res.ok) throw new Error("Failed to update contact request");
+    return res.json() as Promise<{ request: ContactRequest }>;
+  },
+
+  async getSettings(): Promise<AppSettings> {
     try {
       const res = await fetch(`${API_BASE}/settings`);
-      if (!res.ok) return { siteTitle: "RES-DASHBORD.COM", bannerText: "", enterprise: { employees: [] } };
+      if (!res.ok) return { siteTitle: "Worm-AI", bannerText: "" };
       return res.json();
     } catch {
-      return { siteTitle: "RES-DASHBORD.COM", bannerText: "", enterprise: { employees: [] } };
+      return { siteTitle: "Worm-AI", bannerText: "" };
     }
   },
 
-  async updateSettings(settings: { siteTitle?: string; bannerText?: string; enterprise?: unknown }) {
+  async updateSettings(settings: AppSettings) {
     const res = await fetch(`${API_BASE}/settings`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", ...authHeaders() },

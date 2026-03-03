@@ -22,6 +22,17 @@ async function validateSession(req: Request): Promise<Session | null> {
   }
 }
 
+const normalizeKey = (value: string) =>
+  value
+    .replace(/^\uFEFF/, "")
+    .toLowerCase()
+    .replace(/[\u064B-\u0652]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[\s_\-\/]+/g, "")
+    .trim();
+
 function parseCSV(text: string): Record<string, string>[] {
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) return [];
@@ -51,7 +62,8 @@ function parseCSV(text: string): Record<string, string>[] {
     return fields;
   };
 
-  const headers = parseRow(lines[0]);
+  const headers = parseRow(lines[0]).map((header) => header.replace(/^\uFEFF/, "").trim());
+
   return lines
     .slice(1)
     .filter((line) => line.trim())
@@ -65,21 +77,70 @@ function parseCSV(text: string): Record<string, string>[] {
     });
 }
 
+function getRecordValue(record: Record<string, string>, keys: string[]): string {
+  for (const key of keys) {
+    if (record[key] && String(record[key]).trim()) return String(record[key]);
+  }
+
+  const normalizedTargets = keys.map(normalizeKey);
+  for (const [rawKey, rawValue] of Object.entries(record)) {
+    if (!String(rawValue).trim()) continue;
+    const normalized = normalizeKey(rawKey);
+
+    if (normalizedTargets.includes(normalized)) return String(rawValue);
+
+    if (
+      normalizedTargets.some(
+        (target) => normalized.includes(target) || target.includes(normalized),
+      )
+    ) {
+      return String(rawValue);
+    }
+  }
+
+  return "";
+}
+
 function classifyStatus(status: string): "confirmed" | "cancelled" | "not_confirmed" {
-  const s = status.trim().toUpperCase();
-  if (s === "N" || s === "M" || s === "CONFIRMED") return "confirmed";
-  if (s === "C" || s === "NS") return "cancelled";
+  const s = status.trim().toLowerCase();
+  if (!s) return "not_confirmed";
+
+  if (
+    s === "c" ||
+    s === "ns" ||
+    s.includes("cancel") ||
+    s.includes("ملغي") ||
+    s.includes("إلغاء") ||
+    s.includes("الغاء")
+  ) {
+    return "cancelled";
+  }
+
+  if (
+    s === "n" ||
+    s === "m" ||
+    s.includes("conf") ||
+    s.includes("confirmed") ||
+    s.includes("مؤكد")
+  ) {
+    return "confirmed";
+  }
+
   return "not_confirmed";
 }
 
 function getBookingStatus(record: Record<string, string>): string {
-  return (
-    record["Status"] ||
-    record["status"] ||
-    record["Booking Status"] ||
-    record["BookingStatus"] ||
-    ""
-  );
+  return getRecordValue(record, [
+    "All stute",
+    "All Stute",
+    "all stute",
+    "Status",
+    "status",
+    "Booking Status",
+    "BookingStatus",
+    "حالة الحجز",
+    "الحالة",
+  ]);
 }
 
 function calculateStats(bookings: Record<string, string>[]) {
@@ -121,6 +182,21 @@ export default async (req: Request) => {
         stats: { total: 0, confirmed: 0, cancelled: 0, cancelRate: 0 },
       });
     }
+  }
+
+
+  if (method === "DELETE") {
+    const session = await validateSession(req);
+    if (!session) return json({ error: "Unauthorized" }, 401);
+
+    if (!["superadmin", "admin"].includes(session.role)) {
+      return json({ error: "Permission Denied" }, 403);
+    }
+
+    await store.setJSON("data", []);
+    await store.setJSON("stats", { total: 0, confirmed: 0, cancelled: 0, cancelRate: 0 });
+
+    return json({ ok: true });
   }
 
   if (method === "POST") {

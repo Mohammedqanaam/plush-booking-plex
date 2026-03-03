@@ -1,56 +1,20 @@
 import { getStore } from "@netlify/blobs";
 
 type Session = { username: string; role: string };
-type SiteSettings = { siteTitle: string; bannerText: string };
-type Employee = {
-  id: string;
-  name: string;
-  department: string;
-  phone: string;
-  active: boolean;
+type SiteSettings = {
+  siteTitle: string;
+  bannerText: string;
+  reportMonth: string;
+  reportYear: string;
+  hiddenEmployees: string[];
 };
 
-type EnterpriseSettings = {
-  whatsappTemplate: string;
-  emailTemplate: string;
-  emailEnabled: boolean;
-  slaHours: number;
-  escalationThreshold: number;
-  employees: Employee[];
-  theme: {
-    primary: string;
-    accent: string;
-    background: string;
-    card: string;
-    border: string;
-    borderRadius: string;
-    fontStyle: string;
-  };
-};
-
-type SettingsPayload = SiteSettings & { enterprise?: EnterpriseSettings };
-
-const DEFAULT_SETTINGS: SettingsPayload = {
-  siteTitle: "RES-DASHBORD.COM",
+const DEFAULT_SETTINGS: SiteSettings = {
+  siteTitle: "Worm-AI",
   bannerText: "",
-  enterprise: {
-    whatsappTemplate:
-      "Complaint No: {{complaintNo}}\nBrand: {{brand}}\nBranch: {{branch}}\nCategory: {{mainCategory}}\nSub-category: {{subCategory}}\n\nGuest Name: {{guestFullName}}\nBooking Mobile: {{bookingMobile}}\nSuite No: {{suiteNumber}}\nCheck-in Date: {{checkInDate}}\nGuest In-House: {{inHouse}}\nPriority: {{priority}}\nAssigned Employee: {{assignedEmployee}}\n\nPlease handle according to operational protocol.",
-    emailTemplate: "",
-    emailEnabled: true,
-    slaHours: 2,
-    escalationThreshold: 3,
-    employees: [],
-    theme: {
-      primary: "268 86% 62%",
-      accent: "286 75% 60%",
-      background: "258 44% 9%",
-      card: "258 35% 14%",
-      border: "263 28% 24%",
-      borderRadius: "0.85rem",
-      fontStyle: "IBM Plex Sans Arabic",
-    },
-  },
+  reportMonth: "",
+  reportYear: "",
+  hiddenEmployees: [],
 };
 
 function json(data: unknown, status = 200) {
@@ -111,17 +75,11 @@ export default async (req: Request) => {
     const updated: SettingsPayload = {
       siteTitle: body.siteTitle !== undefined ? body.siteTitle : current.siteTitle,
       bannerText: body.bannerText !== undefined ? body.bannerText : current.bannerText,
-      enterprise: {
-        ...DEFAULT_SETTINGS.enterprise!,
-        ...(current.enterprise || {}),
-        ...(body.enterprise || {}),
-        theme: {
-          ...DEFAULT_SETTINGS.enterprise!.theme,
-          ...(current.enterprise?.theme || {}),
-          ...(body.enterprise?.theme || {}),
-        },
-        employees: body.enterprise?.employees || current.enterprise?.employees || [],
-      },
+      reportMonth: body.reportMonth !== undefined ? String(body.reportMonth) : current.reportMonth,
+      reportYear: body.reportYear !== undefined ? String(body.reportYear) : current.reportYear,
+      hiddenEmployees: Array.isArray(body.hiddenEmployees)
+        ? body.hiddenEmployees.map((v) => String(v))
+        : current.hiddenEmployees,
     };
 
     await store.setJSON("site", updated);
