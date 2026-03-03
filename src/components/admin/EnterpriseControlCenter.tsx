@@ -1,7 +1,35 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
-const defaults = {
+type EnterpriseTheme = {
+  primary: string;
+  accent: string;
+  background: string;
+  card: string;
+  border: string;
+  borderRadius: string;
+  fontStyle: string;
+};
+
+type EnterpriseEmployee = {
+  id: string;
+  name: string;
+  department: string;
+  phone: string;
+  active: boolean;
+};
+
+type EnterpriseSettings = {
+  whatsappTemplate: string;
+  emailTemplate: string;
+  emailEnabled: boolean;
+  slaHours: number;
+  escalationThreshold: number;
+  employees: EnterpriseEmployee[];
+  theme: EnterpriseTheme;
+};
+
+const defaults: EnterpriseSettings = {
   whatsappTemplate: "",
   emailTemplate: "",
   emailEnabled: true,
@@ -20,11 +48,13 @@ const defaults = {
 };
 
 const EnterpriseControlCenter = () => {
-  const [enterprise, setEnterprise] = useState<any>(defaults);
+  const [enterprise, setEnterprise] = useState<EnterpriseSettings>(defaults);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    api.getSettings().then((s) => setEnterprise({ ...defaults, ...(s.enterprise || {}) }));
+    api.getSettings().then((s) => {
+      setEnterprise({ ...defaults, ...(s.enterprise || {}) });
+    });
   }, []);
 
   useEffect(() => {
@@ -52,7 +82,7 @@ const EnterpriseControlCenter = () => {
       <div className="grid md:grid-cols-2 gap-2">
         <input type="number" className="bg-secondary rounded-lg p-2" value={enterprise.slaHours} onChange={(e)=>setEnterprise({...enterprise,slaHours:Number(e.target.value)})} placeholder="SLA hours" />
         <input type="number" className="bg-secondary rounded-lg p-2" value={enterprise.escalationThreshold} onChange={(e)=>setEnterprise({...enterprise,escalationThreshold:Number(e.target.value)})} placeholder="Escalation threshold" />
-        {Object.keys(enterprise.theme).map((k)=><input key={k} className="bg-secondary rounded-lg p-2" value={enterprise.theme[k]} onChange={(e)=>setEnterprise({...enterprise,theme:{...enterprise.theme,[k]:e.target.value}})} placeholder={k} />)}
+        {(Object.keys(enterprise.theme) as Array<keyof EnterpriseTheme>).map((k)=><input key={k} className="bg-secondary rounded-lg p-2" value={enterprise.theme[k]} onChange={(e)=>setEnterprise({...enterprise,theme:{...enterprise.theme,[k]:e.target.value}})} placeholder={k} />)}
       </div>
       <div className="flex gap-2">
         <button className="px-3 py-2 rounded-lg bg-secondary" onClick={()=>setEnterprise(defaults)}>Reset to default</button>
