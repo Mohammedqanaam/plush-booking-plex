@@ -76,8 +76,9 @@ const AdminDashboard = () => {
       setPassword("");
       setSelectedRole("viewer");
       await loadUsers();
-    } catch (err: any) {
-      setMessage(err.message || "تعذر إضافة المستخدم.");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "تعذر إضافة المستخدم.";
+      setMessage(errorMessage);
     }
   };
 
