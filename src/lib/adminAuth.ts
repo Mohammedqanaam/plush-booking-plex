@@ -12,9 +12,7 @@ export const getAdminSession = (): AdminSession | null => {
   try {
     const parsed = JSON.parse(stored);
     if (parsed?.username && parsed?.role) return parsed as AdminSession;
-  } catch {
-    return null;
-  }
+  } catch {}
   return null;
 };
 
