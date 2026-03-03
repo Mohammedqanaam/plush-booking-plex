@@ -10,6 +10,8 @@ type Discount = {
   percent: number;
   code: string;
   active: boolean;
+  assignedEmployee?: string;
+  notes?: string;
   createdAt: string;
 };
 

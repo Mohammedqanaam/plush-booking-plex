@@ -31,6 +31,7 @@ const Dashboard = () => {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [stats, setStats] = useState<BookingStats>(defaultStats);
   const [loading, setLoading] = useState(true);
+  const [directoryEmployees, setDirectoryEmployees] = useState<string[]>([]);
 
   useEffect(() => {
     api
@@ -45,6 +46,13 @@ const Dashboard = () => {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    api.getSettings().then((settings) => {
+      const names = (settings.enterprise?.employees || [])
+        .filter((item: any) => item.active)
+        .map((item: any) => item.name);
+      setDirectoryEmployees(names);
+    }).catch(() => {});
   }, []);
 
   const computedStats = useMemo(() => {
@@ -147,7 +155,7 @@ const Dashboard = () => {
       map.set(name, current);
     });
 
-    return Array.from(map.values())
+    const ranked = Array.from(map.values())
       .sort((a, b) => b.total - a.total)
       .slice(0, 40)
       .map((employee) => ({
@@ -156,7 +164,13 @@ const Dashboard = () => {
           ? (employee.cancelled / employee.total) * 100
           : 0,
       }));
-  }, [bookings]);
+
+    const missing = directoryEmployees
+      .filter((name) => !ranked.some((employee) => employee.name === name))
+      .map((name) => ({ name, total: 0, confirmed: 0, cancelled: 0, cancelRate: 0 }));
+
+    return [...ranked, ...missing];
+  }, [bookings, directoryEmployees]);
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-6">

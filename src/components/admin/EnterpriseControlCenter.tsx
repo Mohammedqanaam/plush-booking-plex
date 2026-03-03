@@ -7,11 +7,14 @@ const defaults = {
   emailEnabled: true,
   slaHours: 2,
   escalationThreshold: 3,
+  employees: [],
   theme: {
-    primary: "42 90% 55%",
-    accent: "42 80% 48%",
-    background: "270 60% 5%",
-    borderRadius: "0.75rem",
+    primary: "268 86% 62%",
+    accent: "286 75% 60%",
+    background: "258 44% 9%",
+    card: "258 35% 14%",
+    border: "263 28% 24%",
+    borderRadius: "0.85rem",
     fontStyle: "IBM Plex Sans Arabic",
   },
 };
@@ -29,13 +32,15 @@ const EnterpriseControlCenter = () => {
     root.style.setProperty("--primary", enterprise.theme.primary);
     root.style.setProperty("--accent", enterprise.theme.accent);
     root.style.setProperty("--background", enterprise.theme.background);
+    root.style.setProperty("--card", enterprise.theme.card);
+    root.style.setProperty("--border", enterprise.theme.border);
     root.style.setProperty("--radius", enterprise.theme.borderRadius);
     root.style.setProperty("--font-enterprise", enterprise.theme.fontStyle);
   }, [enterprise.theme]);
 
   const save = async () => {
     await api.updateSettings({ enterprise });
-    setMessage("Enterprise settings saved");
+    setMessage("تم حفظ إعدادات المركز المؤسسي");
   };
 
   return (
