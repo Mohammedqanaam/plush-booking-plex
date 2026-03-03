@@ -1,15 +1,20 @@
 import { getStore } from "@netlify/blobs";
-import { hotelBranches } from "../../src/data/hotels";
 import {
   BRAND_PREFIX,
   COMPLAINT_CATEGORIES,
   DEFAULT_WHATSAPP_TEMPLATE,
   applyTemplate,
 } from "../../src/lib/enterpriseProtocol";
+import { hotelBranches } from "../../src/data/hotels";
+
+type Brand = keyof typeof BRAND_PREFIX;
+type ComplaintStatus = "جديدة" | "جاري المتابعة" | "تم الحل" | "مؤرشف";
+
+type Session = { username: string; role: string };
 
 type Complaint = {
   complaintNo: string;
-  brand: keyof typeof BRAND_PREFIX;
+  brand: Brand;
   branch: string;
   mainCategory: string;
   subCategory: string;
@@ -21,34 +26,12 @@ type Complaint = {
   checkInDate: string;
   inHouse: "Yes" | "No";
   notes: string;
-  createdAt: string;
-import type { Context } from "@netlify/functions";
-
-type ComplaintStatus = "Open" | "In Progress" | "Closed";
-
-type ComplaintRecord = {
-  id: string;
-  brand: string;
-  branch: string;
-  category: string;
-  urgency?: string;
-  guest_name: string;
-  booking_mobile?: string;
-  contact_mobile?: string;
-  suite_number?: string;
-  checkin_date?: string;
-  guest_in_house?: boolean;
-  notes?: string;
   status: ComplaintStatus;
-  created_at: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
-const prefixMap: Record<string, string> = {
-  Boudl: "BO",
-  Braira: "BR",
-  Narcissus: "NA",
-  Aber: "AB",
-};
+const STATUS_SET = new Set<ComplaintStatus>(["جديدة", "جاري المتابعة", "تم الحل", "مؤرشف"]);
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -57,7 +40,51 @@ function json(data: unknown, status = 200) {
   });
 }
 
-async function nextComplaintNo(brand: keyof typeof BRAND_PREFIX) {
+function normalizeStatus(value: unknown): ComplaintStatus | null {
+  if (typeof value !== "string") return null;
+
+  const cleaned = value.trim();
+  if (STATUS_SET.has(cleaned as ComplaintStatus)) return cleaned as ComplaintStatus;
+
+  const englishMap: Record<string, ComplaintStatus> = {
+    open: "جديدة",
+    new: "جديدة",
+    "in progress": "جاري المتابعة",
+    in_progress: "جاري المتابعة",
+    followup: "جاري المتابعة",
+    resolved: "تم الحل",
+    closed: "تم الحل",
+    solved: "تم الحل",
+    archived: "مؤرشف",
+    archive: "مؤرشف",
+  };
+
+  return englishMap[cleaned.toLowerCase()] || null;
+}
+
+async function validateSession(req: Request): Promise<Session | null> {
+  const authHeader = req.headers.get("Authorization");
+  const token = authHeader?.replace("Bearer ", "").trim();
+  if (!token) return null;
+
+  const sessionStore = getStore({ name: "sessions", consistency: "strong" });
+  try {
+    return (await sessionStore.get(`sess_${token}`, { type: "json" })) as Session | null;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureAdmin(req: Request) {
+  const session = await validateSession(req);
+  if (!session) return { ok: false as const, response: json({ error: "Unauthorized" }, 401) };
+  if (!["superadmin", "admin"].includes(session.role)) {
+    return { ok: false as const, response: json({ error: "Permission Denied" }, 403) };
+  }
+  return { ok: true as const };
+}
+
+async function nextComplaintNo(brand: Brand) {
   const counters = getStore("complaint_counters");
   const key = `counter_${brand}`;
   const current = ((await counters.get(key, { type: "json" })) as number | null) || 0;
@@ -92,17 +119,20 @@ export default async (req: Request) => {
 
   if (req.method === "GET") {
     const items = ((await store.get("items", { type: "json" })) as Complaint[] | null) || [];
+    const complaints = items.map((item) => ({ ...item, status: item.status || "جديدة" }));
+
     const branches = Array.from(new Set(hotelBranches.map((b) => `${b.name} - ${b.city}`))).sort((a, b) =>
       a.localeCompare(b, "ar"),
     );
-    return json({ complaints: items, categories: COMPLAINT_CATEGORIES, branches });
+    return json({ complaints, categories: COMPLAINT_CATEGORIES, branches });
   }
 
   if (req.method === "POST") {
     const body = (await req.json().catch(() => ({}))) as Partial<Complaint>;
-    const brand = (body.brand || "Boudl") as keyof typeof BRAND_PREFIX;
+    const brand = (body.brand || "Boudl") as Brand;
     const complaintNo = await nextComplaintNo(brand);
 
+    const now = new Date().toISOString();
     const complaint: Complaint = {
       complaintNo,
       brand,
@@ -117,8 +147,14 @@ export default async (req: Request) => {
       checkInDate: String(body.checkInDate || "").trim(),
       inHouse: body.inHouse === "No" ? "No" : "Yes",
       notes: String(body.notes || "").trim(),
-      createdAt: new Date().toISOString(),
+      status: "جديدة",
+      createdAt: now,
+      updatedAt: now,
     };
+
+    if (!complaint.branch || !complaint.mainCategory || !complaint.subCategory || !complaint.guestName) {
+      return json({ error: "Missing required fields" }, 400);
+    }
 
     const items = ((await store.get("items", { type: "json" })) as Complaint[] | null) || [];
     items.unshift(complaint);
@@ -157,102 +193,50 @@ export default async (req: Request) => {
     return json({ complaint, whatsappMessage, whatsappUrl, emailResult }, 201);
   }
 
+  if (req.method === "PUT") {
+    const auth = await ensureAdmin(req);
+    if (!auth.ok) return auth.response;
+
+    const body = (await req.json().catch(() => ({}))) as { complaintNo?: string; status?: string };
+    const complaintNo = String(body.complaintNo || "").trim();
+    const status = normalizeStatus(body.status);
+
+    if (!complaintNo || !status) {
+      return json({ error: "complaintNo and valid status are required" }, 400);
+    }
+
+    const items = ((await store.get("items", { type: "json" })) as Complaint[] | null) || [];
+    const index = items.findIndex((item) => item.complaintNo === complaintNo);
+    if (index < 0) return json({ error: "Complaint not found" }, 404);
+
+    const updated = {
+      ...items[index],
+      status,
+      updatedAt: new Date().toISOString(),
+    };
+    items[index] = updated;
+    await store.setJSON("items", items);
+
+    return json({ complaint: updated });
+  }
+
+  if (req.method === "DELETE") {
+    const auth = await ensureAdmin(req);
+    if (!auth.ok) return auth.response;
+
+    const body = (await req.json().catch(() => ({}))) as { complaintNo?: string };
+    const complaintNo = String(body.complaintNo || "").trim();
+    if (!complaintNo) return json({ error: "complaintNo is required" }, 400);
+
+    const items = ((await store.get("items", { type: "json" })) as Complaint[] | null) || [];
+    const next = items.filter((item) => item.complaintNo !== complaintNo);
+    if (next.length === items.length) return json({ error: "Complaint not found" }, 404);
+
+    await store.setJSON("items", next);
+    return json({ success: true });
+  }
+
   return json({ error: "Method not allowed" }, 405);
-function generateComplaintNumber(prefix: string) {
-  const random = Math.floor(10000 + Math.random() * 90000);
-  return `${prefix}-${random}`;
-}
-
-async function notifyAdminsByEmail(complaint: ComplaintRecord, adminEmails: string[]) {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  if (!resendApiKey || !adminEmails.length) return;
-
-  const to = adminEmails.map((v) => v.trim()).filter(Boolean);
-  if (!to.length) return;
-
-  const subject = `شكوى جديدة ${complaint.id} - ${complaint.brand}`;
-  const html = `
-    <h3>شكوى جديدة</h3>
-    <p><strong>الرقم:</strong> ${complaint.id}</p>
-    <p><strong>العلامة:</strong> ${complaint.brand}</p>
-    <p><strong>الفرع:</strong> ${complaint.branch}</p>
-    <p><strong>العميل:</strong> ${complaint.guest_name}</p>
-    <p><strong>الفئة:</strong> ${complaint.category}</p>
-    <p><strong>الأولوية:</strong> ${complaint.urgency || "-"}</p>
-    <p><strong>الملاحظات:</strong> ${complaint.notes || "-"}</p>
-    <p><strong>وقت الإنشاء:</strong> ${complaint.created_at}</p>
-  `;
-
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM || "Complaints <onboarding@resend.dev>",
-      to,
-      subject,
-      html,
-    }),
-  }).catch(() => null);
-}
-
-export default async (req: Request, context: Context) => {
-  const store = context.blobs.getStore("complaints_store");
-
-  if (req.method !== "POST") {
-    return json({ error: "Method Not Allowed" }, 405);
-  }
-
-  let body: Partial<ComplaintRecord>;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: "Invalid request body" }, 400);
-  }
-
-  const brand = String(body.brand || "").trim();
-  const branch = String(body.branch || "").trim();
-  const category = String(body.category || "").trim();
-  const guestName = String(body.guest_name || "").trim();
-
-  if (!brand || !branch || !category || !guestName) {
-    return json({ error: "Missing required fields" }, 400);
-  }
-
-  const prefix = prefixMap[brand] || "CM";
-  const number = generateComplaintNumber(prefix);
-
-  const complaint: ComplaintRecord = {
-    id: number,
-    brand,
-    branch,
-    category,
-    urgency: body.urgency ? String(body.urgency) : undefined,
-    guest_name: guestName,
-    booking_mobile: body.booking_mobile ? String(body.booking_mobile) : undefined,
-    contact_mobile: body.contact_mobile ? String(body.contact_mobile) : undefined,
-    suite_number: body.suite_number ? String(body.suite_number) : undefined,
-    checkin_date: body.checkin_date ? String(body.checkin_date) : undefined,
-    guest_in_house: body.guest_in_house === true,
-    notes: body.notes ? String(body.notes) : undefined,
-    status: "Open",
-    created_at: new Date().toISOString(),
-  };
-
-  const all = ((await store.get("all", { type: "json" })) as ComplaintRecord[] | null) || [];
-  all.push(complaint);
-  await store.setJSON("all", all);
-
-  const adminEmails = (process.env.ADMIN_EMAILS || "")
-    .split(",")
-    .map((v) => v.trim())
-    .filter(Boolean);
-
-  await notifyAdminsByEmail(complaint, adminEmails);
-
-  return json({ complaint_number: number }, 201);
 };
 
 export const config = {
