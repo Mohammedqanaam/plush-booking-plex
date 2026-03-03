@@ -182,6 +182,13 @@ const Dashboard = () => {
         setBookings([]);
       })
       .finally(() => setLoading(false));
+
+    api.getSettings().then((settings) => {
+      const names = (settings.enterprise?.employees || [])
+        .filter((item: any) => item.active)
+        .map((item: any) => item.name);
+      setDirectoryEmployees(names);
+    }).catch(() => {});
   }, []);
 
   const groupedEmployees = useMemo<EmployeeStat[]>(() => {
