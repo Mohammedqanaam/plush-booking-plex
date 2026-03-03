@@ -21,10 +21,12 @@ const RiyadhClock = () => {
   }, []);
 
   return (
-    <div className="flex items-center gap-2 text-lavender-soft drop-shadow-[0_0_12px_rgba(167,139,250,0.6)]">
+    <div className="flex items-center gap-2 text-lavender-soft drop-shadow-[0_0_10px_rgba(167,139,250,0.45)]">
       <span className="inline-block w-2 h-2 rounded-full bg-lavender-glow animate-pulse" />
-      <span className="text-xs">الرياض</span>
-      <span className="font-mono tabular-nums text-sm text-white">{time}</span>
+      <span className="text-[13px] font-medium text-foreground/90">الرياض</span>
+      <span dir="ltr" className="font-semibold tabular-nums tracking-wide text-[15px] text-white/95">
+        {time}
+      </span>
     </div>
   );
 };

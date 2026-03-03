@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:netlify-toml": "node -e \"const fs=require('fs');const {parse}=require('@iarna/toml');parse(fs.readFileSync('netlify.toml','utf8'));console.log('netlify.toml OK');\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -67,6 +68,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@iarna/toml": "^2.2.5",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
