@@ -2,16 +2,27 @@ import { getStore } from "@netlify/blobs";
 
 type Session = { username: string; role: string };
 type SiteSettings = { siteTitle: string; bannerText: string };
+type Employee = {
+  id: string;
+  name: string;
+  department: string;
+  phone: string;
+  active: boolean;
+};
+
 type EnterpriseSettings = {
   whatsappTemplate: string;
   emailTemplate: string;
   emailEnabled: boolean;
   slaHours: number;
   escalationThreshold: number;
+  employees: Employee[];
   theme: {
     primary: string;
     accent: string;
     background: string;
+    card: string;
+    border: string;
     borderRadius: string;
     fontStyle: string;
   };
@@ -20,20 +31,23 @@ type EnterpriseSettings = {
 type SettingsPayload = SiteSettings & { enterprise?: EnterpriseSettings };
 
 const DEFAULT_SETTINGS: SettingsPayload = {
-  siteTitle: "WORM-AI",
+  siteTitle: "RES-DASHBORD.COM",
   bannerText: "",
   enterprise: {
     whatsappTemplate:
-      "Complaint No: {{complaintNo}}\nBrand: {{brand}}\nBranch: {{branch}}\nCategory: {{mainCategory}}\nSub-category: {{subCategory}}\n\nGuest Name: {{guestFullName}}\nBooking Mobile: {{bookingMobile}}\nSuite No: {{suiteNumber}}\nCheck-in Date: {{checkInDate}}\nGuest In-House: {{inHouse}}\nPriority: {{priority}}\n\nPlease handle according to operational protocol.",
+      "Complaint No: {{complaintNo}}\nBrand: {{brand}}\nBranch: {{branch}}\nCategory: {{mainCategory}}\nSub-category: {{subCategory}}\n\nGuest Name: {{guestFullName}}\nBooking Mobile: {{bookingMobile}}\nSuite No: {{suiteNumber}}\nCheck-in Date: {{checkInDate}}\nGuest In-House: {{inHouse}}\nPriority: {{priority}}\nAssigned Employee: {{assignedEmployee}}\n\nPlease handle according to operational protocol.",
     emailTemplate: "",
     emailEnabled: true,
     slaHours: 2,
     escalationThreshold: 3,
+    employees: [],
     theme: {
-      primary: "42 90% 55%",
-      accent: "42 80% 48%",
-      background: "270 60% 5%",
-      borderRadius: "0.75rem",
+      primary: "268 86% 62%",
+      accent: "286 75% 60%",
+      background: "258 44% 9%",
+      card: "258 35% 14%",
+      border: "263 28% 24%",
+      borderRadius: "0.85rem",
       fontStyle: "IBM Plex Sans Arabic",
     },
   },
@@ -106,6 +120,7 @@ export default async (req: Request) => {
           ...(current.enterprise?.theme || {}),
           ...(body.enterprise?.theme || {}),
         },
+        employees: body.enterprise?.employees || current.enterprise?.employees || [],
       },
     };
 

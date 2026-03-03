@@ -5,7 +5,7 @@ import RiyadhClock from "./RiyadhClock";
 import { api } from "@/lib/api";
 
 const Layout = () => {
-  const [siteTitle, setSiteTitle] = useState("WORM-AI");
+  const [siteTitle, setSiteTitle] = useState("RES-DASHBORD.COM");
   const [bannerText, setBannerText] = useState("");
 
   useEffect(() => {
@@ -14,6 +14,16 @@ const Layout = () => {
       .then((data) => {
         if (data.siteTitle) setSiteTitle(data.siteTitle);
         if (data.bannerText !== undefined) setBannerText(data.bannerText);
+        const theme = data.enterprise?.theme;
+        if (theme) {
+          const root = document.documentElement;
+          if (theme.primary) root.style.setProperty("--primary", theme.primary);
+          if (theme.accent) root.style.setProperty("--accent", theme.accent);
+          if (theme.background) root.style.setProperty("--background", theme.background);
+          if (theme.card) root.style.setProperty("--card", theme.card);
+          if (theme.border) root.style.setProperty("--border", theme.border);
+          if (theme.borderRadius) root.style.setProperty("--radius", theme.borderRadius);
+        }
       })
       .catch(() => {});
   }, []);

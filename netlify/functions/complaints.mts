@@ -10,6 +10,7 @@ type Complaint = {
   mainCategory: string;
   subCategory: string;
   urgent: boolean;
+  assignedEmployee?: string;
   guestFullName: string;
   bookingMobile: string;
   contactMobile: string;
@@ -30,7 +31,7 @@ type EnterpriseSettings = {
   };
 };
 
-const DEFAULT_TEMPLATE = `Complaint No: {{complaintNo}}\nBrand: {{brand}}\nBranch: {{branch}}\nCategory: {{mainCategory}}\nSub-category: {{subCategory}}\n\nGuest Name: {{guestFullName}}\nBooking Mobile: {{bookingMobile}}\nSuite No: {{suiteNumber}}\nCheck-in Date: {{checkInDate}}\nGuest In-House: {{inHouse}}\nPriority: {{priority}}\n\nPlease handle according to operational protocol.`;
+const DEFAULT_TEMPLATE = `Complaint No: {{complaintNo}}\nBrand: {{brand}}\nBranch: {{branch}}\nCategory: {{mainCategory}}\nSub-category: {{subCategory}}\n\nGuest Name: {{guestFullName}}\nBooking Mobile: {{bookingMobile}}\nSuite No: {{suiteNumber}}\nCheck-in Date: {{checkInDate}}\nGuest In-House: {{inHouse}}\nPriority: {{priority}}\nAssigned Employee: {{assignedEmployee}}\n\nPlease handle according to operational protocol.`;
 
 const prefixMap: Record<BrandCode, string> = { Boudl: "BO", Braira: "BR", Narcissus: "NA", Aber: "AB" };
 
@@ -127,6 +128,7 @@ export default async (req: Request) => {
       checkInDate: complaint.checkInDate,
       inHouse: complaint.inHouse,
       priority: complaint.urgent ? "Urgent" : "Normal",
+      assignedEmployee: complaint.assignedEmployee || "N/A",
     };
 
     const whatsappMessage = renderTemplate(settings.complaint.whatsappTemplate || DEFAULT_TEMPLATE, dataMap);
@@ -139,6 +141,30 @@ export default async (req: Request) => {
     }
 
     return json({ ok: true, complaint, whatsappMessage, whatsappLink: `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`, emailStatus });
+  }
+
+  const session = await validateSession(req);
+  if (!session) return json({ error: "Unauthorized" }, 401);
+
+  if (!["superadmin", "admin", "editor"].includes(session.role)) {
+    return json({ error: "Permission Denied" }, 403);
+  }
+
+  const complaints = ((await store.get("all", { type: "json" })) as Complaint[]) || [];
+
+  if (method === "PUT") {
+    const body = (await req.json()) as Partial<Complaint> & { complaintNo: string };
+    const index = complaints.findIndex((item) => item.complaintNo === body.complaintNo);
+    if (index < 0) return json({ error: "Not found" }, 404);
+    complaints[index] = { ...complaints[index], ...body };
+    await store.setJSON("all", complaints);
+    return json({ ok: true, complaint: complaints[index] });
+  }
+
+  if (method === "DELETE") {
+    const body = (await req.json()) as { complaintNo?: string };
+    await store.setJSON("all", complaints.filter((item) => item.complaintNo !== body.complaintNo));
+    return json({ ok: true });
   }
 
   return json({ error: "Method not allowed" }, 405);

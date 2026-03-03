@@ -124,10 +124,10 @@ export const api = {
   async getSettings() {
     try {
       const res = await fetch(`${API_BASE}/settings`);
-      if (!res.ok) return { siteTitle: "WORM-AI", bannerText: "" };
+      if (!res.ok) return { siteTitle: "RES-DASHBORD.COM", bannerText: "", enterprise: { employees: [] } };
       return res.json();
     } catch {
-      return { siteTitle: "WORM-AI", bannerText: "" };
+      return { siteTitle: "RES-DASHBORD.COM", bannerText: "", enterprise: { employees: [] } };
     }
   },
 
@@ -155,6 +155,33 @@ export const api = {
     return res.json();
   },
 
+
+
+  async listComplaints() {
+    const res = await fetch(`${API_BASE}/complaints`, { headers: authHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch complaints");
+    return res.json();
+  },
+
+  async updateComplaint(payload: Record<string, unknown>) {
+    const res = await fetch(`${API_BASE}/complaints`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Failed to update complaint");
+    return res.json();
+  },
+
+  async deleteComplaint(id: string) {
+    const res = await fetch(`${API_BASE}/complaints`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ complaintNo: id }),
+    });
+    if (!res.ok) throw new Error("Failed to delete complaint");
+    return res.json();
+  },
   async listDiscounts() {
     const res = await fetch(`${API_BASE}/discounts`, { headers: authHeaders() });
     if (!res.ok) {
