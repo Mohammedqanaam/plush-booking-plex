@@ -12,6 +12,7 @@ import {
   Download,
   MessageSquareMore,
   CheckCircle2,
+  BadgeAlert,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -20,7 +21,7 @@ import {
   hasPermission,
   type UserRole,
 } from "@/lib/adminAuth";
-import { api, type ContactRequest } from "@/lib/api";
+import { api, type ComplaintRecord, type ContactRequest } from "@/lib/api";
 
 type User = { username: string; role: UserRole };
 type BookingRecord = Record<string, string | number | undefined>;
@@ -31,7 +32,7 @@ type EmployeeRow = {
   confirmed: number;
 };
 
-type AdminTab = "upload" | "users" | "settings" | "requests";
+type AdminTab = "upload" | "users" | "settings" | "requests" | "complaints";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   superadmin: "مدير عام",
@@ -107,17 +108,20 @@ const AdminDashboard = () => {
   const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsMessage, setRequestsMessage] = useState<string | null>(null);
+  const [complaints, setComplaints] = useState<ComplaintRecord[]>([]);
+  const [complaintsLoading, setComplaintsLoading] = useState(false);
+  const [complaintsMessage, setComplaintsMessage] = useState<string | null>(null);
 
   const getInitialTab = (): AdminTab => {
     const tab = (searchParams.get("tab") || "upload") as AdminTab;
-    return ["upload", "users", "settings", "requests"].includes(tab) ? tab : "upload";
+    return ["upload", "users", "settings", "requests", "complaints"].includes(tab) ? tab : "upload";
   };
 
   const [activeTab, setActiveTab] = useState<AdminTab>(getInitialTab);
 
   useEffect(() => {
     const tab = (searchParams.get("tab") || "upload") as AdminTab;
-    if (["upload", "users", "settings", "requests"].includes(tab) && tab !== activeTab) {
+    if (["upload", "users", "settings", "requests", "complaints"].includes(tab) && tab !== activeTab) {
       setActiveTab(tab);
     }
   }, [searchParams, activeTab]);
@@ -133,6 +137,14 @@ const AdminDashboard = () => {
 
     loadContactRequests();
     const timer = window.setInterval(loadContactRequests, 10000);
+    return () => window.clearInterval(timer);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "complaints") return;
+
+    loadAdminComplaints();
+    const timer = window.setInterval(loadAdminComplaints, 10000);
     return () => window.clearInterval(timer);
   }, [activeTab]);
 
@@ -416,6 +428,20 @@ const AdminDashboard = () => {
     }
   };
 
+  const loadAdminComplaints = async () => {
+    if (!checkPermission("view")) return;
+    setComplaintsLoading(true);
+    try {
+      const data = await api.getAdminComplaints();
+      setComplaints(Array.isArray(data) ? data : []);
+      setComplaintsMessage(null);
+    } catch {
+      setComplaintsMessage("تعذر تحميل الشكاوى.");
+    } finally {
+      setComplaintsLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     await api.logout();
     clearAdminSession();
@@ -445,6 +471,12 @@ const AdminDashboard = () => {
       id: "requests" as const,
       label: "الطلبات",
       icon: MessageSquareMore,
+      permission: "view",
+    },
+    {
+      id: "complaints" as const,
+      label: "الشكاوى",
+      icon: BadgeAlert,
       permission: "view",
     },
   ];
@@ -665,6 +697,58 @@ const AdminDashboard = () => {
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   {request.status === "new" ? "تحديد كـ تم" : "إرجاع كـ جديد"}
                 </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "complaints" && (
+        <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <BadgeAlert className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">شكاوى العملاء</h3>
+              <p className="text-xs text-muted-foreground">قسم متزامن لعرض الشكاوى الواردة من صفحة الشكاوى.</p>
+            </div>
+          </div>
+
+          {complaintsMessage && <p className="text-xs text-muted-foreground">{complaintsMessage}</p>}
+
+          <div className="space-y-2">
+            {!complaints.length && !complaintsLoading ? (
+              <p className="text-xs text-muted-foreground">لا توجد شكاوى حالياً.</p>
+            ) : null}
+
+            {complaints.map((item) => (
+              <div key={item.id} className="glass-card p-3 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold truncate">{item.id}</p>
+                  <span
+                    className={`rounded px-2 py-0.5 text-[11px] ${
+                      item.status === "Open"
+                        ? "bg-primary/20 text-primary"
+                        : item.status === "In Progress"
+                          ? "bg-warning/20 text-warning"
+                          : "bg-success/20 text-success"
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">
+                  {item.branch} · {item.category}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {item.guest_name}
+                  {item.contact_mobile ? ` · ${item.contact_mobile}` : ""}
+                </p>
+                {item.notes ? <p className="text-xs text-muted-foreground truncate">{item.notes}</p> : null}
+                <p className="text-[11px] text-muted-foreground">
+                  {new Date(item.created_at).toLocaleString("ar-SA")}
+                </p>
               </div>
             ))}
           </div>
