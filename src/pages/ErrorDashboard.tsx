@@ -1,15 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
-type ErrorLog = {
-  id: string;
-  source: string;
-  message: string;
-  createdAt: string;
-};
-
 const ErrorDashboard = () => {
-  const [errors, setErrors] = useState<ErrorLog[]>([]);
+  const [errors, setErrors] = useState<any[]>([]);
 
   useEffect(() => {
     api.getErrors().then((data) => setErrors(data.errors || [])).catch(() => setErrors([]));

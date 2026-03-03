@@ -32,8 +32,6 @@ type ComplaintForm = {
 
 <<<<<<< codex/fix-xud2ja
 type ComplaintItem = FormState & { complaintNo: string; createdAt: string };
-type SubmitResult = { whatsappMessage?: string; whatsappLink?: string };
-type EmployeeReference = { active?: boolean; name?: string };
 
 const firstCategory = Object.keys(complaintHierarchy)[0];
 
@@ -53,7 +51,7 @@ const Complaints = () => {
     inHouse: "Yes",
     notes: "",
   });
-  const [result, setResult] = useState<SubmitResult | null>(null);
+  const [result, setResult] = useState<any>(null);
   const [status, setStatus] = useState<string>("");
   const [employees, setEmployees] = useState<string[]>([]);
   const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
@@ -63,12 +61,7 @@ const Complaints = () => {
 
   const loadReference = async () => {
     const [settings, list] = await Promise.all([api.getSettings(), api.listComplaints()]);
-    setEmployees(
-      (settings.enterprise?.employees || [])
-        .filter((item: EmployeeReference) => item.active)
-        .map((item: EmployeeReference) => item.name)
-        .filter((name): name is string => Boolean(name))
-    );
+    setEmployees((settings.enterprise?.employees || []).filter((item: any) => item.active).map((item: any) => item.name));
     setComplaints(list.complaints || []);
   };
 
@@ -157,13 +150,13 @@ const Complaints = () => {
           {employees.map((name) => <option key={name}>{name}</option>)}
         </select>
 
-        {([
+        {[
           ["guestFullName", "Guest Full Name"],
           ["bookingMobile", "Booking Mobile"],
           ["contactMobile", "Contact Mobile"],
           ["suiteNumber", "Suite Number"],
-        ] as const).map(([k, label]) => (
-          <input key={k} required className="bg-secondary rounded-lg p-3" placeholder={label} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
+        ].map(([k, label]) => (
+          <input key={k} required className="bg-secondary rounded-lg p-3" placeholder={label} value={(form as any)[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
         ))}
 
         <input required type="date" className="bg-secondary rounded-lg p-3" value={form.checkInDate} onChange={(e) => setForm({ ...form, checkInDate: e.target.value })} />

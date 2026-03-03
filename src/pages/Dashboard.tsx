@@ -182,9 +182,8 @@ const Dashboard = () => {
 
     api.getSettings().then((settings) => {
       const names = (settings.enterprise?.employees || [])
-        .filter((item: { active?: boolean; name?: string }) => item.active)
-        .map((item: { active?: boolean; name?: string }) => item.name)
-        .filter((name): name is string => Boolean(name));
+        .filter((item: any) => item.active)
+        .map((item: any) => item.name);
       setDirectoryEmployees(names);
     }).catch(() => {});
   }, []);
