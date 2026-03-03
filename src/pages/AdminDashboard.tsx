@@ -108,9 +108,6 @@ const AdminDashboard = () => {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsMessage, setRequestsMessage] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"upload" | "users" | "settings" | "requests">(
-    "upload"
-  );
   type AdminTab = "upload" | "users" | "settings" | "requests";
 
   const getInitialTab = (): AdminTab => {
@@ -436,6 +433,14 @@ const AdminDashboard = () => {
         <div className="space-y-1">
           <h2 className="text-2xl font-bold">لوحة الإدارة</h2>
           <p className="text-muted-foreground text-sm">مرحباً {session?.username || "مسؤول"} ({ROLE_LABELS[(session?.role as UserRole) || "viewer"]})</p>
+          <button
+            type="button"
+            onClick={() => navigate("/admin/complaints")}
+            className="mt-2 h-9 px-3 rounded-lg border border-border text-xs inline-flex items-center gap-2 hover:bg-secondary transition"
+          >
+            <MessageSquareMore className="w-3.5 h-3.5" />
+            إدارة الشكاوى
+          </button>
         </div>
         <button onClick={handleLogout} className="h-10 px-4 rounded-lg border border-border text-sm flex items-center gap-2 hover:bg-secondary transition">
           <LogOut className="w-4 h-4" /> تسجيل الخروج

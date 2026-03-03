@@ -11,6 +11,7 @@ import Complaints from "./pages/Complaints";
 import AdminDiscounts from "./pages/AdminDiscounts";
 import AdminEnterpriseControl from "./pages/AdminEnterpriseControl";
 import AdminErrors from "./pages/AdminErrors";
+import AdminComplaints from "./pages/AdminComplaints";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
@@ -54,6 +55,10 @@ const App = () => (
             path="/admin/errors"
             element={<ProtectedRoute><AdminErrors /></ProtectedRoute>}
           />
+          <Route
+            path="/admin/complaints"
+            element={<ProtectedRoute><AdminComplaints /></ProtectedRoute>}
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
@@ -62,4 +67,3 @@ const App = () => (
 );
 
 export default App;
-

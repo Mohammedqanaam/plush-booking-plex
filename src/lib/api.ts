@@ -44,6 +44,27 @@ export type ComplaintRecord = {
   created_at: string;
 };
 
+export type AdminComplaintStatus = "جديدة" | "جاري المتابعة" | "تم الحل" | "مؤرشف";
+
+export type AdminComplaint = {
+  complaintNo: string;
+  brand: string;
+  branch: string;
+  mainCategory: string;
+  subCategory: string;
+  urgency: boolean;
+  guestName: string;
+  bookingMobile?: string;
+  contactMobile?: string;
+  suiteNumber?: string;
+  checkInDate?: string;
+  inHouse?: "Yes" | "No";
+  notes?: string;
+  status: AdminComplaintStatus;
+  createdAt: string;
+  updatedAt?: string;
+};
+
 const API_BASE = "/.netlify/functions";
 
 const getToken = (): string | null => {
@@ -239,7 +260,17 @@ export const api = {
       headers: authHeaders(),
     });
     if (!res.ok) throw new Error("Failed to fetch admin complaints");
-    return res.json() as Promise<ComplaintRecord[]>;
+    return res.json() as Promise<AdminComplaint[]>;
+  },
+
+  async updateAdminComplaintStatus(complaintNo: string, status: AdminComplaintStatus) {
+    const res = await fetch(`/api/admin/complaints`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ complaintNo, status }),
+    });
+    if (!res.ok) throw new Error("Failed to update complaint status");
+    return res.json() as Promise<{ complaint: AdminComplaint }>;
   },
 
   async getSettings(): Promise<AppSettings> {
