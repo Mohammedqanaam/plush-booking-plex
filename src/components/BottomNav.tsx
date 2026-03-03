@@ -1,8 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Search, Shield, Upload, Users, Settings } from "lucide-react";
+import { Home, MessageSquare, Search, Shield, Upload, Users, Settings, BadgeAlert } from "lucide-react";
 
 const mainNavItems = [
   { path: "/", label: "الرئيسية", icon: Home },
+  { path: "/complaints", label: "الشكاوى", icon: BadgeAlert },
   { path: "/contacts", label: "طلبات التواصل", icon: MessageSquare },
   { path: "/search", label: "البحث", icon: Search },
   { path: "/admin", label: "Admin", icon: Shield },
@@ -42,7 +43,7 @@ const BottomNav = () => {
               }`}
             >
               <item.icon className={`w-5 h-5 ${isActive ? "drop-shadow-[0_0_6px_hsl(42,90%,55%)]" : ""}`} />
-              <span className="text-[11px] font-medium">{item.label}</span>
+              <span className="text-[10px] sm:text-[11px] font-medium">{item.label}</span>
               {isActive && (
                 <span className="absolute bottom-0 w-8 h-0.5 gold-gradient rounded-full" />
               )}
