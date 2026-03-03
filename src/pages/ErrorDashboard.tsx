@@ -1,0 +1,25 @@
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+
+const ErrorDashboard = () => {
+  const [errors, setErrors] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.getErrors().then((data) => setErrors(data.errors || [])).catch(() => setErrors([]));
+  }, []);
+
+  return (
+    <div className="p-4 max-w-5xl mx-auto space-y-4">
+      <h2 className="text-2xl font-bold">Error Monitoring Dashboard</h2>
+      {errors.map((err) => (
+        <div key={err.id} className="glass-card p-3">
+          <p className="text-sm font-semibold">{err.source}</p>
+          <p className="text-xs text-muted-foreground">{err.message}</p>
+          <p className="text-xs text-muted-foreground">{err.createdAt}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default ErrorDashboard;
