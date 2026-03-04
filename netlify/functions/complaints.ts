@@ -43,13 +43,14 @@ async function nextComplaintNo(brand: keyof typeof BRAND_PREFIX) {
 async function sendComplaintEmailCopy(complaint: Complaint, html: string) {
   const webhook = process.env.COMPLAINT_EMAIL_WEBHOOK;
   if (!webhook) return { sent: false, reason: "webhook_not_configured" };
+  const recipient = process.env.COMPLAINT_EMAIL_TO || "x2yy@icloud.com";
 
   try {
     const res = await fetch(webhook, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        to: "mohammedqanaam@gmail.com",
+        to: recipient,
         subject: `Complaint ${complaint.complaintNo} - ${complaint.brand}`,
         html,
         complaint,
@@ -108,9 +109,8 @@ export default async (req: Request) => {
       bookingMobile: complaint.bookingMobile,
       suiteNumber: complaint.suiteNumber,
       checkInDate: complaint.checkInDate,
-      inHouse: complaint.inHouse,
-      urgency: complaint.urgency ? "Urgent" : "Normal",
-      contactMobile: complaint.contactMobile,
+      inHouse: complaint.inHouse === "Yes" ? "نعم" : "لا",
+      urgency: complaint.urgency ? "عاجلة" : "عادية",
       notes: complaint.notes,
     };
 
