@@ -108,9 +108,6 @@ const AdminDashboard = () => {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsMessage, setRequestsMessage] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"upload" | "users" | "settings" | "requests">(
-    "upload"
-  );
   type AdminTab = "upload" | "users" | "settings" | "requests";
 
   const getInitialTab = (): AdminTab => {
