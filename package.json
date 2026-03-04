@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:netlify-toml": "node -e \"const fs=require('fs');const {parse}=require('@iarna/toml');parse(fs.readFileSync('netlify.toml','utf8'));console.log('netlify.toml OK');\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -57,7 +58,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.61.1",
     "react-resizable-panels": "^2.1.9",
-    "react-router-dom": "^6.30.1",
+    "react-router-dom": "^6.30.3",
     "recharts": "^2.15.4",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
@@ -67,6 +68,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@iarna/toml": "^2.2.5",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
@@ -85,7 +87,8 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
-    "vite": "^5.4.19",
+    "vite": "^7.3.1",
+    "vite": "^5.4.21",
     "vitest": "^3.2.4"
   }
 }

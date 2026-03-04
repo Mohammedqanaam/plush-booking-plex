@@ -7,19 +7,22 @@ import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import HotelSearch from "./pages/HotelSearch";
 import Contacts from "./pages/Contacts";
+import Complaints from "./pages/Complaints";
+import AdminDiscounts from "./pages/AdminDiscounts";
+import AdminEnterpriseControl from "./pages/AdminEnterpriseControl";
+import AdminErrors from "./pages/AdminErrors";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
-import Complaints from "./pages/Complaints";
-import Discounts from "./pages/Discounts";
-import ErrorDashboard from "./pages/ErrorDashboard";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
+import EnterpriseThemeLoader from "./components/EnterpriseThemeLoader";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <EnterpriseThemeLoader />
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -29,8 +32,6 @@ const App = () => (
           <Route path="/search" element={<HotelSearch />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/complaints" element={<Complaints />} />
-          <Route path="/discounts" element={<Discounts />} />
-          <Route path="/admin/errors" element={<ErrorDashboard />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"
@@ -41,6 +42,18 @@ const App = () => (
             }
           />
         </Route>
+          <Route
+            path="/admin/discounts"
+            element={<ProtectedRoute><AdminDiscounts /></ProtectedRoute>}
+          />
+          <Route
+            path="/admin/enterprise-control"
+            element={<ProtectedRoute><AdminEnterpriseControl /></ProtectedRoute>}
+          />
+          <Route
+            path="/admin/errors"
+            element={<ProtectedRoute><AdminErrors /></ProtectedRoute>}
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
@@ -49,3 +62,4 @@ const App = () => (
 );
 
 export default App;
+
