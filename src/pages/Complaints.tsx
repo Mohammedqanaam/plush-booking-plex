@@ -79,13 +79,13 @@ const Complaints = () => {
           {subCategories.map((s) => <option key={s}>{s}</option>)}
         </select>
         <input className="h-11 rounded-lg bg-secondary border border-border px-3" placeholder="اسم الضيف" value={form.guestName} onChange={(e) => setForm({ ...form, guestName: e.target.value })} required />
-        <input className="h-11 rounded-lg bg-secondary border border-border px-3" placeholder="جوال الحجز" value={form.bookingMobile} onChange={(e) => setForm({ ...form, bookingMobile: e.target.value })} required />
+        <input className="h-11 rounded-lg bg-secondary border border-border px-3" placeholder="رقم الحجز" value={form.bookingMobile} onChange={(e) => setForm({ ...form, bookingMobile: e.target.value })} required />
         <input className="h-11 rounded-lg bg-secondary border border-border px-3" placeholder="جوال التواصل" value={form.contactMobile} onChange={(e) => setForm({ ...form, contactMobile: e.target.value })} required />
         <input className="h-11 rounded-lg bg-secondary border border-border px-3" placeholder="رقم الجناح" value={form.suiteNumber} onChange={(e) => setForm({ ...form, suiteNumber: e.target.value })} />
         <input type="date" className="h-11 rounded-lg bg-secondary border border-border px-3" value={form.checkInDate} onChange={(e) => setForm({ ...form, checkInDate: e.target.value })} />
         <select value={form.inHouse} onChange={(e) => setForm({ ...form, inHouse: e.target.value as "Yes" | "No" })} className="h-11 rounded-lg bg-secondary border border-border px-3">
-          <option value="Yes">In-House: Yes</option>
-          <option value="No">In-House: No</option>
+          <option value="Yes">داخل الفندق: نعم</option>
+          <option value="No">داخل الفندق: لا</option>
         </select>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.urgency} onChange={(e) => setForm({ ...form, urgency: e.target.checked })} /> عاجل</label>
         <textarea className="md:col-span-2 rounded-lg bg-secondary border border-border p-3" rows={4} placeholder="ملاحظات" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
