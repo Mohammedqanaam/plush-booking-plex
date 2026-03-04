@@ -5,7 +5,7 @@ import RiyadhClock from "./RiyadhClock";
 import { api } from "@/lib/api";
 
 const Layout = () => {
-  const [siteTitle, setSiteTitle] = useState("WORM-AI");
+  const [siteTitle, setSiteTitle] = useState("Worm-AI");
   const [bannerText, setBannerText] = useState("");
 
   useEffect(() => {
@@ -14,6 +14,16 @@ const Layout = () => {
       .then((data) => {
         if (data.siteTitle) setSiteTitle(data.siteTitle);
         if (data.bannerText !== undefined) setBannerText(data.bannerText);
+        const theme = data.enterprise?.theme;
+        if (theme) {
+          const root = document.documentElement;
+          if (theme.primary) root.style.setProperty("--primary", theme.primary);
+          if (theme.accent) root.style.setProperty("--accent", theme.accent);
+          if (theme.background) root.style.setProperty("--background", theme.background);
+          if (theme.card) root.style.setProperty("--card", theme.card);
+          if (theme.border) root.style.setProperty("--border", theme.border);
+          if (theme.borderRadius) root.style.setProperty("--radius", theme.borderRadius);
+        }
       })
       .catch(() => {});
   }, []);
@@ -28,8 +38,8 @@ const Layout = () => {
 
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-4 h-14 max-w-4xl mx-auto">
-          <h1 className="text-lg font-bold gold-text">{siteTitle}</h1>
+        <div className="flex items-center justify-between px-4 h-16 max-w-4xl mx-auto gap-2">
+          <h1 className="text-xl sm:text-lg font-bold gold-text leading-none">{siteTitle}</h1>
           <RiyadhClock />
         </div>
       </header>

@@ -1,9 +1,21 @@
 import { getStore } from "@netlify/blobs";
 
 type Session = { username: string; role: string };
-type SiteSettings = { siteTitle: string; bannerText: string };
+type SiteSettings = {
+  siteTitle: string;
+  bannerText: string;
+  reportMonth: string;
+  reportYear: string;
+  hiddenEmployees: string[];
+};
 
-const DEFAULT_SETTINGS: SiteSettings = { siteTitle: "WORM-AI", bannerText: "" };
+const DEFAULT_SETTINGS: SiteSettings = {
+  siteTitle: "Worm-AI",
+  bannerText: "",
+  reportMonth: "",
+  reportYear: "",
+  hiddenEmployees: [],
+};
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -31,8 +43,8 @@ export default async (req: Request) => {
 
   if (method === "GET") {
     try {
-      const settings = (await store.get("site", { type: "json" })) as SiteSettings | null;
-      return json(settings || DEFAULT_SETTINGS);
+      const settings = (await store.get("site", { type: "json" })) as SettingsPayload | null;
+      return json({ ...DEFAULT_SETTINGS, ...settings, enterprise: { ...DEFAULT_SETTINGS.enterprise, ...(settings?.enterprise || {}) } });
     } catch {
       return json(DEFAULT_SETTINGS);
     }
@@ -46,23 +58,28 @@ export default async (req: Request) => {
       return json({ error: "Permission Denied" }, 403);
     }
 
-    let body: Partial<SiteSettings>;
+    let body: Partial<SettingsPayload>;
     try {
       body = await req.json();
     } catch {
       return json({ error: "Invalid request" }, 400);
     }
 
-    let current: SiteSettings;
+    let current: SettingsPayload;
     try {
-      current = ((await store.get("site", { type: "json" })) as SiteSettings) || DEFAULT_SETTINGS;
+      current = ((await store.get("site", { type: "json" })) as SettingsPayload) || DEFAULT_SETTINGS;
     } catch {
       current = DEFAULT_SETTINGS;
     }
 
-    const updated: SiteSettings = {
+    const updated: SettingsPayload = {
       siteTitle: body.siteTitle !== undefined ? body.siteTitle : current.siteTitle,
       bannerText: body.bannerText !== undefined ? body.bannerText : current.bannerText,
+      reportMonth: body.reportMonth !== undefined ? String(body.reportMonth) : current.reportMonth,
+      reportYear: body.reportYear !== undefined ? String(body.reportYear) : current.reportYear,
+      hiddenEmployees: Array.isArray(body.hiddenEmployees)
+        ? body.hiddenEmployees.map((v) => String(v))
+        : current.hiddenEmployees,
     };
 
     await store.setJSON("site", updated);

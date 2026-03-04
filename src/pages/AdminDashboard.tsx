@@ -9,19 +9,28 @@ import {
   Shield,
   Trash2,
   Users,
+  Download,
+  MessageSquareMore,
+  CheckCircle2,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   getAdminSession,
   clearAdminSession,
   hasPermission,
   type UserRole,
 } from "@/lib/adminAuth";
-import { api } from "@/lib/api";
+import { api, type ContactRequest } from "@/lib/api";
 
-type User = {
-  username: string;
-  role: UserRole;
+type User = { username: string; role: UserRole };
+type Employee = { id: string; name: string; department: string; phone: string; active: boolean };
+
+type BookingRecord = Record<string, string | number | undefined>;
+
+type EmployeeRow = {
+  name: string;
+  total: number;
+  confirmed: number;
 };
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -31,8 +40,49 @@ const ROLE_LABELS: Record<UserRole, string> = {
   viewer: "مشاهد",
 };
 
+const normalizeEmployeeName = (value: string) =>
+  value
+    .replace(/[ً-ْ]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+const AGENT_NAME_KEYS = [
+  "Agent name",
+  "Agent Name",
+  "agent name",
+  "Agent",
+  "Employee",
+  "Employee Name",
+  "User Name",
+  "اسم الموظف",
+  "اسم المندوب",
+  "الموظف",
+  "المندوب",
+];
+
+const MONTH_OPTIONS = [
+  "",
+  "يناير",
+  "فبراير",
+  "مارس",
+  "أبريل",
+  "مايو",
+  "يونيو",
+  "يوليو",
+  "أغسطس",
+  "سبتمبر",
+  "أكتوبر",
+  "نوفمبر",
+  "ديسمبر",
+];
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const session = getAdminSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,19 +94,146 @@ const AdminDashboard = () => {
 
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const [siteTitle, setSiteTitle] = useState("");
   const [bannerText, setBannerText] = useState("");
+  const [reportMonth, setReportMonth] = useState("");
+  const [reportYear, setReportYear] = useState("");
+  const [employeeOptions, setEmployeeOptions] = useState<EmployeeRow[]>([]);
+  const [hiddenEmployeesSettings, setHiddenEmployeesSettings] = useState<string[]>([]);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"upload" | "users" | "settings">(
-    "upload"
-  );
+  const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsMessage, setRequestsMessage] = useState<string | null>(null);
+
+  type AdminTab = "upload" | "users" | "settings" | "requests";
+
+  const getInitialTab = (): AdminTab => {
+    const tab = (searchParams.get("tab") || "upload") as AdminTab;
+    return ["upload", "users", "settings", "requests"].includes(tab) ? tab : "upload";
+  };
+
+  const [activeTab, setActiveTab] = useState<AdminTab>(getInitialTab);
+
+  useEffect(() => {
+    const tab = (searchParams.get("tab") || "upload") as AdminTab;
+    if (["upload", "users", "settings", "requests"].includes(tab) && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams, activeTab]);
 
   useEffect(() => {
     loadUsers();
     loadSettings();
+    loadBookingsForSettings();
   }, []);
+
+
+
+  useEffect(() => {
+    if (activeTab !== "requests") return;
+
+    loadContactRequests();
+    const timer = window.setInterval(loadContactRequests, 10000);
+    return () => window.clearInterval(timer);
+  }, [activeTab]);
+
+  const loadBookingsForSettings = async () => {
+    try {
+      const data = await api.getBookings();
+      const bookings = Array.isArray(data.bookings) ? (data.bookings as BookingRecord[]) : [];
+
+      const normalizeAgentName = (value: string) =>
+        value
+          .replace(/[ً-ْ]/g, "")
+          .replace(/[أإآ]/g, "ا")
+          .replace(/ة/g, "ه")
+          .replace(/ى/g, "ي")
+          .replace(/\s+/g, " ")
+          .trim()
+          .toLowerCase();
+
+      const normalizeKey = (value: string) =>
+        value
+          .replace(/^\uFEFF/, "")
+          .toLowerCase()
+          .replace(/[ً-ْ]/g, "")
+          .replace(/[أإآ]/g, "ا")
+          .replace(/ة/g, "ه")
+          .replace(/ى/g, "ي")
+          .replace(/[\s_/-]+/g, "")
+          .trim();
+
+      const getAnyValue = (record: BookingRecord, keys: string[]) => {
+        for (const key of keys) {
+          const value = record[key];
+          if (value !== undefined && String(value).trim()) return String(value);
+        }
+
+        const entries = Object.entries(record as Record<string, string | number | undefined>);
+        const normalizedTargets = keys.map(normalizeKey);
+
+        for (const [rawKey, rawValue] of entries) {
+          if (rawValue === undefined || !String(rawValue).trim()) continue;
+          const normalized = normalizeKey(rawKey);
+
+          if (normalizedTargets.includes(normalized)) return String(rawValue);
+
+          if (normalizedTargets.some((target) => normalized.includes(target) || target.includes(normalized))) {
+            return String(rawValue);
+          }
+        }
+
+        return "";
+      };
+
+      const getEmployeeName = (record: BookingRecord) =>
+        getAnyValue(record, AGENT_NAME_KEYS).replace(/\s+/g, " ").trim();
+
+      const getStatus = (record: BookingRecord) =>
+        getAnyValue(record, [
+          "All stute",
+          "All Stute",
+          "all stute",
+          "Status",
+          "status",
+          "Booking Status",
+          "BookingStatus",
+          "حالة الحجز",
+          "الحالة",
+        ])
+          .trim()
+          .toLowerCase();
+
+      const map = new Map<string, EmployeeRow>();
+
+      bookings.forEach((record) => {
+        const name = getEmployeeName(record);
+        const normalizedName = normalizeAgentName(name);
+        if (!normalizedName) return;
+
+        const status = getStatus(record);
+        const current = map.get(normalizedName) || { name, total: 0, confirmed: 0 };
+        current.total += 1;
+        if (
+          status === "n" ||
+          status === "m" ||
+          status.includes("conf") ||
+          status.includes("confirmed") ||
+          status.includes("مؤكد")
+        ) {
+          current.confirmed += 1;
+        }
+        map.set(normalizedName, current);
+      });
+
+      setEmployeeOptions(Array.from(map.values()).sort((a, b) => b.total - a.total));
+    } catch {
+      setEmployeeOptions([]);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -72,6 +249,9 @@ const AdminDashboard = () => {
       const data = await api.getSettings();
       setSiteTitle(data.siteTitle || "");
       setBannerText(data.bannerText || "");
+      setReportMonth(data.reportMonth || "");
+      setReportYear(data.reportYear || "");
+      setHiddenEmployeesSettings(Array.isArray(data.hiddenEmployees) ? data.hiddenEmployees : []);
     } catch {}
   };
 
@@ -82,10 +262,7 @@ const AdminDashboard = () => {
 
   const handleCreateUser = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!checkPermission("manage_users")) {
-      setMessage("صلاحية مرفوضة - Permission Denied");
-      return;
-    }
+    if (!checkPermission("manage_users")) return setMessage("صلاحية مرفوضة - Permission Denied");
     try {
       await api.createUser(username.trim(), password.trim(), selectedRole);
       setMessage("تمت إضافة المستخدم بنجاح.");
@@ -99,10 +276,7 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteUser = async (targetUsername: string) => {
-    if (!checkPermission("delete_users")) {
-      setMessage("صلاحية مرفوضة - Permission Denied");
-      return;
-    }
+    if (!checkPermission("delete_users")) return setMessage("صلاحية مرفوضة - Permission Denied");
     try {
       await api.deleteUser(targetUsername);
       setMessage(`تم حذف المستخدم ${targetUsername}.`);
@@ -112,25 +286,17 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleUploadCSV = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (!checkPermission("upload")) {
-      setUploadMessage("صلاحية مرفوضة - Permission Denied");
-      return;
-    }
+  const handleUploadCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!checkPermission("upload")) return setUploadMessage("صلاحية مرفوضة - Permission Denied");
     const file = event.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
     setUploadMessage(null);
-
     try {
       const text = await file.text();
       const result = await api.uploadBookings(text);
-      setUploadMessage(
-        `تم رفع ${result.stats?.total || 0} حجز بنجاح. مؤكد: ${result.stats?.confirmed || 0} | ملغي: ${result.stats?.cancelled || 0} | نسبة الإلغاء: ${result.stats?.cancelRate || 0}%`
-      );
+      setUploadMessage(`تم رفع ${result.stats?.total || 0} حجز بنجاح. مؤكد: ${result.stats?.confirmed || 0} | ملغي: ${result.stats?.cancelled || 0} | نسبة الإلغاء: ${result.stats?.cancelRate || 0}%`);
     } catch {
       setUploadMessage("فشل رفع الملف. تأكد من صيغة CSV.");
     } finally {
@@ -139,16 +305,92 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleSaveSettings = async () => {
+
+  const handleResetDashboard = async () => {
     if (!checkPermission("edit_settings")) {
-      setSettingsMessage("صلاحية مرفوضة - Permission Denied");
+      setUploadMessage("صلاحية مرفوضة - Permission Denied");
       return;
     }
+
+    setResetting(true);
     try {
-      await api.updateSettings({ siteTitle, bannerText });
+      await api.resetBookings();
+      setUploadMessage("تم تصفير بيانات الداشبورد بنجاح (0 حجوزات).");
+    } catch {
+      setUploadMessage("تعذر تصفير بيانات الداشبورد.");
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleDownloadReport = () => {
+    const visible = employeeOptions.filter(
+      (employee) => !hiddenEmployeesSettings.some((name) => normalizeEmployeeName(name) === normalizeEmployeeName(employee.name)),
+    );
+
+    const lines = [
+      "Central Reservations Report",
+      `Month: ${reportMonth || "Auto"}`,
+      `Year: ${reportYear || "Auto"}`,
+      "",
+      ...visible.map(
+        (employee) =>
+          `${employee.name} | Confirmed: ${employee.confirmed} | Total: ${employee.total}`,
+      ),
+    ];
+
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Reservations_Report_${reportYear || "auto"}_${reportMonth || "auto"}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const toggleEmployeeVisibilitySetting = (name: string) => {
+    const target = normalizeEmployeeName(name);
+    setHiddenEmployeesSettings((prev) => {
+      const exists = prev.some((n) => normalizeEmployeeName(n) === target);
+      if (exists) return prev.filter((n) => normalizeEmployeeName(n) !== target);
+      return [...prev, name];
+    });
+  };
+
+  const handleSaveSettings = async () => {
+    if (!checkPermission("edit_settings")) return setSettingsMessage("صلاحية مرفوضة - Permission Denied");
+    try {
+      await api.updateSettings({ siteTitle, bannerText, reportMonth, reportYear, hiddenEmployees: hiddenEmployeesSettings });
       setSettingsMessage("تم حفظ الإعدادات بنجاح.");
     } catch {
       setSettingsMessage("فشل حفظ الإعدادات.");
+    }
+  };
+
+
+  const loadContactRequests = async () => {
+    if (!checkPermission("view")) return;
+    setRequestsLoading(true);
+    try {
+      const data = await api.getContactRequests();
+      setContactRequests(Array.isArray(data.requests) ? data.requests : []);
+      setRequestsMessage(null);
+    } catch {
+      setRequestsMessage("تعذر تحميل الطلبات.");
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const handleToggleRequestStatus = async (request: ContactRequest) => {
+    try {
+      const nextStatus = request.status === "new" ? "done" : "new";
+      const data = await api.updateContactRequestStatus(request.id, nextStatus);
+      setContactRequests((prev) =>
+        prev.map((item) => (item.id === request.id ? data.request : item)),
+      );
+    } catch {
+      setRequestsMessage("تعذر تحديث حالة الطلب.");
     }
   };
 
@@ -177,31 +419,26 @@ const AdminDashboard = () => {
       icon: Settings,
       permission: "edit_settings",
     },
+    {
+      id: "requests" as const,
+      label: "الطلبات",
+      icon: MessageSquareMore,
+      permission: "view",
+    },
   ];
 
   return (
-    <div className="p-4 max-w-4xl mx-auto space-y-6">
-      {/* Header */}
+    <div className="p-4 max-w-5xl mx-auto space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-bold">لوحة الإدارة</h2>
-          <p className="text-muted-foreground text-sm">
-            مرحباً {session?.username || "مسؤول"} (
-            {ROLE_LABELS[(session?.role as UserRole) || "viewer"] ||
-              session?.role}
-            )
-          </p>
+          <p className="text-muted-foreground text-sm">مرحباً {session?.username || "مسؤول"} ({ROLE_LABELS[(session?.role as UserRole) || "viewer"]})</p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="h-10 px-4 rounded-lg border border-border text-sm flex items-center gap-2 hover:bg-secondary transition"
-        >
-          <LogOut className="w-4 h-4" />
-          تسجيل الخروج
+        <button onClick={handleLogout} className="h-10 px-4 rounded-lg border border-border text-sm flex items-center gap-2 hover:bg-secondary transition">
+          <LogOut className="w-4 h-4" /> تسجيل الخروج
         </button>
       </div>
 
-      {/* Tab Navigation */}
       <div className="flex gap-2 overflow-x-auto">
         {tabs.map((tab) => {
           const permitted = checkPermission(tab.permission);
@@ -214,6 +451,7 @@ const AdminDashboard = () => {
                   return;
                 }
                 setActiveTab(tab.id);
+                setSearchParams({ tab: tab.id });
                 setMessage(null);
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
@@ -231,14 +469,6 @@ const AdminDashboard = () => {
         })}
       </div>
 
-      {/* Permission denied message */}
-      {message && (
-        <p className="text-xs text-muted-foreground glass-card p-3">
-          {message}
-        </p>
-      )}
-
-      {/* Upload Tab */}
       {activeTab === "upload" && (
         <div className="glass-card p-5 space-y-4">
           <div className="flex items-center gap-3">
@@ -287,104 +517,285 @@ const AdminDashboard = () => {
             {uploading ? "جاري الرفع..." : "اختيار ملف CSV"}
           </button>
 
+          <button
+            onClick={handleResetDashboard}
+            disabled={resetting}
+            className="w-full h-11 rounded-lg border border-destructive/40 text-destructive font-semibold text-sm disabled:opacity-50"
+          >
+            {resetting ? "جاري التصفير..." : "تصفير الداشبورد"}
+          </button>
+
           {uploadMessage && (
             <p className="text-xs text-muted-foreground">{uploadMessage}</p>
           )}
         </div>
       )}
 
-      {/* Users Tab */}
       {activeTab === "users" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Add User Form */}
+        <div className="grid lg:grid-cols-2 gap-4">
           <div className="glass-card p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <UserPlus className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold">إضافة مستخدم جديد</h3>
-                <p className="text-xs text-muted-foreground">
-                  إضافة مستخدم مع تحديد الصلاحية
-                </p>
-              </div>
-            </div>
-
+            <div className="flex items-center gap-3"><UserPlus className="w-5 h-5 text-primary" /><h3 className="text-sm font-semibold">إضافة مستخدم جديد</h3></div>
             <form onSubmit={handleCreateUser} className="space-y-3">
-              <input
-                type="text"
-                placeholder="اسم المستخدم"
-                dir="ltr"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground text-sm"
-              />
-              <input
-                type="password"
-                placeholder="كلمة المرور"
-                dir="ltr"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground text-sm"
-              />
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-                className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-foreground text-sm"
-              >
-                <option value="viewer">مشاهد (Viewer)</option>
-                <option value="editor">محرر (Editor)</option>
-                <option value="admin">مسؤول (Admin)</option>
-                <option value="superadmin">مدير عام (Superadmin)</option>
+              <input type="text" placeholder="اسم المستخدم" dir="ltr" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-sm" />
+              <input type="password" placeholder="كلمة المرور" dir="ltr" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-sm" />
+              <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value as UserRole)} className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-sm">
+                <option value="viewer">مشاهد (Viewer)</option><option value="editor">محرر (Editor)</option><option value="admin">مسؤول (Admin)</option><option value="superadmin">مدير عام (Superadmin)</option>
               </select>
-              <button
-                type="submit"
-                className="w-full h-11 rounded-lg gold-gradient text-primary-foreground font-semibold text-sm"
-              >
-                إضافة المستخدم
-              </button>
+              <button type="submit" className="w-full h-11 rounded-lg gold-gradient text-primary-foreground font-semibold text-sm">إضافة المستخدم</button>
             </form>
+            {message && <p className="text-xs text-muted-foreground">{message}</p>}
           </div>
 
-          {/* Users List */}
-          <div className="glass-card p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-primary" />
+          <div className="glass-card p-5 space-y-3">
+            <div className="flex items-center gap-3"><Shield className="w-5 h-5 text-primary" /><h3 className="text-sm font-semibold">المستخدمين المسجلين</h3></div>
+            {users.map((user) => (
+              <div key={user.username} className="flex items-center justify-between text-sm border-b border-border/50 pb-2 last:border-0 last:pb-0">
+                <div>{user.username} <span className="text-xs text-muted-foreground">({ROLE_LABELS[user.role]})</span></div>
+                {checkPermission("delete_users") && user.username !== "admin" && user.username !== session?.username && (
+                  <button onClick={() => handleDeleteUser(user.username)} className="text-destructive p-1"><Trash2 className="w-4 h-4" /></button>
+                )}
               </div>
-              <div>
-                <h3 className="text-sm font-semibold">المستخدمين المسجلين</h3>
-                <p className="text-xs text-muted-foreground">
-                  إجمالي: {users.length}
-                </p>
-              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+      {/* Requests Tab */}
+      {activeTab === "requests" && (
+        <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <MessageSquareMore className="w-5 h-5 text-primary" />
             </div>
-            <div className="space-y-2">
-              {users.map((user) => (
-                <div
-                  key={user.username}
-                  className="flex items-center justify-between text-sm border-b border-border/50 pb-2 last:border-0 last:pb-0"
-                >
-                  <div>
-                    <span>{user.username}</span>
-                    <span className="text-xs text-muted-foreground mr-2">
-                      ({ROLE_LABELS[user.role] || user.role})
-                    </span>
-                  </div>
-                  {checkPermission("delete_users") &&
-                    user.username !== "admin" &&
-                    user.username !== session?.username && (
-                      <button
-                        onClick={() => handleDeleteUser(user.username)}
-                        className="text-destructive hover:text-destructive/80 transition p-1"
-                        title="حذف المستخدم"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+            <div>
+              <h3 className="text-sm font-semibold">طلبات التواصل</h3>
+              <p className="text-xs text-muted-foreground">قسم متزامن لعرض الطلبات الواردة من صفحة طلبات التواصل.</p>
+            </div>
+          </div>
+
+          {requestsMessage && <p className="text-xs text-muted-foreground">{requestsMessage}</p>}
+
+          <div className="space-y-2">
+            {!contactRequests.length && !requestsLoading ? (
+              <p className="text-xs text-muted-foreground">لا توجد طلبات حالياً.</p>
+            ) : null}
+
+            {contactRequests.map((request) => (
+              <div key={request.id} className="glass-card p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{request.customerName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{request.branchName} · {request.phone}</p>
+                  {request.note ? <p className="text-xs mt-1 text-muted-foreground truncate">{request.note}</p> : null}
+                  <p className="text-[11px] text-muted-foreground mt-1">{new Date(request.createdAt).toLocaleString("ar-SA")}</p>
                 </div>
-              ))}
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleRequestStatus(request)}
+                  className={`rounded px-3 py-1.5 text-xs inline-flex items-center gap-1 ${
+                    request.status === "new"
+                      ? "bg-primary/20 text-primary"
+                      : "bg-success/20 text-success"
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {request.status === "new" ? "تحديد كـ تم" : "إرجاع كـ جديد"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+      {/* Requests Tab */}
+      {activeTab === "requests" && (
+        <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <MessageSquareMore className="w-5 h-5 text-primary" />
             </div>
+            <div>
+              <h3 className="text-sm font-semibold">طلبات التواصل</h3>
+              <p className="text-xs text-muted-foreground">قسم متزامن لعرض الطلبات الواردة من صفحة طلبات التواصل.</p>
+            </div>
+          </div>
+
+          {requestsMessage && <p className="text-xs text-muted-foreground">{requestsMessage}</p>}
+
+          <div className="space-y-2">
+            {!contactRequests.length && !requestsLoading ? (
+              <p className="text-xs text-muted-foreground">لا توجد طلبات حالياً.</p>
+            ) : null}
+
+            {contactRequests.map((request) => (
+              <div key={request.id} className="glass-card p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{request.customerName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{request.branchName} · {request.phone}</p>
+                  {request.note ? <p className="text-xs mt-1 text-muted-foreground truncate">{request.note}</p> : null}
+                  <p className="text-[11px] text-muted-foreground mt-1">{new Date(request.createdAt).toLocaleString("ar-SA")}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleRequestStatus(request)}
+                  className={`rounded px-3 py-1.5 text-xs inline-flex items-center gap-1 ${
+                    request.status === "new"
+                      ? "bg-primary/20 text-primary"
+                      : "bg-success/20 text-success"
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {request.status === "new" ? "تحديد كـ تم" : "إرجاع كـ جديد"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+      {/* Requests Tab */}
+      {activeTab === "requests" && (
+        <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <MessageSquareMore className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">طلبات التواصل</h3>
+              <p className="text-xs text-muted-foreground">قسم متزامن لعرض الطلبات الواردة من صفحة طلبات التواصل.</p>
+            </div>
+          </div>
+
+          {requestsMessage && <p className="text-xs text-muted-foreground">{requestsMessage}</p>}
+
+          <div className="space-y-2">
+            {!contactRequests.length && !requestsLoading ? (
+              <p className="text-xs text-muted-foreground">لا توجد طلبات حالياً.</p>
+            ) : null}
+
+            {contactRequests.map((request) => (
+              <div key={request.id} className="glass-card p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{request.customerName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{request.branchName} · {request.phone}</p>
+                  {request.note ? <p className="text-xs mt-1 text-muted-foreground truncate">{request.note}</p> : null}
+                  <p className="text-[11px] text-muted-foreground mt-1">{new Date(request.createdAt).toLocaleString("ar-SA")}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleRequestStatus(request)}
+                  className={`rounded px-3 py-1.5 text-xs inline-flex items-center gap-1 ${
+                    request.status === "new"
+                      ? "bg-primary/20 text-primary"
+                      : "bg-success/20 text-success"
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {request.status === "new" ? "تحديد كـ تم" : "إرجاع كـ جديد"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+      {/* Requests Tab */}
+      {activeTab === "requests" && (
+        <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <MessageSquareMore className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">طلبات التواصل</h3>
+              <p className="text-xs text-muted-foreground">قسم متزامن لعرض الطلبات الواردة من صفحة طلبات التواصل.</p>
+            </div>
+          </div>
+
+          {requestsMessage && <p className="text-xs text-muted-foreground">{requestsMessage}</p>}
+
+          <div className="space-y-2">
+            {!contactRequests.length && !requestsLoading ? (
+              <p className="text-xs text-muted-foreground">لا توجد طلبات حالياً.</p>
+            ) : null}
+
+            {contactRequests.map((request) => (
+              <div key={request.id} className="glass-card p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{request.customerName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{request.branchName} · {request.phone}</p>
+                  {request.note ? <p className="text-xs mt-1 text-muted-foreground truncate">{request.note}</p> : null}
+                  <p className="text-[11px] text-muted-foreground mt-1">{new Date(request.createdAt).toLocaleString("ar-SA")}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleRequestStatus(request)}
+                  className={`rounded px-3 py-1.5 text-xs inline-flex items-center gap-1 ${
+                    request.status === "new"
+                      ? "bg-primary/20 text-primary"
+                      : "bg-success/20 text-success"
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {request.status === "new" ? "تحديد كـ تم" : "إرجاع كـ جديد"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+      {/* Requests Tab */}
+      {activeTab === "requests" && (
+        <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <MessageSquareMore className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">طلبات التواصل</h3>
+              <p className="text-xs text-muted-foreground">قسم متزامن لعرض الطلبات الواردة من صفحة طلبات التواصل.</p>
+            </div>
+          </div>
+
+          {requestsMessage && <p className="text-xs text-muted-foreground">{requestsMessage}</p>}
+
+          <div className="space-y-2">
+            {!contactRequests.length && !requestsLoading ? (
+              <p className="text-xs text-muted-foreground">لا توجد طلبات حالياً.</p>
+            ) : null}
+
+            {contactRequests.map((request) => (
+              <div key={request.id} className="glass-card p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{request.customerName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{request.branchName} · {request.phone}</p>
+                  {request.note ? <p className="text-xs mt-1 text-muted-foreground truncate">{request.note}</p> : null}
+                  <p className="text-[11px] text-muted-foreground mt-1">{new Date(request.createdAt).toLocaleString("ar-SA")}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleRequestStatus(request)}
+                  className={`rounded px-3 py-1.5 text-xs inline-flex items-center gap-1 ${
+                    request.status === "new"
+                      ? "bg-primary/20 text-primary"
+                      : "bg-success/20 text-success"
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {request.status === "new" ? "تحديد كـ تم" : "إرجاع كـ جديد"}
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -394,12 +805,64 @@ const AdminDashboard = () => {
         <div className="glass-card p-5 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Edit3 className="w-5 h-5 text-primary" />
+              <MessageSquareMore className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">طلبات التواصل</h3>
+              <p className="text-xs text-muted-foreground">قسم متزامن لعرض الطلبات الواردة من صفحة طلبات التواصل.</p>
+            </div>
+          </div>
+
+          {requestsMessage && <p className="text-xs text-muted-foreground">{requestsMessage}</p>}
+
+          <div className="space-y-2">
+            {!contactRequests.length && !requestsLoading ? (
+              <p className="text-xs text-muted-foreground">لا توجد طلبات حالياً.</p>
+            ) : null}
+
+            {contactRequests.map((request) => (
+              <div key={request.id} className="glass-card p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{request.customerName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{request.branchName} · {request.phone}</p>
+                  {request.note ? <p className="text-xs mt-1 text-muted-foreground truncate">{request.note}</p> : null}
+                  <p className="text-[11px] text-muted-foreground mt-1">{new Date(request.createdAt).toLocaleString("ar-SA")}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleRequestStatus(request)}
+                  className={`rounded px-3 py-1.5 text-xs inline-flex items-center gap-1 ${
+                    request.status === "new"
+                      ? "bg-primary/20 text-primary"
+                      : "bg-success/20 text-success"
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {request.status === "new" ? "تحديد كـ تم" : "إرجاع كـ جديد"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Settings Tab */}
+      {activeTab === "settings" && (
+        <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-3"><Edit3 className="w-5 h-5 text-primary" /><h3 className="text-sm font-semibold">إعدادات الموقع والأقسام</h3></div>
+          <input type="text" placeholder="عنوان الموقع" dir="ltr" value={siteTitle} onChange={(e) => setSiteTitle(e.target.value)} className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-sm" />
+          <input type="text" placeholder="نص البانر العلوي" value={bannerText} onChange={(e) => setBannerText(e.target.value)} className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-sm" />
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold">دليل الموظفين (متزامن مع الرئيسية/الخصومات/الشكاوى)</h4>
+              <button className="px-3 py-1 rounded bg-secondary text-xs" onClick={addEmployee}>إضافة موظف</button>
             </div>
             <div>
               <h3 className="text-sm font-semibold">إعدادات الموقع</h3>
               <p className="text-xs text-muted-foreground">
-                تعديل عنوان الموقع ونص البانر
+                تعديل العنوان + إعدادات الشهر/السنة + إخفاء موظفين الداشبورد
               </p>
             </div>
           </div>
@@ -411,7 +874,7 @@ const AdminDashboard = () => {
               </label>
               <input
                 type="text"
-                placeholder="WORM-AI"
+                placeholder="Worm-AI"
                 dir="ltr"
                 value={siteTitle}
                 onChange={(e) => setSiteTitle(e.target.value)}
@@ -430,6 +893,69 @@ const AdminDashboard = () => {
                 className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground text-sm"
               />
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">شهر التقرير</label>
+                <select
+                  value={reportMonth}
+                  onChange={(e) => setReportMonth(e.target.value)}
+                  className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-foreground text-sm"
+                >
+                  {MONTH_OPTIONS.map((month) => (
+                    <option key={month || "all"} value={month}>
+                      {month || "تلقائي حسب البيانات"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">السنة (نص)</label>
+                <input
+                  type="text"
+                  placeholder="2025"
+                  value={reportYear}
+                  onChange={(e) => setReportYear(e.target.value)}
+                  className="w-full h-11 px-4 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="glass-card p-3 space-y-2">
+              <p className="text-xs text-muted-foreground">إخفاء/إظهار الموظفين داخل الداشبورد:</p>
+              <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-2">
+                {employeeOptions.length ? (
+                  employeeOptions.map((employee) => {
+                    const hidden = hiddenEmployeesSettings.some((name) => normalizeEmployeeName(name) === normalizeEmployeeName(employee.name));
+                    return (
+                      <div key={employee.name} className="flex items-center justify-between border border-border rounded-md px-3 py-2 text-xs gap-2">
+                        <div>
+                          <p className="font-semibold">{employee.name}</p>
+                          <p className="text-muted-foreground">{employee.confirmed} مؤكد / {employee.total} إجمالي</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleEmployeeVisibilitySetting(employee.name)}
+                          className={`rounded px-2 py-1 ${hidden ? "bg-destructive/20 text-destructive" : "bg-success/20 text-success"}`}
+                        >
+                          {hidden ? "❌ مخفي" : "✅ ظاهر"}
+                        </button>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-muted-foreground">لا توجد أسماء موظفين ظاهرة حالياً. قد تكون كل الأسماء مخفية من الإعدادات أو لا يوجد عمود اسم موظف مطابق.</p>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={handleDownloadReport}
+              className="w-full h-11 rounded-lg border border-primary/40 text-primary font-semibold text-sm inline-flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              تحميل تقرير الموظفين (TXT)
+            </button>
+
             <button
               onClick={handleSaveSettings}
               className="w-full h-11 rounded-lg gold-gradient text-primary-foreground font-semibold text-sm"
@@ -438,9 +964,9 @@ const AdminDashboard = () => {
             </button>
           </div>
 
-          {settingsMessage && (
-            <p className="text-xs text-muted-foreground">{settingsMessage}</p>
-          )}
+          <button onClick={handleSaveSettings} className="w-full h-11 rounded-lg gold-gradient text-primary-foreground font-semibold text-sm">حفظ جميع الأقسام</button>
+          {settingsMessage && <p className="text-xs text-muted-foreground">{settingsMessage}</p>}
+          <EnterpriseControlCenter />
         </div>
       )}
     </div>
