@@ -64,6 +64,26 @@ This project is built with:
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
 
+### Netlify + `netlify-purge-cloudflare-on-deploy` troubleshooting
+
+If a Netlify deploy fails during the plugin `onPostBuild` hook with:
+
+`Error: Could not determine auth method. Please review the plugin README file and verify your environment variables.`
+
+the Cloudflare purge plugin is enabled but required environment variables are missing or misnamed.
+
+Per the plugin README, configure one auth method in Netlify (**Site settings → Build & deploy → Environment**):
+
+1. API token (recommended):
+   - `CLOUDFLARE_ZONE_ID`
+   - `CLOUDFLARE_API_TOKEN`
+2. API key (legacy):
+   - `CLOUDFLARE_ZONE_ID`
+   - `CLOUDFLARE_API_KEY`
+   - `CLOUDFLARE_EMAIL`
+
+Variable names must match exactly for this plugin. If you no longer need the purge step, remove the plugin from your Netlify plugin/site configuration.
+
 ## Can I connect a custom domain to my Lovable project?
 
 Yes, you can!
