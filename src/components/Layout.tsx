@@ -20,7 +20,7 @@ const Layout = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="app-shell flex flex-col">
       {bannerText && (
         <div className="bg-primary/10 text-center py-1.5 px-4 text-xs text-primary border-b border-border/30">
           {bannerText}
@@ -28,7 +28,7 @@ const Layout = () => {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
+      <header className="safe-area-top sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-4 h-16 max-w-4xl mx-auto gap-2">
           <h1 className="text-xl sm:text-lg font-bold gold-text leading-none">{siteTitle}</h1>
           <div className="flex items-center gap-2"><ViewerPreferences /><RiyadhClock /></div>
