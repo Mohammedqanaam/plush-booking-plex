@@ -57,6 +57,20 @@
   }
 }
 
+
+
+  :root[data-theme="light"] {
+    --background: 0 0% 98%;
+    --foreground: 260 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 260 30% 12%;
+    --secondary: 260 30% 94%;
+    --secondary-foreground: 260 30% 16%;
+    --muted: 260 20% 90%;
+    --muted-foreground: 260 10% 35%;
+    --border: 260 20% 82%;
+    --input: 260 20% 82%;
+  }
 @layer base {
   * {
     @apply border-border;
