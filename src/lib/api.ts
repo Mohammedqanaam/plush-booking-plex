@@ -235,26 +235,6 @@ export const api = {
     return res.json() as Promise<DiscountItem[]>;
   },
 
-  async createDiscount(payload: { brand: string; sector_name: string; discount_percentage: number }) {
-    const res = await fetch(`/api/discounts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error("Failed to create discount");
-    return res.json() as Promise<{ success: boolean; item: DiscountItem }>;
-  },
-
-  async submitComplaint(payload: Omit<ComplaintRecord, "id" | "status" | "created_at">) {
-    const res = await fetch(`/api/complaints`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error("Failed to submit complaint");
-    return res.json() as Promise<{ complaint_number: string }>;
-  },
-
   async getAdminComplaints() {
     const res = await fetch(`/api/admin/complaints`, {
       headers: authHeaders(),
