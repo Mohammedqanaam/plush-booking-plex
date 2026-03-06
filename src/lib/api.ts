@@ -1,9 +1,11 @@
-type AppSettings = {
+export type AppSettings = {
   siteTitle?: string;
   bannerText?: string;
   reportMonth?: string;
   reportYear?: string;
   hiddenEmployees?: string[];
+  complaintEmail?: string;
+  complaintEmailWebhook?: string;
 };
 
 export type ContactRequest = {
@@ -16,56 +18,44 @@ export type ContactRequest = {
   createdAt: string;
 };
 
-type ContactsResponse = {
-  requests: ContactRequest[];
-};
-
 export type DiscountItem = {
   id: string;
-  sector_name: string;
-  discount_percentage: number;
-  created_at: string;
+  brand: "Boudl" | "Braira" | "Narcissus" | "Aber";
+  title: string;
+  percentage: number;
+  active: boolean;
+  startsAt?: string;
+  endsAt?: string;
+  notes?: string;
+  createdAt: string;
 };
 
+export type ComplaintStatus = "open" | "under_review" | "closed";
+
 export type ComplaintRecord = {
-  id: string;
+  complaintNo: string;
   brand: string;
   branch: string;
-  category: string;
-  urgency?: string;
-  guest_name: string;
-  booking_mobile?: string;
-  contact_mobile?: string;
-  suite_number?: string;
-  checkin_date?: string;
-  guest_in_house?: boolean;
-  notes?: string;
-  status: "Open" | "In Progress" | "Closed";
-  created_at: string;
+  mainCategory: string;
+  subCategory: string;
+  priority: string;
+  guestName: string;
+  bookingMobile: string;
+  contactMobile: string;
+  suiteNumber: string;
+  checkInDate: string;
+  notes: string;
+  status: ComplaintStatus;
+  createdAt: string;
 };
 
 const API_BASE = "/.netlify/functions";
 
-const getToken = (): string | null => {
-  if (typeof window === "undefined") return null;
-  return sessionStorage.getItem("admin_token");
-};
+const getToken = (): string | null => (typeof window === "undefined" ? null : sessionStorage.getItem("admin_token"));
 
 const authHeaders = (): Record<string, string> => {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
-const logApiError = async (source: string, message: string, context?: unknown) => {
-  try {
-    await fetch(`${API_BASE}/errors`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source, message, context }),
-    });
-  } catch {
-    // no-op logging fallback
-  }
 };
 
 export const api = {
@@ -75,53 +65,30 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || "Login failed");
-    }
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "فشل تسجيل الدخول");
     const data = await res.json();
     sessionStorage.setItem("admin_token", data.token);
-    sessionStorage.setItem(
-      "admin_session",
-      JSON.stringify({ username: data.username, role: data.role })
-    );
+    sessionStorage.setItem("admin_session", JSON.stringify({ username: data.username, role: data.role }));
     return data;
   },
 
   async validateSession() {
     const token = getToken();
     if (!token) return null;
-    try {
-      const res = await fetch(`${API_BASE}/auth`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) {
-        sessionStorage.removeItem("admin_token");
-        sessionStorage.removeItem("admin_session");
-        return null;
-      }
-      return await res.json();
-    } catch {
-      return null;
-    }
+    const res = await fetch(`${API_BASE}/auth`, { headers: authHeaders() });
+    if (!res.ok) return null;
+    return res.json();
   },
 
   async logout() {
-    try {
-      await fetch(`${API_BASE}/auth`, {
-        method: "DELETE",
-        headers: authHeaders(),
-      });
-    } catch {}
+    await fetch(`${API_BASE}/auth`, { method: "DELETE", headers: authHeaders() }).catch(() => null);
     sessionStorage.removeItem("admin_token");
     sessionStorage.removeItem("admin_session");
   },
 
   async getUsers() {
-    const res = await fetch(`${API_BASE}/users`, {
-      headers: authHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to fetch users");
+    const res = await fetch(`${API_BASE}/users`, { headers: authHeaders() });
+    if (!res.ok) throw new Error("تعذر تحميل المستخدمين");
     return res.json();
   },
 
@@ -131,10 +98,7 @@ export const api = {
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ username, password, role }),
     });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || "Failed to create user");
-    }
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "تعذر إنشاء المستخدم");
     return res.json();
   },
 
@@ -144,7 +108,7 @@ export const api = {
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ username }),
     });
-    if (!res.ok) throw new Error("Failed to delete user");
+    if (!res.ok) throw new Error("تعذر حذف المستخدم");
     return res.json();
   },
 
@@ -154,26 +118,19 @@ export const api = {
       headers: { "Content-Type": "text/csv", ...authHeaders() },
       body: csvText,
     });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || "Upload failed");
-    }
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "فشل رفع الملف");
     return res.json();
   },
 
-
   async resetBookings() {
-    const res = await fetch(`${API_BASE}/bookings`, {
-      method: "DELETE",
-      headers: authHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to reset bookings");
+    const res = await fetch(`${API_BASE}/bookings`, { method: "DELETE", headers: authHeaders() });
+    if (!res.ok) throw new Error("تعذر تصفير البيانات");
     return res.json();
   },
 
   async getBookings() {
     const res = await fetch(`${API_BASE}/bookings`);
-    if (!res.ok) throw new Error("Failed to fetch bookings");
+    if (!res.ok) throw new Error("تعذر تحميل البيانات");
     return res.json();
   },
 
@@ -183,19 +140,14 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || "Failed to submit request");
-    }
+    if (!res.ok) throw new Error("تعذر إرسال الطلب");
     return res.json() as Promise<{ request: ContactRequest }>;
   },
 
   async getContactRequests() {
-    const res = await fetch(`${API_BASE}/contacts`, {
-      headers: authHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to fetch contact requests");
-    return res.json() as Promise<ContactsResponse>;
+    const res = await fetch(`${API_BASE}/contacts`, { headers: authHeaders() });
+    if (!res.ok) throw new Error("تعذر تحميل الطلبات");
+    return res.json() as Promise<{ requests: ContactRequest[] }>;
   },
 
   async updateContactRequestStatus(id: string, status: "new" | "done") {
@@ -204,52 +156,14 @@ export const api = {
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ id, status }),
     });
-    if (!res.ok) throw new Error("Failed to update contact request");
-    return res.json() as Promise<{ request: ContactRequest }>;
-  },
-
-  async getDiscounts(brand: string) {
-    const res = await fetch(`/api/discounts?brand=${encodeURIComponent(brand)}`);
-    if (!res.ok) throw new Error("Failed to fetch discounts");
-    return res.json() as Promise<DiscountItem[]>;
-  },
-
-  async createDiscount(payload: { brand: string; sector_name: string; discount_percentage: number }) {
-    const res = await fetch(`/api/discounts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error("Failed to create discount");
-    return res.json() as Promise<{ success: boolean; item: DiscountItem }>;
-  },
-
-  async submitComplaint(payload: Omit<ComplaintRecord, "id" | "status" | "created_at">) {
-    const res = await fetch(`/api/complaints`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error("Failed to submit complaint");
-    return res.json() as Promise<{ complaint_number: string }>;
-  },
-
-  async getAdminComplaints() {
-    const res = await fetch(`/api/admin/complaints`, {
-      headers: authHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to fetch admin complaints");
-    return res.json() as Promise<ComplaintRecord[]>;
+    if (!res.ok) throw new Error("تعذر تحديث الحالة");
+    return res.json();
   },
 
   async getSettings(): Promise<AppSettings> {
-    try {
-      const res = await fetch(`${API_BASE}/settings`);
-      if (!res.ok) return { siteTitle: "Worm-AI", bannerText: "" };
-      return res.json();
-    } catch {
-      return { siteTitle: "Worm-AI", bannerText: "" };
-    }
+    const res = await fetch(`${API_BASE}/settings`).catch(() => null);
+    if (!res || !res.ok) return { siteTitle: "Worm-AI", bannerText: "" };
+    return res.json();
   },
 
   async updateSettings(settings: AppSettings) {
@@ -258,83 +172,59 @@ export const api = {
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(settings),
     });
-    if (!res.ok) throw new Error("Failed to update settings");
+    if (!res.ok) throw new Error("تعذر حفظ الإعدادات");
     return res.json();
   },
 
   async submitComplaint(payload: Record<string, unknown>) {
     const res = await fetch(`${API_BASE}/complaints`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      const message = await res.text();
-      await logApiError("complaints.submit", message, payload);
-      throw new Error("Complaint submission failed");
-    }
+    if (!res.ok) throw new Error("تعذر إرسال الشكوى");
     return res.json();
   },
-
-
 
   async listComplaints() {
     const res = await fetch(`${API_BASE}/complaints`, { headers: authHeaders() });
-    if (!res.ok) throw new Error("Failed to fetch complaints");
-    return res.json();
+    if (!res.ok) throw new Error("تعذر تحميل الشكاوى");
+    return res.json() as Promise<{ complaints: ComplaintRecord[] }>;
   },
 
-  async updateComplaint(payload: Record<string, unknown>) {
+  async updateComplaint(payload: { complaintNo: string; status: ComplaintStatus }) {
     const res = await fetch(`${API_BASE}/complaints`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to update complaint");
+    if (!res.ok) throw new Error("تعذر تحديث الشكوى");
     return res.json();
   },
 
-  async deleteComplaint(id: string) {
-    const res = await fetch(`${API_BASE}/complaints`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify({ complaintNo: id }),
-    });
-    if (!res.ok) throw new Error("Failed to delete complaint");
-    return res.json();
-  },
   async listDiscounts() {
-    const res = await fetch(`${API_BASE}/discounts`, { headers: authHeaders() });
-    if (!res.ok) {
-      await logApiError("discounts.list", `status-${res.status}`);
-      throw new Error("Failed to fetch discounts");
-    }
-    return res.json();
+    const res = await fetch(`${API_BASE}/discounts`);
+    if (!res.ok) throw new Error("تعذر تحميل الخصومات");
+    return res.json() as Promise<{ discounts: DiscountItem[] }>;
   },
 
-  async createDiscount(payload: Record<string, unknown>) {
+  async createDiscount(payload: Partial<DiscountItem>) {
     const res = await fetch(`${API_BASE}/discounts`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      await logApiError("discounts.create", `status-${res.status}`, payload);
-      throw new Error("Failed to create discount");
-    }
+    if (!res.ok) throw new Error("تعذر إنشاء الخصم");
     return res.json();
   },
 
-  async updateDiscount(payload: Record<string, unknown>) {
+  async updateDiscount(payload: Partial<DiscountItem> & { id: string }) {
     const res = await fetch(`${API_BASE}/discounts`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      await logApiError("discounts.update", `status-${res.status}`, payload);
-      throw new Error("Failed to update discount");
-    }
+    if (!res.ok) throw new Error("تعذر تحديث الخصم");
     return res.json();
   },
 
@@ -344,16 +234,7 @@ export const api = {
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ id }),
     });
-    if (!res.ok) {
-      await logApiError("discounts.delete", `status-${res.status}`, { id });
-      throw new Error("Failed to delete discount");
-    }
-    return res.json();
-  },
-
-  async getErrors() {
-    const res = await fetch(`${API_BASE}/errors`, { headers: authHeaders() });
-    if (!res.ok) throw new Error("Failed to fetch errors");
+    if (!res.ok) throw new Error("تعذر حذف الخصم");
     return res.json();
   },
 };

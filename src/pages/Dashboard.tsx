@@ -1,382 +1,97 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  BarChart3,
-  CalendarCheck,
-  CalendarDays,
-  CalendarX,
-  Hotel,
-  UserRound,
-} from "lucide-react";
+import { BarChart3, CalendarCheck, CalendarDays, CalendarX, Hotel, UserRound } from "lucide-react";
 import { api } from "@/lib/api";
 
 type BookingRecord = Record<string, string | number | undefined>;
+const AGENT_KEYS = ["Agent name", "Agent Name", "agent name", "اسم الموظف", "الموظف", "المندوب"];
+const STATUS_KEYS = ["All stute", "all stute", "Status", "status", "حالة الحجز", "الحالة"];
+const DATE_KEYS = ["Date booking", "Date Booking", "Booking Date", "Date", "تاريخ الحجز"];
 
-type BookingStats = {
-  total: number;
-  confirmed: number;
-  cancelled: number;
-  cancelRate: number;
-};
-
-type EmployeeStat = {
-  name: string;
-  normalizedName: string;
-  total: number;
-  confirmed: number;
-  cancelled: number;
-  cancelRate: number;
-};
-
-const AGENT_NAME_KEYS = [
-  "Agent name",
-  "Agent Name",
-  "agent name",
-  "Agent",
-  "Employee",
-  "Employee Name",
-  "User Name",
-  "اسم الموظف",
-  "اسم المندوب",
-  "الموظف",
-  "المندوب",
-];
-
-const defaultStats: BookingStats = {
-  total: 0,
-  confirmed: 0,
-  cancelled: 0,
-  cancelRate: 0,
-};
-
-function classifyStatus(status: string): "confirmed" | "cancelled" | "other" {
-  const s = status.trim().toLowerCase();
-  if (!s) return "other";
-
-  if (
-    s === "c" ||
-    s === "ns" ||
-    s.includes("cancel") ||
-    s.includes("ملغي") ||
-    s.includes("إلغاء") ||
-    s.includes("الغاء")
-  ) {
-    return "cancelled";
-  }
-
-  if (
-    s === "n" ||
-    s === "m" ||
-    s.includes("conf") ||
-    s.includes("confirmed") ||
-    s.includes("مؤكد")
-  ) {
-    return "confirmed";
-  }
-
-  return "other";
-}
-
-const normalizeKey = (value: string) =>
-  value
-    .replace(/^\uFEFF/, "")
-    .toLowerCase()
-    .replace(/[\u064B-\u0652]/g, "")
-    .replace(/[أإآ]/g, "ا")
-    .replace(/ة/g, "ه")
-    .replace(/ى/g, "ي")
-    .replace(/[\s_/-]+/g, "")
-    .trim();
-
-function getAnyValue(record: BookingRecord, keys: string[]): string {
-  for (const key of keys) {
-    const value = record[key];
-    if (value !== undefined && String(value).trim()) return String(value);
-  }
-
-  const entries = Object.entries(record as Record<string, string | number | undefined>);
-  const normalizedTargets = keys.map(normalizeKey);
-
-  for (const [rawKey, rawValue] of entries) {
-    if (rawValue === undefined || !String(rawValue).trim()) continue;
-    const normalized = normalizeKey(rawKey);
-
-    if (normalizedTargets.includes(normalized)) return String(rawValue);
-
-    if (normalizedTargets.some((target) => normalized.includes(target) || target.includes(normalized))) {
-      return String(rawValue);
-    }
-  }
-
+const norm = (v: string) => v.replace(/[\u064B-\u0652]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim().toLowerCase();
+const anyVal = (r: BookingRecord, keys: string[]) => {
+  for (const k of keys) if (r[k] !== undefined && String(r[k]).trim()) return String(r[k]);
+  const entries = Object.entries(r);
+  const kn = keys.map(norm);
+  for (const [k, v] of entries) if (String(v || "").trim() && kn.some((kk) => norm(k).includes(kk))) return String(v);
   return "";
-}
-
-const normalizeAgentName = (value: string) =>
-  value
-    .replace(/[\u064B-\u0652]/g, "")
-    .replace(/[أإآ]/g, "ا")
-    .replace(/ة/g, "ه")
-    .replace(/ى/g, "ي")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-
-const formatAgentName = (value: string) => value.replace(/\s+/g, " ").trim();
-
-
-const hasLetters = (value: string) => /[A-Za-z؀-ۿ]/.test(value);
-
-const MONTH_NAMES_AR = [
-  "يناير",
-  "فبراير",
-  "مارس",
-  "أبريل",
-  "مايو",
-  "يونيو",
-  "يوليو",
-  "أغسطس",
-  "سبتمبر",
-  "أكتوبر",
-  "نوفمبر",
-  "ديسمبر",
-];
-
-const parsePossibleDate = (value: string): Date | null => {
-  const v = value.trim();
-  if (!v) return null;
-
-  const native = new Date(v);
-  if (!Number.isNaN(native.getTime())) return native;
-
-  const match = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
-  if (!match) return null;
-
-  const day = Number(match[1]);
-  const month = Number(match[2]) - 1;
-  const yearRaw = Number(match[3]);
-  const year = yearRaw < 100 ? 2000 + yearRaw : yearRaw;
-  const parsed = new Date(year, month, day);
-
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+const statusType = (s: string) => {
+  const v = norm(s);
+  if (["m", "n"].includes(v) || v.includes("conf") || v.includes("مؤكد")) return "confirmed";
+  if (["c", "ns"].includes(v) || v.includes("cancel") || v.includes("ملغ") || v.includes("الغاء") || v.includes("إلغاء")) return "cancelled";
+  return "other";
 };
 
 const Dashboard = () => {
-  const [bookings, setBookings] = useState<BookingRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hiddenEmployees, setHiddenEmployees] = useState<string[]>([]);
-  const [reportMonth, setReportMonth] = useState("");
-  const [reportYear, setReportYear] = useState("");
+  const [rows, setRows] = useState<BookingRecord[]>([]);
+  const [hidden, setHidden] = useState<string[]>([]);
+  const [monthFilter, setMonthFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
 
   useEffect(() => {
-    Promise.all([api.getBookings(), api.getSettings()])
-      .then(([data, settings]) => {
-        if (Array.isArray(data.bookings)) {
-          setBookings(data.bookings);
-        }
-        if (Array.isArray(settings.hiddenEmployees)) {
-          setHiddenEmployees(settings.hiddenEmployees);
-        }
-        if (settings.reportMonth) setReportMonth(settings.reportMonth);
-        if (settings.reportYear) setReportYear(settings.reportYear);
-      })
-      .catch(() => {
-        setBookings([]);
-      })
-      .finally(() => setLoading(false));
-
-    api.getSettings().then((settings) => {
-      const names = (settings.enterprise?.employees || [])
-        .filter((item: any) => item.active)
-        .map((item: any) => item.name);
-      setDirectoryEmployees(names);
-    }).catch(() => {});
+    Promise.all([api.getBookings(), api.getSettings()]).then(([b, s]) => {
+      setRows(Array.isArray(b.bookings) ? b.bookings : []);
+      setHidden(s.hiddenEmployees || []);
+      setMonthFilter(s.reportMonth || "");
+      setYearFilter(s.reportYear || "");
+    }).catch(() => setRows([]));
   }, []);
 
-  const groupedEmployees = useMemo<EmployeeStat[]>(() => {
-    if (!bookings.length) return [];
-
+  const employees = useMemo(() => {
     const map = new Map<string, { name: string; total: number; confirmed: number; cancelled: number }>();
-
-    bookings.forEach((record) => {
-      const rawName = getAnyValue(record, AGENT_NAME_KEYS);
-      const normalizedName = normalizeAgentName(rawName);
-      if (!normalizedName) return;
-
-      const displayName = formatAgentName(rawName);
-      if (!displayName || !hasLetters(displayName)) return;
-      const status = getAnyValue(record, ["All stute", "All Stute", "all stute", "Status", "status", "Booking Status", "BookingStatus", "حالة الحجز", "الحالة"]);
-      const category = classifyStatus(status);
-
-      const current = map.get(normalizedName) || {
-        name: displayName,
-        total: 0,
-        confirmed: 0,
-        cancelled: 0,
-      };
-
-      if (!current.name && displayName) {
-        current.name = displayName;
-      }
-
-      current.total += 1;
-      if (category === "confirmed") current.confirmed += 1;
-      if (category === "cancelled") current.cancelled += 1;
-      map.set(normalizedName, current);
+    rows.forEach((r) => {
+      const name = anyVal(r, AGENT_KEYS).trim();
+      if (!name) return;
+      const key = norm(name);
+      const prev = map.get(key) || { name, total: 0, confirmed: 0, cancelled: 0 };
+      prev.total += 1;
+      const st = statusType(anyVal(r, STATUS_KEYS));
+      if (st === "confirmed") prev.confirmed += 1;
+      if (st === "cancelled") prev.cancelled += 1;
+      map.set(key, prev);
     });
-
     return Array.from(map.entries())
-      .map(([normalizedName, value]) => ({
-        name: value.name,
-        normalizedName,
-        total: value.total,
-        confirmed: value.confirmed,
-        cancelled: value.cancelled,
-        cancelRate: value.total ? (value.cancelled / value.total) * 100 : 0,
-      }))
-      .sort((a, b) => b.total - a.total);
-  }, [bookings]);
+      .filter(([k]) => !hidden.map(norm).includes(k))
+      .map(([_, v]) => ({ ...v, cancelRate: v.total ? +(v.cancelled / v.total * 100).toFixed(1) : 0 }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 40);
+  }, [rows, hidden]);
 
-  const hiddenEmployeeKeys = useMemo(
-    () => new Set(hiddenEmployees.map((name) => normalizeAgentName(name)).filter(Boolean)),
-    [hiddenEmployees],
-  );
-
-  const employees = useMemo(
-    () => groupedEmployees.filter((employee) => !hiddenEmployeeKeys.has(employee.normalizedName)),
-    [groupedEmployees, hiddenEmployeeKeys],
-  );
-
-  const computedStats = useMemo<BookingStats>(() => {
-    if (!employees.length) return defaultStats;
-
-    const total = employees.reduce((sum, employee) => sum + employee.total, 0);
-    const confirmed = employees.reduce((sum, employee) => sum + employee.confirmed, 0);
-    const cancelled = employees.reduce((sum, employee) => sum + employee.cancelled, 0);
-
-    return {
-      total,
-      confirmed,
-      cancelled,
-      cancelRate: total === 0 ? 0 : parseFloat(((cancelled / total) * 100).toFixed(1)),
-    };
+  const totals = useMemo(() => {
+    const total = employees.reduce((s, e) => s + e.total, 0);
+    const confirmed = employees.reduce((s, e) => s + e.confirmed, 0);
+    const cancelled = employees.reduce((s, e) => s + e.cancelled, 0);
+    return { total, confirmed, cancelled, cancelRate: total ? +(cancelled / total * 100).toFixed(1) : 0 };
   }, [employees]);
 
-  const monthSummary = useMemo(() => {
-    const dateKeys = ["Date", "Booking Date", "booking_date", "Created At", "تاريخ الحجز", "التاريخ"];
-    const monthMap = new Map<string, number>();
-
-    bookings.forEach((record) => {
-      const raw = getAnyValue(record, dateKeys);
-      const parsed = parsePossibleDate(raw);
-      if (!parsed) return;
-      const label = `${MONTH_NAMES_AR[parsed.getMonth()]} ${parsed.getFullYear()}`;
-      monthMap.set(label, (monthMap.get(label) || 0) + 1);
+  const monthly = useMemo(() => {
+    const map = new Map<string, number>();
+    rows.forEach((r) => {
+      const raw = anyVal(r, DATE_KEYS);
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) return;
+      const label = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      map.set(label, (map.get(label) || 0) + 1);
     });
+    return Array.from(map.entries()).map(([month, total]) => ({ month, total })).filter((r) => (!monthFilter || r.month.includes(monthFilter)) && (!yearFilter || r.month.includes(yearFilter)));
+  }, [rows, monthFilter, yearFilter]);
 
-    let rows = Array.from(monthMap.entries())
-      .map(([month, total]) => ({ month, total }))
-      .sort((a, b) => b.total - a.total);
+  return <div className="p-4 max-w-5xl mx-auto space-y-6">
+    <h2 className="text-2xl font-bold">لوحة المتابعة</h2>
+    <div className="grid grid-cols-2 gap-3">{[
+      { label: "إجمالي الحجوزات", value: totals.total, icon: Hotel, color: "text-primary" },
+      { label: "المؤكد", value: totals.confirmed, icon: CalendarCheck, color: "text-success" },
+      { label: "الملغي", value: totals.cancelled, icon: CalendarX, color: "text-destructive" },
+      { label: "نسبة الإلغاء", value: `${totals.cancelRate}%`, icon: BarChart3, color: "text-warning" },
+    ].map((k) => <div className="kpi-card" key={k.label}><k.icon className={`w-5 h-5 ${k.color}`} /><p className="text-2xl font-bold">{k.value}</p><p className="text-xs">{k.label}</p></div>)}</div>
 
-    if (reportMonth) {
-      rows = rows.filter((row) => row.month.includes(reportMonth));
-    }
-    if (reportYear) {
-      rows = rows.filter((row) => row.month.includes(reportYear));
-    }
+    <div className="glass-card p-4"><h3 className="font-semibold flex items-center gap-2"><CalendarDays className="w-4 h-4" />التجميع الشهري</h3><div className="flex gap-2 flex-wrap mt-2">{monthly.map((m) => <span key={m.month} className="text-xs px-2 py-1 rounded bg-secondary">{m.month}: {m.total}</span>)}</div></div>
 
-    return rows.slice(0, 6);
-  }, [bookings, reportMonth, reportYear]);
-
-  const kpis = [
-    { label: "إجمالي الحجوزات", value: computedStats.total.toLocaleString(), icon: Hotel, color: "text-primary" },
-    { label: "الحجوزات المؤكدة", value: computedStats.confirmed.toLocaleString(), icon: CalendarCheck, color: "text-success" },
-    { label: "الإلغاءات", value: computedStats.cancelled.toLocaleString(), icon: CalendarX, color: "text-destructive" },
-    { label: "نسبة الإلغاء", value: `${computedStats.cancelRate}%`, icon: BarChart3, color: "text-warning" },
-  ];
-
-
-  return (
-    <div className="p-4 max-w-5xl mx-auto space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-2xl font-bold">لوحة التحكم</h2>
-        <p className="text-muted-foreground text-sm">نظرة عامة على إحصائيات الحجوزات</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        {kpis.map((kpi, i) => (
-          <div key={kpi.label} className="kpi-card" style={{ animationDelay: `${i * 100}ms` }}>
-            <div className="flex items-center justify-between mb-3">
-              <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
-            </div>
-            <p className={`text-2xl font-bold ${kpi.color} animate-count-up`}>{loading ? "..." : kpi.value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="glass-card p-5 space-y-3">
-        <h3 className="text-sm font-semibold gold-text flex items-center gap-2">
-          <CalendarDays className="w-4 h-4" />
-          نشاط الحجوزات حسب الأشهر
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {(reportMonth || reportYear) ? (
-            <p className="w-full text-xs text-muted-foreground">الفلترة من الإعدادات: {reportMonth || "كل الشهور"} {reportYear || ""}</p>
-          ) : null}
-          {monthSummary.length ? (
-            monthSummary.map((item) => (
-              <span key={item.month} className="text-xs rounded-full bg-secondary px-3 py-1 border border-border">
-                {item.month}: {item.total}
-              </span>
-            ))
-          ) : (
-            <p className="text-xs text-muted-foreground">لم يتم التعرف على أعمدة تاريخ صالحة داخل البيانات بعد.</p>
-          )}
-        </div>
-      </div>
-
-      <div className="glass-card p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold gold-text">موظفي الحجز المركزي</h3>
-          <span className="text-xs text-muted-foreground">{employees.length ? `${employees.length} موظف ظاهر` : "لا توجد بيانات"}</span>
-        </div>
-
-        <div className="space-y-2">
-          {!employees.length && groupedEmployees.length > 0 && !loading ? (
-            <p className="text-xs text-muted-foreground">
-              جميع الموظفين مخفيين حالياً من إعدادات الأدمن.
-            </p>
-          ) : null}
-
-          {!employees.length && groupedEmployees.length === 0 && !loading ? (
-            <p className="text-xs text-muted-foreground">
-              لم يتم العثور على أسماء موظفين داخل ملف الحجوزات. تأكد من وجود عمود اسم موظف مثل Agent name أو اسم الموظف، وعمود حالة مثل All stute أو Status.
-            </p>
-          ) : null}
-
-          {employees.map((employee) => (
-            <div key={employee.name} className="glass-card p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-start sm:items-center gap-3 min-w-0">
-                <div className="w-9 h-9 shrink-0 rounded-full bg-primary/20 text-primary flex items-center justify-center">
-                  <UserRound className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-base sm:text-sm font-semibold leading-6 text-foreground break-words">{employee.name}</p>
-                  <p className="text-sm sm:text-xs text-foreground/80">إجمالي: {employee.total}</p>
-                </div>
-              </div>
-
-              <div className="text-sm sm:text-xs grid grid-cols-3 sm:flex items-center gap-x-3 gap-y-1 pr-12 sm:pr-0">
-                <span className="text-success">مؤكد: {employee.confirmed}</span>
-                <span className="text-destructive">ملغي: {employee.cancelled}</span>
-                <span className="text-warning">نسبة الإلغاء: {employee.cancelRate.toFixed(1)}%</span>
-                
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="glass-card p-4 space-y-2">
+      <p className="text-sm font-semibold">الموظفون الظاهرون ({employees.length}/40)</p>
+      {employees.map((e) => <div key={e.name} className="flex justify-between items-center border-b pb-2"><div className="flex items-center gap-2"><UserRound className="w-4 h-4" />{e.name}</div><div className="text-xs"><span className="text-success font-semibold">مؤكد: {e.confirmed}</span> | <span className="text-destructive">ملغي: {e.cancelled}</span> | إجمالي: {e.total}</div></div>)}
     </div>
-  );
+  </div>;
 };
 
 export default Dashboard;
