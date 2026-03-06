@@ -6,7 +6,7 @@ const mainNavItems = [
   { path: "/complaints", label: "الشكاوى", icon: BadgeAlert },
   { path: "/contacts", label: "طلبات التواصل", icon: MessageSquare },
   { path: "/search", label: "البحث", icon: Search },
-  { path: "/admin", label: "Admin", icon: Shield },
+  { path: "/admin", label: "الإدارة", icon: Shield },
 ];
 
 const adminNavItems = [
