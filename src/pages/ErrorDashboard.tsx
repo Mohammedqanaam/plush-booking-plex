@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
+type AppError = {
+  id: string;
+  source: string;
+  message: string;
+  createdAt: string;
+};
+
 const ErrorDashboard = () => {
-  const [errors, setErrors] = useState<any[]>([]);
+  const [errors, setErrors] = useState<AppError[]>([]);
 
   useEffect(() => {
     api.getErrors().then((data) => setErrors(data.errors || [])).catch(() => setErrors([]));
