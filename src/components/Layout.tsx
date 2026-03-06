@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
+import AiChat from "./AiChat";
 import BottomNav from "./BottomNav";
 import RiyadhClock from "./RiyadhClock";
 import { api } from "@/lib/api";
@@ -42,6 +43,9 @@ const Layout = () => {
 
       {/* Bottom navigation */}
       <BottomNav />
+
+      {/* AI Chat widget */}
+      <AiChat />
     </div>
   );
 };
