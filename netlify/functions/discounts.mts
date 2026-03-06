@@ -78,6 +78,10 @@ export default async (req: Request) => {
       return json(filtered);
     }
 
+    const session = await validateSession(req);
+    if (!session || !["superadmin", "admin", "editor"].includes(session.role)) {
+      return json({ error: "Unauthorized" }, 401);
+    }
     return json({ discounts: items });
   }
 
