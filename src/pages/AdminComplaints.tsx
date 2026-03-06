@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, type AdminComplaint, type AdminComplaintStatus } from "@/lib/api";
 
 const STATUS_OPTIONS: AdminComplaintStatus[] = ["جديدة", "جاري المتابعة", "تم الحل", "مؤرشف"];
@@ -16,7 +16,7 @@ const AdminComplaints = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const loadComplaints = async () => {
+  const loadComplaints = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.getAdminComplaints();
@@ -27,11 +27,11 @@ const AdminComplaints = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadComplaints();
-  }, []);
+  }, [loadComplaints]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
