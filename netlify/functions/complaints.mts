@@ -129,7 +129,13 @@ export default async (req: Request) => {
 
   if (req.method === "POST") {
     const body = (await req.json().catch(() => ({}))) as Partial<Complaint>;
-    const brand = (body.brand || "Boudl") as Brand;
+
+    const allowedBrands = Object.keys(BRAND_PREFIX);
+    const defaultBrand = (allowedBrands[0] ?? "Boudl") as Brand;
+    const requestedBrandRaw = body.brand;
+    const requestedBrand =
+      typeof requestedBrandRaw === "string" ? requestedBrandRaw.trim() : "";
+    const brand = (allowedBrands.includes(requestedBrand) ? requestedBrand : defaultBrand) as Brand;
     const complaintNo = await nextComplaintNo(brand);
 
     const now = new Date().toISOString();
