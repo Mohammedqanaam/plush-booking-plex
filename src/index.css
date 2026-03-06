@@ -82,10 +82,34 @@
 
   body {
     @apply bg-background text-foreground font-arabic antialiased;
+    min-height: 100dvh;
   }
 }
 
 @layer utilities {
+  .app-shell {
+    width: min(100%, 460px);
+    margin-inline: auto;
+    min-height: 100dvh;
+    background: hsl(var(--background));
+    box-shadow: 0 0 0 1px hsl(var(--border) / 0.35), 0 24px 50px hsl(var(--background) / 0.65);
+  }
+
+  @media (max-width: 640px) {
+    .app-shell {
+      width: 100%;
+      box-shadow: none;
+    }
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
   .glass-card {
     @apply bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl;
   }

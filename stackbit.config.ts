@@ -11,7 +11,7 @@ export default defineStackbitConfig({
     "contentSources": [
         new ContentfulContentSource({
             spaceId: process.env.CONTENTFUL_SPACE_ID!,
-            environment: process.env.CONTENTFUL_ENVIRONMENT || 'master',
+            environment: process.env.CONTENTFUL_ENVIRONMENT || 'main',
             previewToken: process.env.CONTENTFUL_PREVIEW_TOKEN!,
             accessToken: process.env.CONTENTFUL_MANAGEMENT_TOKEN!
         }),
