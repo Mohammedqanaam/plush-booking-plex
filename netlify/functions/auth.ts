@@ -12,7 +12,9 @@ async function ensureDefaultUser() {
   try {
     const data = await store.get("all", { type: "json" });
     if (Array.isArray(data) && data.length > 0) return;
-  } catch {}
+  } catch {
+    // store empty or not yet initialised – proceed to seed default user
+  }
   await store.setJSON("all", [DEFAULT_ADMIN]);
 }
 
@@ -95,7 +97,9 @@ export default async (req: Request) => {
       const sessionStore = getStore({ name: "sessions", consistency: "strong" });
       try {
         await sessionStore.delete(`sess_${token}`);
-      } catch {}
+      } catch {
+        // session already gone – safe to ignore
+      }
     }
     return json({ ok: true });
   }

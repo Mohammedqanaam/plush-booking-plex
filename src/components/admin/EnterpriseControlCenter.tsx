@@ -20,7 +20,7 @@ const defaults = {
 };
 
 const EnterpriseControlCenter = () => {
-  const [enterprise, setEnterprise] = useState<any>(defaults);
+  const [enterprise, setEnterprise] = useState<typeof defaults>(defaults);
   const [message, setMessage] = useState("");
 
   useEffect(() => {

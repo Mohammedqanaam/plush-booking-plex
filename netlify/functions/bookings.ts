@@ -30,7 +30,7 @@ const normalizeKey = (value: string) =>
     .replace(/[أإآ]/g, "ا")
     .replace(/ة/g, "ه")
     .replace(/ى/g, "ي")
-    .replace(/[\s_\-\/]+/g, "")
+    .replace(/[\s_\-/]+/g, "")
     .trim();
 
 function parseCSV(text: string): Record<string, string>[] {
