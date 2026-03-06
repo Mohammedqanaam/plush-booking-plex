@@ -103,14 +103,22 @@ export default async (req: Request) => {
     };
 
     const title = String(body.title ?? body.sector_name ?? "").trim();
-    const percentage = normalizePercentage(
-      body.percentage ?? body.percent ?? body.discount_percentage,
-    );
+    const rawPercentage =
+      body.percentage ?? body.percent ?? body.discount_percentage;
 
-    if (!title || Number.isNaN(percentage)) {
+    const hasValidPercentage =
+      typeof rawPercentage === "number"
+        ? Number.isFinite(rawPercentage)
+        : typeof rawPercentage === "string"
+          ? rawPercentage.trim() !== "" &&
+            !Number.isNaN(Number(rawPercentage))
+          : false;
+
+    if (!title || !hasValidPercentage) {
       return json({ error: "Missing fields" }, 400);
     }
 
+    const percentage = normalizePercentage(rawPercentage);
     const now = new Date().toISOString();
     const discount: Discount = {
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
