@@ -235,6 +235,16 @@ export const api = {
     return res.json() as Promise<DiscountItem[]>;
   },
 
+  async submitComplaint(payload: Omit<ComplaintRecord, "id" | "status" | "created_at">) {
+    const res = await fetch(`/api/complaints`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Failed to submit complaint");
+    return res.json() as Promise<{ complaint_number: string }>;
+  },
+
   async getAdminComplaints() {
     const res = await fetch(`/api/admin/complaints`, {
       headers: authHeaders(),
@@ -273,22 +283,6 @@ export const api = {
     return res.json();
   },
 
-  async submitComplaint(payload: Record<string, unknown>) {
-    const res = await fetch(`${API_BASE}/complaints`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const message = await res.text();
-      await logApiError("complaints.submit", message, payload);
-      throw new Error("Complaint submission failed");
-    }
-    return res.json();
-  },
-
-
-
   async listComplaints() {
     const res = await fetch(`${API_BASE}/complaints`, { headers: authHeaders() });
     if (!res.ok) throw new Error("Failed to fetch complaints");
@@ -314,6 +308,7 @@ export const api = {
     if (!res.ok) throw new Error("Failed to delete complaint");
     return res.json();
   },
+
   async listDiscounts() {
     const res = await fetch(`${API_BASE}/discounts`, { headers: authHeaders() });
     if (!res.ok) {
