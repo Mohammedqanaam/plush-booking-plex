@@ -1,8 +1,23 @@
 import { useEffect, useState } from "react";
 import { enterpriseApi } from "@/lib/enterpriseApi";
 
+type EnterpriseConfig = {
+  whatsappTemplate?: string;
+  emailTemplate?: string;
+  emailEnabled?: boolean;
+  slaMinutes?: number;
+  escalationThreshold?: number;
+  theme?: {
+    primary?: string;
+    accent?: string;
+    background?: string;
+    radius?: string;
+    font?: string;
+  };
+};
+
 const AdminEnterpriseControl = () => {
-  const [cfg, setCfg] = useState<any>(null);
+  const [cfg, setCfg] = useState<EnterpriseConfig | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {

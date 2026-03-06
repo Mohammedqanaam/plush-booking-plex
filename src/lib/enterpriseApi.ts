@@ -17,7 +17,9 @@ async function logApiError(source: string, message: string, context?: string) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ source, message, context }),
     });
-  } catch {}
+  } catch {
+    // fire-and-forget logging; swallow to avoid masking the original error
+  }
 }
 
 export const enterpriseApi = {

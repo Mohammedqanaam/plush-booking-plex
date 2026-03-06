@@ -1,12 +1,8 @@
 import { ContentfulContentSource } from '@stackbit/cms-contentful';
 import { SanityContentSource } from '@stackbit/cms-sanity';
-import path from 'path';
 import { ContentstackContentSource } from '@stackbit/cms-contentstack';
-import { SanityContentSource } from '@stackbit/cms-sanity';
-import path from 'path';
-import { ContentfulContentSource } from '@stackbit/cms-contentful';
-
 import { defineStackbitConfig } from '@stackbit/types';
+import path from 'path';
 
 export default defineStackbitConfig({
     "stackbitVersion": "~0.6.0",
@@ -29,14 +25,6 @@ export default defineStackbitConfig({
             studioUrl: process.env.SANITY_STUDIO_URL || ''
         }),
 
-        new ContentfulContentSource({
-            spaceId: process.env.CONTENTFUL_SPACE_ID!,
-            environment: process.env.CONTENTFUL_ENVIRONMENT || 'master',
-            previewToken: process.env.CONTENTFUL_PREVIEW_TOKEN!,
-            accessToken: process.env.CONTENTFUL_MANAGEMENT_TOKEN!
-        }),
-    ],
-    "postInstallCommand": "npm i --no-save @stackbit/types @stackbit/cms-sanity @stackbit/cms-contentful"
         new ContentstackContentSource({
             apiKey: process.env.CONTENTSTACK_API_KEY!,
             managementToken: process.env.CONTENTSTACK_MANAGEMENT_TOKEN!,
@@ -45,6 +33,6 @@ export default defineStackbitConfig({
             publishEnvironmentName: process.env.CONTENTSTACK_PUBLISH_ENV || 'production',
             skipFetchOnStartIfCache: true
         }),
-        ],
+    ],
     "postInstallCommand": "npm i --no-save @stackbit/types @stackbit/cms-contentful @stackbit/cms-sanity @stackbit/cms-contentstack"
 })

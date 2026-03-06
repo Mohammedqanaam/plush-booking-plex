@@ -7,6 +7,6 @@ describe("netlify config", () => {
     const content = fs.readFileSync("netlify.toml", "utf8");
     const parsed = parse(content);
     expect(parsed).toBeTypeOf("object");
-    expect((parsed as any).build).toBeTruthy();
+    expect((parsed as Record<string, unknown>).build).toBeTruthy();
   });
 });

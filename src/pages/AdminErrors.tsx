@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { enterpriseApi } from "@/lib/enterpriseApi";
 
+type ErrorLog = {
+  id: string;
+  source: string;
+  message: string;
+  context?: string;
+  createdAt: string;
+};
+
 const AdminErrors = () => {
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<ErrorLog[]>([]);
   useEffect(() => {
     enterpriseApi.getErrorLogs().then((d) => setLogs(d.logs || [])).catch(() => setLogs([]));
   }, []);
