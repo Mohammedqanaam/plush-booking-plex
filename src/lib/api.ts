@@ -103,6 +103,16 @@ export const api = {
     return res.json();
   },
 
+  async changePassword(currentPassword: string, newPassword: string) {
+    const res = await fetch(`${API_BASE}/users`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "تعذر تغيير كلمة المرور");
+    return res.json();
+  },
+
   async deleteUser(username: string) {
     const res = await fetch(`${API_BASE}/users`, {
       method: "DELETE",
