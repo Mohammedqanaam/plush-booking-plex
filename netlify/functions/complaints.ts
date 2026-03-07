@@ -43,7 +43,7 @@ async function nextComplaintNo(brand: keyof typeof BRAND_PREFIX) {
 }
 
 async function sendComplaintEmailCopy(complaint: Complaint, html: string) {
-  const settings = ((await getStore("settings").get("site", { type: "json" })) as { complaintEmail?: string; complaintEmailWebhook?: string } | null) || {};
+  const settings = ((await getStore("settings").get("site", { type: "json" })) as { complaintEmail?: string; complaintEmailWebhook?: string; complaintWhatsappNumber?: string } | null) || {};
   const webhook = settings.complaintEmailWebhook || process.env.COMPLAINT_EMAIL_WEBHOOK;
   const recipient = settings.complaintEmail || process.env.COMPLAINT_EMAIL_TO || "";
   if (!webhook || !recipient) return { sent: false, reason: "webhook_or_recipient_missing" };
@@ -70,6 +70,7 @@ export default async (req: Request) => {
   }
 
   if (req.method === "POST") {
+    const settings = ((await getStore("settings").get("site", { type: "json" })) as { complaintWhatsappNumber?: string } | null) || {};
     const body = (await req.json().catch(() => ({}))) as Partial<Complaint>;
     const brand = (body.brand || "Boudl") as keyof typeof BRAND_PREFIX;
     const complaintNo = await nextComplaintNo(brand);
@@ -107,10 +108,15 @@ export default async (req: Request) => {
       notes: complaint.notes,
       mainCategory: complaint.mainCategory,
       subCategory: complaint.subCategory,
+      inHouse: complaint.checkInDate ? "نعم" : "غير محدد",
+      urgency: complaint.priority,
     };
 
     const whatsappMessage = `${applyTemplate(DEFAULT_WHATSAPP_TEMPLATE, values)}\n\nرقم الشكوى: ${complaint.complaintNo}\nالعلامة: ${complaint.brand}\nالفرع: ${complaint.branch}\nاسم الضيف: ${complaint.guestName}\nجوال الحجز: ${complaint.bookingMobile}\nجوال التواصل: ${complaint.contactMobile}\nرقم السويت: ${complaint.suiteNumber}\nتاريخ الدخول: ${complaint.checkInDate}\nالأولوية: ${complaint.priority}\nالملاحظات: ${complaint.notes}`;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
+    const targetNumber = String(settings.complaintWhatsappNumber || "").replace(/\D/g, "");
+    const whatsappUrl = targetNumber
+      ? `https://wa.me/${targetNumber}?text=${encodeURIComponent(whatsappMessage)}`
+      : `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
 
     const emailHtml = `<h3>شكوى ${complaint.complaintNo}</h3><p>${whatsappMessage.replace(/\n/g, "<br>")}</p>`;
     const emailResult = await sendComplaintEmailCopy(complaint, emailHtml);

@@ -6,6 +6,7 @@ export type AppSettings = {
   hiddenEmployees?: string[];
   complaintEmail?: string;
   complaintEmailWebhook?: string;
+  complaintWhatsappNumber?: string;
 };
 
 export type ContactRequest = {
