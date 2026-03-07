@@ -9,6 +9,7 @@ type SiteSettings = {
   hiddenEmployees: string[];
   complaintEmail: string;
   complaintEmailWebhook: string;
+  complaintWhatsappNumber: string;
 };
 
 const DEFAULT_SETTINGS: SiteSettings = {
@@ -19,6 +20,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   hiddenEmployees: [],
   complaintEmail: "",
   complaintEmailWebhook: "",
+  complaintWhatsappNumber: "",
 };
 
 const json = (data: unknown, status = 200) =>
@@ -58,6 +60,7 @@ export default async (req: Request) => {
       hiddenEmployees: Array.isArray(body.hiddenEmployees) ? body.hiddenEmployees.map(String) : current.hiddenEmployees,
       complaintEmail: body.complaintEmail !== undefined ? String(body.complaintEmail) : current.complaintEmail,
       complaintEmailWebhook: body.complaintEmailWebhook !== undefined ? String(body.complaintEmailWebhook) : current.complaintEmailWebhook,
+      complaintWhatsappNumber: body.complaintWhatsappNumber !== undefined ? String(body.complaintWhatsappNumber) : current.complaintWhatsappNumber,
     };
 
     await store.setJSON("site", updated);

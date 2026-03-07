@@ -16,7 +16,7 @@ const normalizeKey = (value: string) =>
     .replace(/[أإآ]/g, "ا")
     .replace(/ة/g, "ه")
     .replace(/ى/g, "ي")
-    .replace(/[\s_\/-]+/g, "")
+    .replace(/[\s_/-]+/g, "")
     .trim()
 
 function getAnyValue(record: BookingRow, keys: string[]): string {
@@ -109,15 +109,17 @@ export function summarizeBookings(rows: BookingRow[]) {
   let cancelled = 0
 
   rows.forEach((row) => {
-    const statusRaw =
-      String(
-        row["All stute"] ??
-        row["All Stute"] ??
-        row["all stute"] ??
-        row["Status"] ??
-        row["status"] ??
-        ""
-      )
+    const statusRaw = getAnyValue(row, [
+      "All stute",
+      "All Stute",
+      "all stute",
+      "Status",
+      "status",
+      "Booking Status",
+      "BookingStatus",
+      "حالة الحجز",
+      "الحالة",
+    ])
 
     const status = classifyBookingStatus(statusRaw)
     if (status === "cancelled") cancelled += 1

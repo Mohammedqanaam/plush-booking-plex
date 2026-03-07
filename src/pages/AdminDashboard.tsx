@@ -3,9 +3,11 @@ import { Download, FileText, LogOut, MessageSquareMore, Settings, Upload, UserPl
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, type ContactRequest } from "@/lib/api";
 import { clearAdminSession, getAdminSession, hasPermission, type UserRole } from "@/lib/adminAuth";
+import { processBookings } from "@/lib/bookingProcessor";
 
 type User = { username: string; role: UserRole };
-type AdminTab = "upload" | "users" | "settings" | "requests";
+type EmployeeStat = { agent: string; confirmed: number; cancelled: number; total: number; cancelRate: number };
+type AdminTab = "upload" | "users" | "employees" | "settings" | "requests";
 
 const ROLE_LABELS: Record<UserRole, string> = { superadmin: "مدير عام", admin: "مسؤول", editor: "محرر", viewer: "مشاهد" };
 
@@ -18,6 +20,8 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>("upload");
   const [users, setUsers] = useState<User[]>([]);
   const [requests, setRequests] = useState<ContactRequest[]>([]);
+  const [employeeStats, setEmployeeStats] = useState<EmployeeStat[]>([]);
+  const [employeeSearch, setEmployeeSearch] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("viewer");
@@ -28,12 +32,14 @@ const AdminDashboard = () => {
   const [hiddenEmployees, setHiddenEmployees] = useState("");
   const [complaintEmail, setComplaintEmail] = useState("");
   const [complaintEmailWebhook, setComplaintEmailWebhook] = useState("");
+  const [complaintWhatsappNumber, setComplaintWhatsappNumber] = useState("");
   const [message, setMessage] = useState<string | null>(null);
 
   const tabs = useMemo(
     () => [
       { id: "upload" as const, label: "رفع CSV", icon: Upload, perm: "upload" },
       { id: "users" as const, label: "المستخدمون", icon: Users, perm: "manage_users" },
+      { id: "employees" as const, label: "الموظفون", icon: Users, perm: "edit_settings" },
       { id: "settings" as const, label: "الإعدادات", icon: Settings, perm: "edit_settings" },
       { id: "requests" as const, label: "طلبات التواصل", icon: MessageSquareMore, perm: "view" },
     ],
@@ -42,7 +48,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const tab = (searchParams.get("tab") || "upload") as AdminTab;
-    if (["upload", "users", "settings", "requests"].includes(tab)) setActiveTab(tab);
+    if (["upload", "users", "employees", "settings", "requests"].includes(tab)) setActiveTab(tab);
     else setSearchParams({ tab: "upload" }, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -56,6 +62,7 @@ const AdminDashboard = () => {
       setHiddenEmployees((s.hiddenEmployees || []).join(", "));
       setComplaintEmail(s.complaintEmail || "");
       setComplaintEmailWebhook(s.complaintEmailWebhook || "");
+      setComplaintWhatsappNumber(s.complaintWhatsappNumber || "");
     });
   }, []);
 
@@ -65,6 +72,14 @@ const AdminDashboard = () => {
     load();
     const timer = window.setInterval(load, 12000);
     return () => window.clearInterval(timer);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "employees") return;
+    api.getBookings().then((d) => {
+      const rows = Array.isArray(d.bookings) ? d.bookings : [];
+      setEmployeeStats(processBookings(rows));
+    }).catch(() => setEmployeeStats([]));
   }, [activeTab]);
 
   const can = (perm: string) => !!session && hasPermission(session.role, perm);
@@ -128,10 +143,38 @@ const AdminDashboard = () => {
           <input className="h-10 rounded-lg bg-secondary border px-3 md:col-span-2" value={hiddenEmployees} onChange={(e) => setHiddenEmployees(e.target.value)} placeholder="الموظفون المخفيون (مفصولين بفاصلة)" />
           <input className="h-10 rounded-lg bg-secondary border px-3" value={complaintEmail} onChange={(e) => setComplaintEmail(e.target.value)} placeholder="بريد تنبيهات الشكاوى" dir="ltr" />
           <input className="h-10 rounded-lg bg-secondary border px-3" value={complaintEmailWebhook} onChange={(e) => setComplaintEmailWebhook(e.target.value)} placeholder="رابط Webhook للشكاوى" dir="ltr" />
+          <input className="h-10 rounded-lg bg-secondary border px-3 md:col-span-2" value={complaintWhatsappNumber} onChange={(e) => setComplaintWhatsappNumber(e.target.value)} placeholder="رقم واتساب استقبال الشكاوى (مثال: 9665XXXXXXXX)" dir="ltr" />
           <button className="h-10 rounded-lg gold-gradient text-primary-foreground md:col-span-2" onClick={async () => {
-            await api.updateSettings({ siteTitle, bannerText, reportMonth, reportYear, hiddenEmployees: hiddenEmployees.split(",").map((x) => x.trim()).filter(Boolean), complaintEmail, complaintEmailWebhook });
+            await api.updateSettings({ siteTitle, bannerText, reportMonth, reportYear, hiddenEmployees: hiddenEmployees.split(",").map((x) => x.trim()).filter(Boolean), complaintEmail, complaintEmailWebhook, complaintWhatsappNumber });
             setMessage("تم حفظ الإعدادات");
           }}><Download className="inline w-4 h-4" /> حفظ الإعدادات</button>
+        </div>
+      )}
+
+      {activeTab === "employees" && (
+        <div className="glass-card p-4 space-y-3">
+          <div className="flex gap-2 flex-wrap">
+            <input className="h-10 rounded-lg bg-secondary border px-3 flex-1 min-w-64" value={employeeSearch} onChange={(e) => setEmployeeSearch(e.target.value)} placeholder="بحث باسم الموظف" />
+          </div>
+          <div className="space-y-2 max-h-[480px] overflow-auto">
+            {employeeStats
+              .filter((e) => !employeeSearch.trim() || e.agent.toLowerCase().includes(employeeSearch.trim().toLowerCase()))
+              .map((employee) => {
+                const isHidden = hiddenEmployees.split(",").map((x) => x.trim()).filter(Boolean).includes(employee.agent);
+                return <div className="border rounded-lg p-3 flex items-center justify-between gap-2" key={employee.agent}>
+                  <div>
+                    <p className="font-semibold">{employee.agent}</p>
+                    <p className="text-xs text-muted-foreground">مؤكد: {employee.confirmed} | ملغي: {employee.cancelled} | إجمالي: {employee.total}</p>
+                  </div>
+                  <button className="h-9 px-3 rounded border" onClick={() => {
+                    const current = hiddenEmployees.split(",").map((x) => x.trim()).filter(Boolean);
+                    const next = isHidden ? current.filter((name) => name !== employee.agent) : [...current, employee.agent];
+                    setHiddenEmployees(next.join(", "));
+                  }}>{isHidden ? "إظهار" : "إخفاء"}</button>
+                </div>;
+              })}
+          </div>
+          <p className="text-xs text-muted-foreground">بعد التعديل اضغط "حفظ الإعدادات" من تبويب الإعدادات لتثبيت قائمة الإخفاء.</p>
         </div>
       )}
 

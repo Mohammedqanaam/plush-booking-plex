@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
-import { Copy, ExternalLink, MessageSquareWarning } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Copy, ExternalLink, MailCheck, MessageSquareWarning } from "lucide-react";
 import { api } from "@/lib/api";
 
 type FormState = {
   brand: "Boudl" | "Braira" | "Narcissus" | "Aber";
   branch: string;
+  mainCategory: string;
+  subCategory: string;
   guestName: string;
   bookingMobile: string;
   contactMobile: string;
@@ -14,22 +16,46 @@ type FormState = {
   notes: string;
 };
 
-const initial: FormState = { brand: "Boudl", branch: "", guestName: "", bookingMobile: "", contactMobile: "", suiteNumber: "", checkInDate: "", priority: "normal", notes: "" };
+const initial: FormState = { brand: "Boudl", branch: "", mainCategory: "", subCategory: "", guestName: "", bookingMobile: "", contactMobile: "", suiteNumber: "", checkInDate: "", priority: "normal", notes: "" };
+
+type ResultState = { complaintNo: string; whatsappMessage: string; whatsappUrl: string; emailResult?: { sent?: boolean; reason?: string } };
 
 const Complaints = () => {
   const [form, setForm] = useState<FormState>(initial);
   const [branches, setBranches] = useState<string[]>([]);
-  const [result, setResult] = useState<{ complaintNo: string; whatsappMessage: string; whatsappUrl: string } | null>(null);
+  const [categories, setCategories] = useState<Record<string, string[]>>({});
+  const [result, setResult] = useState<ResultState | null>(null);
 
   useEffect(() => {
-    api.listComplaints().then((d: { branches?: string[] }) => setBranches(d.branches || [])).catch(() => setBranches([]));
+    api.listComplaints().then((d: { branches?: string[]; categories?: Record<string, string[]> }) => {
+      setBranches(d.branches || []);
+      setCategories(d.categories || {});
+    }).catch(() => {
+      setBranches([]);
+      setCategories({});
+    });
   }, []);
+
+  const subCategories = useMemo(() => categories[form.mainCategory] || [], [categories, form.mainCategory]);
 
   return <div className="p-4 max-w-4xl mx-auto space-y-4">
     <h2 className="text-2xl font-bold">نموذج الشكاوى</h2>
-    <form className="glass-card p-4 grid md:grid-cols-2 gap-3" onSubmit={async (e) => { e.preventDefault(); const data = await api.submitComplaint(form as Record<string, unknown>); setResult({ complaintNo: data.complaint?.complaintNo, whatsappMessage: data.whatsappMessage, whatsappUrl: data.whatsappUrl }); setForm(initial); }}>
+    <form className="glass-card p-4 grid md:grid-cols-2 gap-3" onSubmit={async (e) => {
+      e.preventDefault();
+      const data = await api.submitComplaint(form as Record<string, unknown>);
+      setResult({ complaintNo: data.complaint?.complaintNo, whatsappMessage: data.whatsappMessage, whatsappUrl: data.whatsappUrl, emailResult: data.emailResult });
+      setForm(initial);
+    }}>
       <select className="h-11 rounded-lg bg-secondary border px-3" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as FormState["brand"] })}>{["Boudl", "Braira", "Narcissus", "Aber"].map((b) => <option key={b}>{b}</option>)}</select>
       <select className="h-11 rounded-lg bg-secondary border px-3" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} required><option value="">اختر الفرع</option>{branches.map((b) => <option key={b}>{b}</option>)}</select>
+      <select className="h-11 rounded-lg bg-secondary border px-3" value={form.mainCategory} onChange={(e) => setForm({ ...form, mainCategory: e.target.value, subCategory: "" })} required>
+        <option value="">اختر التصنيف الرئيسي</option>
+        {Object.keys(categories).map((category) => <option key={category} value={category}>{category}</option>)}
+      </select>
+      <select className="h-11 rounded-lg bg-secondary border px-3" value={form.subCategory} onChange={(e) => setForm({ ...form, subCategory: e.target.value })} required>
+        <option value="">اختر التصنيف الفرعي</option>
+        {subCategories.map((item) => <option key={item} value={item}>{item}</option>)}
+      </select>
       <input className="h-11 rounded-lg bg-secondary border px-3" placeholder="اسم الضيف" value={form.guestName} onChange={(e) => setForm({ ...form, guestName: e.target.value })} required />
       <input className="h-11 rounded-lg bg-secondary border px-3" dir="ltr" placeholder="جوال الحجز" value={form.bookingMobile} onChange={(e) => setForm({ ...form, bookingMobile: e.target.value })} required />
       <input className="h-11 rounded-lg bg-secondary border px-3" dir="ltr" placeholder="جوال التواصل" value={form.contactMobile} onChange={(e) => setForm({ ...form, contactMobile: e.target.value })} required />
@@ -40,7 +66,8 @@ const Complaints = () => {
       <button className="md:col-span-2 h-11 rounded-lg gold-gradient text-primary-foreground">إرسال الشكوى</button>
     </form>
 
-    {result && <div className="glass-card p-4 space-y-3"><div className="flex items-center gap-2"><MessageSquareWarning className="w-5 h-5" /> تم إنشاء الشكوى: {result.complaintNo}</div><pre className="text-xs whitespace-pre-wrap bg-secondary p-3 rounded">{result.whatsappMessage}</pre><div className="flex gap-2"><button className="h-10 px-3 rounded border" onClick={() => navigator.clipboard.writeText(result.whatsappMessage)}><Copy className="inline w-4 h-4" /> نسخ</button><a className="h-10 px-3 rounded border inline-flex items-center gap-2" href={result.whatsappUrl} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /> فتح واتساب</a></div></div>}
+    {result && <div className="glass-card p-4 space-y-3"><div className="flex items-center gap-2"><MessageSquareWarning className="w-5 h-5" /> تم إنشاء الشكوى: {result.complaintNo}</div><pre className="text-xs whitespace-pre-wrap bg-secondary p-3 rounded">{result.whatsappMessage}</pre><div className="flex gap-2"><button className="h-10 px-3 rounded border" onClick={() => navigator.clipboard.writeText(result.whatsappMessage)}><Copy className="inline w-4 h-4" /> نسخ</button><a className="h-10 px-3 rounded border inline-flex items-center gap-2" href={result.whatsappUrl} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /> فتح واتساب</a></div>
+      <p className="text-xs text-muted-foreground flex items-center gap-1"><MailCheck className="w-4 h-4" /> {result.emailResult?.sent ? "تم إرسال نسخة بريدية للشكوى" : "تعذر/تخطي إرسال البريد (راجع إعدادات البريد)"}</p></div>}
   </div>;
 };
 
