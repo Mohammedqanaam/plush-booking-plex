@@ -1,5 +1,11 @@
 # Welcome to your Lovable project
 
+## Arabic automation setup (ChatGPT + n8n + GitHub + Netlify)
+
+For the full Arabic step-by-step setup guide (including webhook/OpenAPI schema and Custom GPT setup), see:
+
+- [`docs/n8n-chatgpt-netlify-setup-ar.md`](docs/n8n-chatgpt-netlify-setup-ar.md)
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
