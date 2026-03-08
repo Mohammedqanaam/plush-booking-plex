@@ -95,6 +95,42 @@ export default async (req: Request) => {
     return json({ ok: true });
   }
 
+  if (method === "PATCH") {
+    let body: { currentPassword?: string; newPassword?: string };
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: "Invalid request" }, 400);
+    }
+
+    const { currentPassword, newPassword } = body;
+    if (!currentPassword?.trim() || !newPassword?.trim()) {
+      return json({ error: "Current password and new password are required" }, 400);
+    }
+    if (newPassword.trim().length < 8) {
+      return json({ error: "New password must be at least 8 characters" }, 400);
+    }
+
+    let users: User[] = [];
+    try {
+      users = ((await userStore.get("all", { type: "json" })) as User[]) || [];
+    } catch {
+      return json({ error: "Server error" }, 500);
+    }
+
+    const userIndex = users.findIndex((u) => u.username === session.username);
+    if (userIndex === -1) {
+      return json({ error: "User not found" }, 404);
+    }
+    if (users[userIndex].password !== currentPassword.trim()) {
+      return json({ error: "Current password is incorrect" }, 403);
+    }
+
+    users[userIndex] = { ...users[userIndex], password: newPassword.trim() };
+    await userStore.setJSON("all", users);
+    return json({ ok: true });
+  }
+
   if (method === "DELETE") {
     if (!hasPermission(session.role, "delete_user")) {
       return json({ error: "Permission Denied" }, 403);
