@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FileText, LogOut, MessageSquareMore, Settings, Upload, UserPlus, Users } from "lucide-react";
+import { Download, FileText, LogOut, MessageSquareMore, Settings, Upload, User, UserPlus, Users } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, type ContactRequest } from "@/lib/api";
 import { clearAdminSession, getAdminSession, hasPermission, type UserRole } from "@/lib/adminAuth";
@@ -7,7 +7,7 @@ import { processBookings } from "@/lib/bookingProcessor";
 
 type User = { username: string; role: UserRole };
 type EmployeeStat = { agent: string; confirmed: number; cancelled: number; total: number; cancelRate: number };
-type AdminTab = "upload" | "users" | "employees" | "settings" | "requests";
+type AdminTab = "upload" | "users" | "employees" | "settings" | "requests" | "profile";
 
 const ROLE_LABELS: Record<UserRole, string> = { superadmin: "مدير عام", admin: "مسؤول", editor: "محرر", viewer: "مشاهد" };
 
@@ -34,6 +34,9 @@ const AdminDashboard = () => {
   const [complaintEmailWebhook, setComplaintEmailWebhook] = useState("");
   const [complaintWhatsappNumber, setComplaintWhatsappNumber] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const tabs = useMemo(
     () => [
@@ -42,13 +45,14 @@ const AdminDashboard = () => {
       { id: "employees" as const, label: "الموظفون", icon: Users, perm: "edit_settings" },
       { id: "settings" as const, label: "الإعدادات", icon: Settings, perm: "edit_settings" },
       { id: "requests" as const, label: "طلبات التواصل", icon: MessageSquareMore, perm: "view" },
+      { id: "profile" as const, label: "الملف الشخصي", icon: User, perm: "view" },
     ],
     [],
   );
 
   useEffect(() => {
     const tab = (searchParams.get("tab") || "upload") as AdminTab;
-    if (["upload", "users", "employees", "settings", "requests"].includes(tab)) setActiveTab(tab);
+    if (["upload", "users", "employees", "settings", "requests", "profile"].includes(tab)) setActiveTab(tab);
     else setSearchParams({ tab: "upload" }, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -179,6 +183,42 @@ const AdminDashboard = () => {
       )}
 
       {activeTab === "requests" && <div className="glass-card p-4 space-y-2">{requests.map((r) => <div key={r.id} className="border-b pb-2"><div>{r.customerName} - {r.branchName}</div><div className="text-xs">{r.phone}</div></div>)}</div>}
+
+      {activeTab === "profile" && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="glass-card p-4 space-y-3">
+            <h3 className="font-semibold"><User className="inline w-4 h-4 ms-1" /> معلومات الحساب</h3>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">اسم المستخدم</p>
+              <p className="font-medium">{session?.username}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">الدور</p>
+              <p className="font-medium">{ROLE_LABELS[(session?.role as UserRole) || "viewer"]}</p>
+            </div>
+          </div>
+          <form className="glass-card p-4 space-y-2" onSubmit={async (e) => {
+            e.preventDefault();
+            if (newPassword !== confirmPassword) { setMessage("كلمتا المرور غير متطابقتين"); return; }
+            if (newPassword.length < 8) { setMessage("كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل"); return; }
+            try {
+              await api.changePassword(currentPassword, newPassword);
+              setMessage("تم تغيير كلمة المرور بنجاح");
+              setCurrentPassword("");
+              setNewPassword("");
+              setConfirmPassword("");
+            } catch (err) {
+              setMessage(err instanceof Error ? err.message : "تعذر تغيير كلمة المرور");
+            }
+          }}>
+            <h3 className="font-semibold">تغيير كلمة المرور</h3>
+            <input className="w-full h-10 rounded-lg bg-secondary border px-3" dir="ltr" type="password" placeholder="كلمة المرور الحالية" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+            <input className="w-full h-10 rounded-lg bg-secondary border px-3" dir="ltr" type="password" placeholder="كلمة المرور الجديدة" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            <input className="w-full h-10 rounded-lg bg-secondary border px-3" dir="ltr" type="password" placeholder="تأكيد كلمة المرور الجديدة" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            <button type="submit" className="h-10 px-4 rounded-lg gold-gradient text-primary-foreground">حفظ</button>
+          </form>
+        </div>
+      )}
       {message && <p className="text-xs text-muted-foreground">{message}</p>}
     </div>
   );
