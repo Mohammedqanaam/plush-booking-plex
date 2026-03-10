@@ -29,6 +29,8 @@ export type Branch = {
   name: string;
   city: string;
   brand: string;
+  phone?: string;
+  alternatePhone?: string;
   contacts: BranchContact[];
   services: BranchServices;
   notes?: string;
@@ -47,6 +49,18 @@ const normalizePhone = (input: string): string => {
   if (digits.length === 9) return `+966${digits}`;
   return digits;
 };
+
+const normalizeContactNumbers = (input: string): string[] =>
+  input
+    .split(/[/،]/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const match = part.match(/(\+?\d[\d\s-]{7,}\d)/);
+      if (!match) return "";
+      return normalizePhone(match[1]);
+    })
+    .filter(Boolean);
 
 const isMissing = (value: string) => EMPTY_MARKERS.has(value.trim());
 
@@ -76,24 +90,30 @@ const computeStatus = (hotel: MasterHotel): BranchVerificationStatus => {
   ];
 
   const missingCount = values.filter((v) => isMissing(v)).length;
-  const hasConflictMarker = values.some((v) => /حسب الإمكانية|غير محدد|\*/.test(v));
+  const hasConflictMarker = values.some((v) => /تحت الإنشاء|صيانة/.test(v));
+  const hasManualReviewMarker = values.some((v) => /حسب الإمكانية|غير محدد|\*/.test(v));
 
+  if (hasConflictMarker) return "conflicting";
   if (missingCount >= 6) return "missing_info";
-  if (hasConflictMarker) return "partially_verified";
+  if (hasManualReviewMarker) return "partially_verified";
   if (missingCount > 0) return "partially_verified";
   return "verified";
 };
 
 export const branches: Branch[] = masterHotels.map((hotel, index) => {
   const contacts: BranchContact[] = [];
-  if (hotel.hotelPhone) contacts.push({ label: "رقم الاستقبال", value: normalizePhone(hotel.hotelPhone) });
-  if (hotel.salesPhone) contacts.push({ label: "رقم المبيعات", value: hotel.salesPhone.trim() });
+  const hotelPhones = hotel.hotelPhone ? normalizeContactNumbers(hotel.hotelPhone) : [];
+  const salesPhones = hotel.salesPhone ? normalizeContactNumbers(hotel.salesPhone) : [];
+  hotelPhones.forEach((phone) => contacts.push({ label: "رقم الاستقبال", value: phone }));
+  salesPhones.forEach((phone) => contacts.push({ label: "رقم المبيعات", value: phone }));
 
   return {
     id: hotel.id,
     name: hotel.name.trim(),
     city: hotel.city.trim(),
     brand: hotel.brand.trim(),
+    phone: hotelPhones[0],
+    alternatePhone: salesPhones[0],
     contacts,
     services: {
       breakfast: normalizeServiceValue(hotel.breakfast),

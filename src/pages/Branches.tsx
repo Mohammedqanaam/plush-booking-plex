@@ -24,7 +24,7 @@ const Branches = () => {
     });
   }, [brand, search, status]);
 
-  const selected = filtered.find((b) => b.id === selectedId) ?? filtered[0];
+  const selected = branches.find((b) => b.id === selectedId) ?? filtered[0];
 
   const updateBranchNote = (id: string, notes: string) => {
     setEdits((prev) => ({ ...prev, [id]: { ...prev[id], notes } }));
@@ -41,7 +41,7 @@ const Branches = () => {
         </div>
       </div>
 
-      <div className="glass-card p-4 overflow-x-auto custom-scrollbar">
+      <div className="glass-card p-4 table-scroll custom-scrollbar">
         <table className="min-w-[900px] w-full text-sm">
           <thead>
             <tr className="text-right border-b">

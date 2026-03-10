@@ -23,6 +23,7 @@ const KnowledgeBank = () => {
   const [selected, setSelected] = useState<KnowledgeEntry | null>(null);
   const [entries, setEntries] = useState<KnowledgeEntry[]>(knowledgeEntries);
   const [draft, setDraft] = useState(emptyDraft);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const branchOptions = useMemo(() => ["الكل", ...Array.from(new Set(branches.map((item) => item.name)))], []);
 
@@ -38,12 +39,34 @@ const KnowledgeBank = () => {
 
   const upsertDraft = () => {
     if (!draft.title.trim()) return;
+    if (editingId) {
+      setEntries((prev) => prev.map((entry) => (entry.id === editingId ? { ...entry, ...draft, tags: draft.tags.length ? draft.tags : ["manual"] } : entry)));
+      setEditingId(null);
+      setDraft(emptyDraft);
+      return;
+    }
     const id = `manual-${Date.now()}`;
     setEntries((prev) => [{ ...draft, id, tags: draft.tags.length ? draft.tags : ["manual"] }, ...prev]);
     setDraft(emptyDraft);
   };
 
   const deleteEntry = (id: string) => setEntries((prev) => prev.filter((entry) => entry.id !== id));
+  const startEdit = (entry: KnowledgeEntry) => {
+    setDraft({
+      type: entry.type,
+      category: entry.category,
+      group: entry.group,
+      brand: entry.brand,
+      branch: entry.branch,
+      title: entry.title,
+      summary: entry.summary,
+      body: entry.body,
+      tags: entry.tags,
+      contacts: entry.contacts,
+      priority: entry.priority,
+    });
+    setEditingId(entry.id);
+  };
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
@@ -69,14 +92,20 @@ const KnowledgeBank = () => {
             <option value="">بدون ربط فرع</option>
             {branchOptions.filter((item) => item !== "الكل").map((item) => <option key={item}>{item}</option>)}
           </select>
-          <button onClick={upsertDraft} className="h-9 rounded-lg gold-gradient text-primary-foreground">إضافة</button>
+          <button onClick={upsertDraft} className="h-9 rounded-lg gold-gradient text-primary-foreground">{editingId ? "حفظ التعديل" : "إضافة"}</button>
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-3">
         {filtered.map((entry) => (
           <article key={entry.id} className="glass-card p-4 space-y-2">
-            <div className="flex justify-between items-center gap-2"><p className="text-xs text-primary">{entry.category}</p><button className="text-xs border rounded px-2 py-1" onClick={() => deleteEntry(entry.id)}>حذف</button></div>
+            <div className="flex justify-between items-center gap-2">
+              <p className="text-xs text-primary">{entry.category}</p>
+              <div className="flex items-center gap-2">
+                <button className="text-xs border rounded px-2 py-1" onClick={() => startEdit(entry)}>تعديل</button>
+                <button className="text-xs border rounded px-2 py-1" onClick={() => deleteEntry(entry.id)}>حذف</button>
+              </div>
+            </div>
             <button className="text-right w-full" onClick={() => setSelected(entry)}><h4 className="font-semibold">{entry.title}</h4><p className="text-sm text-muted-foreground">{entry.summary}</p></button>
           </article>
         ))}

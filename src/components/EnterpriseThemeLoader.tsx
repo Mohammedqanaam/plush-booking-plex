@@ -5,6 +5,7 @@ import { applyTheme, DEFAULT_PRESET, themePresets } from "@/theme/enterpriseThem
 export default function EnterpriseThemeLoader() {
   useEffect(() => {
     let selectedPreset = themePresets[DEFAULT_PRESET];
+    const root = document.documentElement;
 
     api
       .getSettings()
@@ -16,7 +17,13 @@ export default function EnterpriseThemeLoader() {
         applyTheme(selectedPreset);
       });
 
-    const root = document.documentElement;
+    const supportsBackdropFilter = CSS.supports("backdrop-filter", "blur(1px)");
+    const supportsWebkitTouchCallout = CSS.supports("-webkit-touch-callout", "none");
+    const hasChromePaintWorklet = typeof CSS !== "undefined" && "paintWorklet" in CSS;
+    root.classList.toggle("has-backdrop-filter", supportsBackdropFilter);
+    root.classList.toggle("is-safari-engine", supportsWebkitTouchCallout && !hasChromePaintWorklet);
+    root.classList.toggle("is-chrome-desktop", hasChromePaintWorklet);
+
     const observer = new MutationObserver(() => applyTheme(selectedPreset));
     observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
 

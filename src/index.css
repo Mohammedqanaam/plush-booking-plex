@@ -55,7 +55,7 @@
 
 @layer utilities {
   .app-shell {
-    width: min(100%, 460px);
+    width: min(100%, 1200px);
     margin-inline: auto;
     min-height: 100dvh;
     background: hsl(var(--background));
@@ -68,8 +68,21 @@
   .custom-scrollbar { scrollbar-gutter: stable; }
   .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #3d2b5e; border-radius: 3px; }
+  .table-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 @supports (-webkit-hyphens: none) {
   .glass-card { -webkit-backdrop-filter: blur(12px); }
+}
+
+:root.is-safari-engine .safe-area-top {
+  transform: translateZ(0);
+}
+
+:root.is-chrome-desktop .glass-card {
+  backdrop-filter: blur(14px);
 }
