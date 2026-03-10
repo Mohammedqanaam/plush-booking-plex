@@ -1,35 +1,24 @@
-import { useState } from "react";
-import { api } from "@/lib/api";
+import { Link } from "react-router-dom";
 
 const UploadCenter = () => {
-  const [status, setStatus] = useState("");
-
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-4">
       <div className="glass-card p-4 space-y-3">
         <h2 className="text-2xl font-bold">مركز رفع البيانات</h2>
-        <p className="text-xs text-muted-foreground">رفع CSV وتحليل مباشر وتحديث تلقائي للوحة الرئيسية وقسم الموظفين.</p>
-        <input
-          type="file"
-          accept=".csv"
-          className="w-full text-sm"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            try {
-              const text = await file.text();
-              const result = await api.uploadBookings(text);
-              setStatus(`✅ تم رفع الملف بنجاح. سجلات: ${result.total ?? "-"}`);
-            } catch {
-              setStatus("❌ فشل رفع الملف. تأكد من الصيغة والأعمدة.");
-            }
-          }}
-        />
-        <div className="flex gap-2">
-          <button className="h-10 px-4 rounded-lg border" onClick={() => api.resetBookings().then(() => setStatus("تم حذف بيانات الرفع الحالي")).catch(() => setStatus("تعذر حذف البيانات"))}>حذف الرفع السابق</button>
-          <button className="h-10 px-4 rounded-lg gold-gradient text-primary-foreground" onClick={() => setStatus("تمت إعادة التحليل (نسخة تجريبية)")}>إعادة التحليل</button>
+        <p className="text-sm text-muted-foreground">
+          هذه الصفحة للعرض فقط. رفع وتحديث البيانات متاح فقط من لوحة الأدمن بعد تسجيل الدخول.
+        </p>
+        <div className="rounded-lg border border-border bg-secondary/30 p-3 text-sm">
+          <p>لإدارة الرفع:</p>
+          <ul className="list-disc pr-4 space-y-1 mt-2">
+            <li>سجّل الدخول إلى لوحة الأدمن.</li>
+            <li>انتقل إلى تبويب <strong>رفع CSV</strong>.</li>
+            <li>نفّذ الرفع أو حذف البيانات من هناك فقط.</li>
+          </ul>
         </div>
-        {status && <p className="text-sm">{status}</p>}
+        <Link to="/admin/login" className="inline-flex h-10 items-center rounded-lg gold-gradient px-4 text-primary-foreground">
+          دخول لوحة الأدمن
+        </Link>
       </div>
     </div>
   );
