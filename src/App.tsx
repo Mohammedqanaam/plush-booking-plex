@@ -17,6 +17,7 @@ import Contacts from "./pages/Contacts";
 import Dashboard from "./pages/Dashboard";
 import HotelSearch from "./pages/HotelSearch";
 import KnowledgeBank from "./pages/KnowledgeBank";
+import UploadCenter from "./pages/UploadCenter";
 import Employees from "./pages/Employees";
 import Policies from "./pages/Policies";
 import Branches from "./pages/Branches";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/search" element={<HotelSearch />} />
             <Route path="/knowledge-bank" element={<KnowledgeBank />} />
+            <Route path="/upload-center" element={<UploadCenter />} />
             <Route path="/employees" element={<Employees />} />
             <Route path="/policies" element={<Policies />} />
             <Route path="/branches" element={<Branches />} />
