@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { branches } from "@/data/branches";
+import { branches } from "@/data/branches";
+
+import { branches, type Branch } from "@/data/branches";
+
+type EditableBranch = Record<string, Partial<Branch>>;
 
 const Branches = () => {
   const [search, setSearch] = useState("");
@@ -74,6 +79,8 @@ const Branches = () => {
             {selected.contacts.map((c) => <p key={`${c.label}-${c.value}`}>{c.label}: {c.value}</p>)}
           </div>
           {selected.notes ? <p className="text-sm text-muted-foreground">{selected.notes}</p> : null}
+          <p className="text-xs text-muted-foreground">التعديل على بيانات الفروع متاح فقط من لوحة الأدمن.</p>
+          <textarea className="w-full rounded-lg bg-secondary border p-2 min-h-24" value={edits[selected.id]?.notes ?? selected.notes ?? ""} onChange={(e) => updateBranchNote(selected.id, e.target.value)} placeholder="ملاحظات تشغيلية (محليًا)" />
         </div>
       ) : null}
     </div>

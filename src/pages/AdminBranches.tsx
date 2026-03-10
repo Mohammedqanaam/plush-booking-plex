@@ -28,6 +28,7 @@ const AdminBranches = () => {
     });
   }, [brand, search, status]);
 
+<<<<<<< copilot/fix-branch-data-issues
   const selected = branches.find((b) => b.id === selectedId) ?? filtered[0];
 
   const updateBranchNote = (id: string, notes: string) => {
@@ -35,6 +36,13 @@ const AdminBranches = () => {
   };
 
   if (!canManage) return <div className="p-4">ليس لديك صلاحية إدارة بيانات الفروع.</div>;
+=======
+  const selected = filtered.find((b) => b.id === selectedId) ?? filtered[0];
+
+  if (!canManage) {
+    return <div className="p-4">ليس لديك صلاحية إدارة الفروع.</div>;
+  }
+>>>>>>> main
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
@@ -47,6 +55,7 @@ const AdminBranches = () => {
         </div>
       </div>
 
+<<<<<<< copilot/fix-branch-data-issues
       <div className="glass-card p-4 table-scroll custom-scrollbar">
         <table className="min-w-[900px] w-full text-sm">
           <thead>
@@ -64,6 +73,15 @@ const AdminBranches = () => {
                 <td className="p-2">{branch.services.breakfast}</td>
                 <td className="p-2">{branch.services.pool}</td>
                 <td className="p-2">{branch.verificationStatus}</td>
+=======
+      <div className="glass-card p-4 overflow-x-auto custom-scrollbar">
+        <table className="min-w-[900px] w-full text-sm">
+          <thead><tr className="text-right border-b"><th className="p-2">الفرع</th><th className="p-2">المدينة</th><th className="p-2">البراند</th><th className="p-2">الهاتف</th><th className="p-2">الحالة</th></tr></thead>
+          <tbody>
+            {filtered.map((branch) => (
+              <tr key={branch.id} className="border-b/40 hover:bg-secondary/20 cursor-pointer" onClick={() => setSelectedId(branch.id)}>
+                <td className="p-2">{branch.name}</td><td className="p-2">{branch.city}</td><td className="p-2">{branch.brand}</td><td className="p-2">{branch.contacts[0]?.value ?? "—"}</td><td className="p-2">{branch.verificationStatus}</td>
+>>>>>>> main
               </tr>
             ))}
           </tbody>
@@ -73,6 +91,7 @@ const AdminBranches = () => {
       {selected ? (
         <div className="glass-card p-4 space-y-3">
           <h3 className="text-lg font-semibold">تفاصيل {selected.name}</h3>
+<<<<<<< copilot/fix-branch-data-issues
           <div className="grid md:grid-cols-2 gap-2 text-sm">
             {Object.entries(selected.services).map(([key, value]) => <p key={key}><span className="text-muted-foreground">{key}:</span> {value}</p>)}
           </div>
@@ -81,6 +100,9 @@ const AdminBranches = () => {
             {selected.contacts.map((c) => <p key={`${c.label}-${c.value}`}>{c.label}: {c.value}</p>)}
           </div>
           <textarea className="w-full rounded-lg bg-secondary border p-2 min-h-24" value={edits[selected.id]?.notes ?? selected.notes ?? ""} onChange={(e) => updateBranchNote(selected.id, e.target.value)} placeholder="ملاحظات تشغيلية (محليًا)" />
+=======
+          <textarea className="w-full rounded-lg bg-secondary border p-2 min-h-24" value={edits[selected.id]?.notes ?? selected.notes ?? ""} onChange={(e) => setEdits((prev) => ({ ...prev, [selected.id]: { ...prev[selected.id], notes: e.target.value } }))} placeholder="ملاحظات تشغيلية (تعديل أدمن)" />
+>>>>>>> main
         </div>
       ) : null}
     </div>

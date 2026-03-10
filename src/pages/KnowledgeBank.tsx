@@ -18,22 +18,43 @@ const KnowledgeBank = () => {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return knowledgeEntries.filter((entry) => {
+<<<<<<< copilot/fix-branch-data-issues
+=======
+    return entries.filter((entry) => {
+>>>>>>> main
       const matchGroup = group === "الكل" || entry.group === group;
       const matchBranch = branch === "الكل" || entry.branch === branch;
       const matchText = !q || searchableText(entry).includes(q);
       return matchGroup && matchBranch && matchText;
     });
   }, [group, branch, query]);
+<<<<<<< copilot/fix-branch-data-issues
+=======
+  }, [entries, group, branch, query]);
+
+  const upsertDraft = () => {
+    if (!draft.title.trim()) return;
+    const id = `manual-${Date.now()}`;
+    setEntries((prev) => [{ ...draft, id, tags: draft.tags.length ? draft.tags : ["manual"] }, ...prev]);
+    setDraft(emptyDraft);
+  };
+
+  const deleteEntry = (id: string) => setEntries((prev) => prev.filter((entry) => entry.id !== id));
+>>>>>>> main
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
       <div className="glass-card p-4 space-y-3">
         <h2 className="text-2xl font-bold">بنك المعلومات</h2>
+<<<<<<< copilot/fix-branch-data-issues
         <p className="text-xs text-muted-foreground">
           الصفحة للعرض فقط. إضافة أو تعديل أو حذف السجلات يتم فقط من لوحة الأدمن بعد تسجيل الدخول.
           {" "}
           <Link className="underline" to="/admin/login">تسجيل دخول الأدمن</Link>
         </p>
+=======
+        <p className="text-xs text-muted-foreground">عرض فقط. إضافة/تعديل/حذف السجلات متاح من لوحة الأدمن بعد تسجيل الدخول.</p>
+>>>>>>> main
         <div className="grid md:grid-cols-4 gap-2">
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="بحث" className="h-10 rounded-lg bg-secondary border px-3 md:col-span-2" />
           <select className="h-10 rounded-lg bg-secondary border px-2" value={group} onChange={(e) => setGroup(e.target.value as "الكل" | KnowledgeGroup)}>{groups.map((item) => <option key={item}>{item}</option>)}</select>
@@ -42,6 +63,29 @@ const KnowledgeBank = () => {
         <div className="flex flex-wrap gap-2">{quickIntents.map((intent) => <button key={intent} onClick={() => setQuery(intent)} className="text-xs px-3 py-1 rounded-full border">{intent}</button>)}</div>
       </div>
 
+<<<<<<< copilot/fix-branch-data-issues
+=======
+      <div className="grid md:grid-cols-2 gap-3">
+        {filtered.map((entry) => (
+          <article key={entry.id} className="glass-card p-4 space-y-2">
+            <p className="text-xs text-primary">{entry.category}</p>
+      <div className="glass-card p-4 space-y-2">
+        <h3 className="font-semibold">إضافة سجل معرفة</h3>
+        <div className="grid gap-2 md:grid-cols-2">
+          <input className="h-9 rounded border bg-secondary px-2" value={draft.title} onChange={(e) => setDraft((p) => ({ ...p, title: e.target.value }))} placeholder="العنوان" />
+          <select className="h-9 rounded border bg-secondary px-2" value={draft.category} onChange={(e) => setDraft((p) => ({ ...p, category: e.target.value as KnowledgeEntry["category"] }))}>
+            <option value="branch_info">branch_info</option><option value="breakfast">breakfast</option><option value="amenities">amenities</option><option value="policies">policies</option><option value="contacts">contacts</option>
+          </select>
+          <textarea className="rounded border bg-secondary px-2 py-1 md:col-span-2 min-h-20" value={draft.body} onChange={(e) => setDraft((p) => ({ ...p, body: e.target.value, summary: e.target.value.slice(0, 80) }))} placeholder="المحتوى" />
+          <select className="h-9 rounded border bg-secondary px-2" value={draft.branch ?? ""} onChange={(e) => setDraft((p) => ({ ...p, branch: e.target.value || undefined }))}>
+            <option value="">بدون ربط فرع</option>
+            {branchOptions.filter((item) => item !== "الكل").map((item) => <option key={item}>{item}</option>)}
+          </select>
+          <button onClick={upsertDraft} className="h-9 rounded-lg gold-gradient text-primary-foreground">إضافة</button>
+        </div>
+      </div>
+
+>>>>>>> main
       <div className="grid md:grid-cols-2 gap-3">
         {filtered.map((entry) => (
           <article key={entry.id} className="glass-card p-4 space-y-2">

@@ -11,6 +11,8 @@ import AdminDiscounts from "./pages/AdminDiscounts";
 import AdminEnterpriseControl from "./pages/AdminEnterpriseControl";
 import AdminErrors from "./pages/AdminErrors";
 import AdminLogin from "./pages/AdminLogin";
+import AdminBranches from "./pages/AdminBranches";
+import AdminKnowledgeBank from "./pages/AdminKnowledgeBank";
 import AdminComplaints from "./pages/AdminComplaints";
 import AdminBranches from "./pages/AdminBranches";
 import AdminKnowledgeBank from "./pages/AdminKnowledgeBank";
