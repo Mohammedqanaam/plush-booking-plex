@@ -44,6 +44,14 @@ const Dashboard = () => {
   const summary = useMemo(() => summarizeBookings(visibleBookings), [visibleBookings]);
   const topEmployees = useMemo(() => processBookings(visibleBookings).slice(0, 4), [visibleBookings]);
 
+
+  useEffect(() => {
+    api.getBookings().then((d) => setBookings(d.bookings || [])).catch(() => setBookings([]));
+  }, []);
+
+  const summary = useMemo(() => summarizeBookings(bookings), [bookings]);
+  const topEmployees = useMemo(() => processBookings(bookings).slice(0, 4), [bookings]);
+
   return <div className="p-4 max-w-6xl mx-auto space-y-5">
     <div>
       <h2 className="text-2xl font-bold">Worm-AI / Res Dashboard</h2>

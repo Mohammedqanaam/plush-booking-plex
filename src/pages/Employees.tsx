@@ -22,6 +22,7 @@ const Employees = () => {
       .map((r) => ({ ...r, display: renames[r.agent] || r.agent, isHidden: hidden.includes(r.agent) })),
     [rows, search, renames, hidden],
   );
+  const shown = useMemo(() => rows.filter((r) => r.agent.includes(search)).map((r) => ({ ...r, display: renames[r.agent] || r.agent, isHidden: hidden.includes(r.agent) })), [rows, search, renames, hidden]);
 
   return <div className="p-4 max-w-5xl mx-auto space-y-4">
     <div className="glass-card p-4 space-y-3">
@@ -48,6 +49,13 @@ const Employees = () => {
         ))}
       </div>
       {canManage ? <button className="h-10 px-4 rounded-lg gold-gradient text-primary-foreground" onClick={() => api.updateSettings({ hiddenEmployees: hidden }).then(() => alert("تم حفظ الإعدادات"))}>حفظ حالة الإخفاء</button> : null}
+            <input className="h-9 rounded border px-2 w-full bg-secondary" value={employee.display} onChange={(e) => setRenames((p) => ({ ...p, [employee.agent]: e.target.value }))} />
+            <p className="text-xs">مؤكد: {employee.confirmed} | ملغي: {employee.cancelled} | الإجمالي: {employee.total} | نسبة الإلغاء: {employee.cancelRate}%</p>
+            <button className="h-8 px-3 rounded border" onClick={() => setHidden((p) => p.includes(employee.agent) ? p.filter((n) => n !== employee.agent) : [...p, employee.agent])}>{employee.isHidden ? "إظهار" : "إخفاء"}</button>
+          </div>
+        ))}
+      </div>
+      <button className="h-10 px-4 rounded-lg gold-gradient text-primary-foreground" onClick={() => api.updateSettings({ hiddenEmployees: hidden }).then(() => alert("تم حفظ الإعدادات"))}>حفظ حالة الإخفاء</button>
     </div>
   </div>;
 };
