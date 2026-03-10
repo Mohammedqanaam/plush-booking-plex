@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
 import { branches } from "@/data/branches";
 
+import { branches, type Branch } from "@/data/branches";
+
+type EditableBranch = Record<string, Partial<Branch>>;
 
 const Branches = () => {
   const [search, setSearch] = useState("");
   const [brand, setBrand] = useState("الكل");
   const [status, setStatus] = useState("الكل");
   const [selectedId, setSelectedId] = useState(branches[0]?.id ?? "");
+  const [edits, setEdits] = useState<EditableBranch>({});
 
   const brands = useMemo(() => ["الكل", ...Array.from(new Set(branches.map((b) => b.brand)))], []);
   const statuses = ["الكل", "verified", "partially_verified", "conflicting", "missing_info"];
@@ -24,6 +28,9 @@ const Branches = () => {
 
   const selected = filtered.find((b) => b.id === selectedId) ?? filtered[0];
 
+  const updateBranchNote = (id: string, notes: string) => {
+    setEdits((prev) => ({ ...prev, [id]: { ...prev[id], notes } }));
+  };
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
@@ -70,6 +77,7 @@ const Branches = () => {
             {selected.contacts.map((c) => <p key={`${c.label}-${c.value}`}>{c.label}: {c.value}</p>)}
           </div>
           <p className="text-xs text-muted-foreground">التعديل على بيانات الفروع متاح فقط من لوحة الأدمن.</p>
+          <textarea className="w-full rounded-lg bg-secondary border p-2 min-h-24" value={edits[selected.id]?.notes ?? selected.notes ?? ""} onChange={(e) => updateBranchNote(selected.id, e.target.value)} placeholder="ملاحظات تشغيلية (محليًا)" />
         </div>
       ) : null}
     </div>
