@@ -79,5 +79,3 @@ export const themeMap: Record<string, ThemeVars> = {
     ring: "272 80% 64%",
   },
 };
-
-export const themePresets = themeMap;

@@ -50,8 +50,14 @@ const normalizePhone = (input: string): string => {
   return digits;
 };
 
+const isValidNormalizedPhone = (value: string): boolean => {
+  const digits = value.replace(/[^\d]/g, "");
+  return digits.length >= 9 && digits.length <= 15;
+};
+
 const normalizeContactNumbers = (input: string): string[] =>
   input
+    // Split on forward slash and Arabic comma to capture multi-number cells from the source sheet.
     .split(/[/،]/)
     .map((part) => part.trim())
     .filter(Boolean)
@@ -60,7 +66,7 @@ const normalizeContactNumbers = (input: string): string[] =>
       if (!match) return "";
       return normalizePhone(match[1]);
     })
-    .filter(Boolean);
+    .filter((value) => value && isValidNormalizedPhone(value));
 
 const isMissing = (value: string) => EMPTY_MARKERS.has(value.trim());
 
@@ -90,12 +96,12 @@ const computeStatus = (hotel: MasterHotel): BranchVerificationStatus => {
   ];
 
   const missingCount = values.filter((v) => isMissing(v)).length;
-  const hasConflictMarker = values.some((v) => /تحت الإنشاء|صيانة/.test(v));
-  const hasManualReviewMarker = values.some((v) => /حسب الإمكانية|غير محدد|\*/.test(v));
+  const hasTemporaryServiceOutage = values.some((v) => /تحت الإنشاء|صيانة/.test(v));
+  const hasConditionalService = values.some((v) => /حسب الإمكانية|غير محدد|\*/.test(v));
 
-  if (hasConflictMarker) return "conflicting";
+  if (hasTemporaryServiceOutage) return "conflicting";
   if (missingCount >= 6) return "missing_info";
-  if (hasManualReviewMarker) return "partially_verified";
+  if (hasConditionalService) return "partially_verified";
   if (missingCount > 0) return "partially_verified";
   return "verified";
 };
@@ -112,8 +118,8 @@ export const branches: Branch[] = masterHotels.map((hotel, index) => {
     name: hotel.name.trim(),
     city: hotel.city.trim(),
     brand: hotel.brand.trim(),
-    phone: hotelPhones[0],
-    alternatePhone: salesPhones[0],
+    ...(hotelPhones[0] ? { phone: hotelPhones[0] } : {}),
+    ...(salesPhones[0] ? { alternatePhone: salesPhones[0] } : {}),
     contacts,
     services: {
       breakfast: normalizeServiceValue(hotel.breakfast),

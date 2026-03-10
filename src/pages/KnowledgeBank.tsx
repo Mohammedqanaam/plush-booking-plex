@@ -40,7 +40,11 @@ const KnowledgeBank = () => {
   const upsertDraft = () => {
     if (!draft.title.trim()) return;
     if (editingId) {
-      setEntries((prev) => prev.map((entry) => (entry.id === editingId ? { ...entry, ...draft, tags: draft.tags.length ? draft.tags : ["manual"] } : entry)));
+      setEntries((prev) =>
+        prev.map((entry) =>
+          entry.id === editingId ? { ...entry, ...draft, tags: draft.tags.length ? draft.tags : ["manual"] } : entry
+        )
+      );
       setEditingId(null);
       setDraft(emptyDraft);
       return;
@@ -92,7 +96,13 @@ const KnowledgeBank = () => {
             <option value="">بدون ربط فرع</option>
             {branchOptions.filter((item) => item !== "الكل").map((item) => <option key={item}>{item}</option>)}
           </select>
-          <button onClick={upsertDraft} className="h-9 rounded-lg gold-gradient text-primary-foreground">{editingId ? "حفظ التعديل" : "إضافة"}</button>
+          <button
+            onClick={upsertDraft}
+            aria-label={editingId ? "حفظ التعديل" : "إضافة إدخال جديد"}
+            className="h-9 rounded-lg gold-gradient text-primary-foreground"
+          >
+            {editingId ? "حفظ التعديل" : "إضافة"}
+          </button>
         </div>
       </div>
 
@@ -102,8 +112,8 @@ const KnowledgeBank = () => {
             <div className="flex justify-between items-center gap-2">
               <p className="text-xs text-primary">{entry.category}</p>
               <div className="flex items-center gap-2">
-                <button className="text-xs border rounded px-2 py-1" onClick={() => startEdit(entry)}>تعديل</button>
-                <button className="text-xs border rounded px-2 py-1" onClick={() => deleteEntry(entry.id)}>حذف</button>
+                <button className="text-xs border rounded px-2 py-1" onClick={() => startEdit(entry)} aria-label={`تعديل ${entry.title}`}>تعديل</button>
+                <button className="text-xs border rounded px-2 py-1" onClick={() => deleteEntry(entry.id)} aria-label={`حذف ${entry.title}`}>حذف</button>
               </div>
             </div>
             <button className="text-right w-full" onClick={() => setSelected(entry)}><h4 className="font-semibold">{entry.title}</h4><p className="text-sm text-muted-foreground">{entry.summary}</p></button>

@@ -12,6 +12,12 @@ type BranchReviewItem = {
   needs_manual_review: string[];
 };
 
+type ReviewFlags = {
+  missing: string[];
+  conflicting: string[];
+  needs_manual_review: string[];
+};
+
 const criticalKeys: Array<keyof Branch["services"]> = [
   "breakfast",
   "pool",
@@ -30,7 +36,7 @@ const criticalKeys: Array<keyof Branch["services"]> = [
 
 const isMissing = (value: string) => value === "غير متوفر";
 
-const reviewFlags = (branch: Branch): Omit<BranchReviewItem, "branch" | "status" | "contactNumbers" | "breakfast" | "topServices" | "notes"> => {
+const reviewFlags = (branch: Branch): ReviewFlags => {
   const missing: string[] = [];
   const conflicting: string[] = [];
   const needs_manual_review: string[] = [];
