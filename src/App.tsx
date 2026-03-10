@@ -12,6 +12,8 @@ import AdminEnterpriseControl from "./pages/AdminEnterpriseControl";
 import AdminErrors from "./pages/AdminErrors";
 import AdminLogin from "./pages/AdminLogin";
 import AdminComplaints from "./pages/AdminComplaints";
+import AdminBranches from "./pages/AdminBranches";
+import AdminKnowledgeBank from "./pages/AdminKnowledgeBank";
 import Complaints from "./pages/Complaints";
 import Contacts from "./pages/Contacts";
 import Dashboard from "./pages/Dashboard";
@@ -51,6 +53,8 @@ const App = () => (
             <Route path="/admin/discounts" element={<ProtectedRoute><AdminDiscounts /></ProtectedRoute>} />
             <Route path="/admin/enterprise-control" element={<ProtectedRoute><AdminEnterpriseControl /></ProtectedRoute>} />
             <Route path="/admin/errors" element={<ProtectedRoute><AdminErrors /></ProtectedRoute>} />
+            <Route path="/admin/branches" element={<ProtectedRoute><AdminBranches /></ProtectedRoute>} />
+            <Route path="/admin/knowledge-bank" element={<ProtectedRoute><AdminKnowledgeBank /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

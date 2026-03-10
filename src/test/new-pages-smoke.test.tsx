@@ -6,6 +6,8 @@ import Policies from "@/pages/Policies";
 import Branches from "@/pages/Branches";
 import OperationsSettings from "@/pages/OperationsSettings";
 import EnterpriseThemeLoader from "@/components/EnterpriseThemeLoader";
+import AdminBranches from "@/pages/AdminBranches";
+import AdminKnowledgeBank from "@/pages/AdminKnowledgeBank";
 
 describe("new page modules added in PR #86", () => {
   it("KnowledgeBank loads without syntax errors", () => {
@@ -34,5 +36,13 @@ describe("new page modules added in PR #86", () => {
 
   it("EnterpriseThemeLoader loads without syntax errors", () => {
     expect(typeof EnterpriseThemeLoader).toBe("function");
+  });
+
+  it("AdminBranches loads without syntax errors", () => {
+    expect(typeof AdminBranches).toBe("function");
+  });
+
+  it("AdminKnowledgeBank loads without syntax errors", () => {
+    expect(typeof AdminKnowledgeBank).toBe("function");
   });
 });
