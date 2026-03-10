@@ -26,8 +26,8 @@ export const clearAdminSession = () => {
 
 export const hasPermission = (role: UserRole, action: string): boolean => {
   const permissions: Record<UserRole, string[]> = {
-    superadmin: ["upload", "manage_users", "delete_users", "edit_settings", "view"],
-    admin: ["upload", "manage_users", "edit_settings", "view"],
+    superadmin: ["upload", "manage_users", "delete_users", "edit_settings", "view", "manage_employees", "manage_knowledge"],
+    admin: ["upload", "manage_users", "edit_settings", "view", "manage_employees", "manage_knowledge"],
     editor: ["upload", "view"],
     viewer: ["view"],
   };
