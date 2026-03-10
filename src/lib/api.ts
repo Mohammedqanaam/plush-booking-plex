@@ -7,6 +7,7 @@ export type AppSettings = {
   complaintEmail?: string;
   complaintEmailWebhook?: string;
   complaintWhatsappNumber?: string;
+  themePreset?: string;
 };
 
 export type ContactRequest = {
