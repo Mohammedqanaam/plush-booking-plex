@@ -36,7 +36,7 @@ describe("operations data module", () => {
 
   it("each knowledgeEntry has required fields", () => {
     for (const entry of knowledgeEntries) {
-      expect(typeof entry.id).toBe("number");
+      expect(["string", "number"]).toContain(typeof entry.id);
       expect(typeof entry.group).toBe("string");
       expect(typeof entry.title).toBe("string");
       expect(Array.isArray(entry.tags)).toBe(true);

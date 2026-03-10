@@ -1,0 +1,111 @@
+export type ThemeVars = {
+  backgroundDark: string;
+  backgroundLight: string;
+  foregroundDark: string;
+  foregroundLight: string;
+  cardDark: string;
+  cardLight: string;
+  cardForegroundDark: string;
+  cardForegroundLight: string;
+  primary: string;
+  accent: string;
+  borderDark: string;
+  borderLight: string;
+  ring: string;
+};
+
+export const DEFAULT_PRESET = "signature-cosmic";
+
+export const themePresets: Record<string, ThemeVars> = {
+  "executive-dark-glass": {
+    backgroundDark: "222 47% 8%",
+    backgroundLight: "0 0% 98%",
+    foregroundDark: "0 0% 98%",
+    foregroundLight: "222 47% 8%",
+    cardDark: "222 35% 11%",
+    cardLight: "0 0% 100%",
+    cardForegroundDark: "0 0% 98%",
+    cardForegroundLight: "222 47% 8%",
+    primary: "220 80% 60%",
+    accent: "212 40% 96%",
+    borderDark: "222 24% 18%",
+    borderLight: "220 18% 84%",
+    ring: "220 80% 60%",
+  },
+  "luxury-lavender": {
+    backgroundDark: "255 35% 10%",
+    backgroundLight: "280 35% 98%",
+    foregroundDark: "0 0% 98%",
+    foregroundLight: "255 35% 10%",
+    cardDark: "255 28% 14%",
+    cardLight: "0 0% 100%",
+    cardForegroundDark: "0 0% 98%",
+    cardForegroundLight: "255 35% 10%",
+    primary: "280 75% 72%",
+    accent: "295 80% 90%",
+    borderDark: "255 22% 24%",
+    borderLight: "280 24% 82%",
+    ring: "280 75% 72%",
+  },
+  "hospitality-premium-gold": {
+    backgroundDark: "25 20% 10%",
+    backgroundLight: "40 60% 97%",
+    foregroundDark: "0 0% 98%",
+    foregroundLight: "25 20% 10%",
+    cardDark: "25 22% 14%",
+    cardLight: "0 0% 100%",
+    cardForegroundDark: "0 0% 98%",
+    cardForegroundLight: "25 20% 10%",
+    primary: "42 88% 55%",
+    accent: "35 95% 78%",
+    borderDark: "26 18% 24%",
+    borderLight: "36 30% 82%",
+    ring: "42 88% 55%",
+  },
+  "signature-cosmic": {
+    backgroundDark: "241 40% 7%",
+    backgroundLight: "270 55% 98%",
+    foregroundDark: "0 0% 98%",
+    foregroundLight: "241 40% 12%",
+    cardDark: "241 30% 11%",
+    cardLight: "0 0% 100%",
+    cardForegroundDark: "0 0% 98%",
+    cardForegroundLight: "241 40% 12%",
+    primary: "284 90% 65%",
+    accent: "190 90% 60%",
+    borderDark: "245 25% 18%",
+    borderLight: "270 28% 84%",
+    ring: "284 90% 65%",
+  },
+  "signature-obsidian": {
+    backgroundDark: "240 10% 5%",
+    backgroundLight: "0 0% 97%",
+    foregroundDark: "0 0% 98%",
+    foregroundLight: "240 10% 10%",
+    cardDark: "240 12% 9%",
+    cardLight: "0 0% 100%",
+    cardForegroundDark: "0 0% 98%",
+    cardForegroundLight: "240 10% 10%",
+    primary: "272 80% 64%",
+    accent: "43 85% 60%",
+    borderDark: "240 14% 18%",
+    borderLight: "240 8% 84%",
+    ring: "272 80% 64%",
+  },
+};
+
+export const applyTheme = (preset: ThemeVars) => {
+  const root = document.documentElement;
+  const mode = root.dataset.theme === "light" ? "light" : "dark";
+
+  root.style.setProperty("--background", mode === "light" ? preset.backgroundLight : preset.backgroundDark);
+  root.style.setProperty("--foreground", mode === "light" ? preset.foregroundLight : preset.foregroundDark);
+  root.style.setProperty("--card", mode === "light" ? preset.cardLight : preset.cardDark);
+  root.style.setProperty("--card-foreground", mode === "light" ? preset.cardForegroundLight : preset.cardForegroundDark);
+  root.style.setProperty("--primary", preset.primary);
+  root.style.setProperty("--accent", preset.accent);
+  root.style.setProperty("--border", mode === "light" ? preset.borderLight : preset.borderDark);
+  root.style.setProperty("--ring", preset.ring);
+  root.style.setProperty("--gold", preset.primary);
+  root.style.setProperty("--gold-glow", preset.accent);
+};
