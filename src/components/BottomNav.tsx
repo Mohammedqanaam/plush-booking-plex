@@ -1,9 +1,11 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Library, Shield, TriangleAlert } from "lucide-react";
+import { Home, Library, Shield, TriangleAlert, Upload } from "lucide-react";
 
 const mainNavItems = [
   { path: "/", label: "الرئيسية", icon: Home },
   { path: "/knowledge-bank", label: "بنك المعلومات", icon: Library },
+  { path: "/upload-center", label: "الرفع", icon: Upload },
   { path: "/complaints", label: "الشكاوى", icon: TriangleAlert },
   { path: "/admin", label: "الإدارة", icon: Shield },
 ];
