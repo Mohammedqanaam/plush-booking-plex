@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Copy, ExternalLink, MailCheck, MessageSquareWarning } from "lucide-react";
 import { api } from "@/lib/api";
+import { masterHotels } from "@/data/hotelMasterData";
 
 type FormState = {
   brand: "Boudl" | "Braira" | "Narcissus" | "Aber";
@@ -20,23 +21,39 @@ const initial: FormState = { brand: "Boudl", branch: "", mainCategory: "", subCa
 
 type ResultState = { complaintNo: string; whatsappMessage: string; whatsappUrl: string; emailResult?: { sent?: boolean; reason?: string } };
 
+const MAIN_CATEGORIES: Record<string, string[]> = {
+  "الاستقبال": ["تأخير تسجيل الدخول", "سوء خدمة", "معلومة غير دقيقة"],
+  "الغرف": ["نظافة", "صيانة", "نوع الغرفة"],
+  "المرافق": ["مسبح", "مواقف", "مطعم/فطور"],
+  "الدفع والفوترة": ["مبلغ زائد", "استرداد", "طريقة الدفع"],
+};
+
+const brandArabicMap: Record<FormState["brand"], string> = {
+  Boudl: "بودل",
+  Braira: "بريرا",
+  Narcissus: "نارسس",
+  Aber: "عابر",
+};
+
 const Complaints = () => {
   const [form, setForm] = useState<FormState>(initial);
-  const [branches, setBranches] = useState<string[]>([]);
-  const [categories, setCategories] = useState<Record<string, string[]>>({});
   const [result, setResult] = useState<ResultState | null>(null);
 
-  useEffect(() => {
-    api.listComplaints().then((d: { branches?: string[]; categories?: Record<string, string[]> }) => {
-      setBranches(d.branches || []);
-      setCategories(d.categories || {});
-    }).catch(() => {
-      setBranches([]);
-      setCategories({});
-    });
-  }, []);
+  const branches = useMemo(() => {
+    const brandArabic = brandArabicMap[form.brand];
+    return masterHotels
+      .filter((hotel) => hotel.brand.includes(brandArabic))
+      .map((hotel) => ({
+        id: hotel.id,
+        name: hotel.name,
+        city: hotel.city,
+        phone: hotel.hotelPhone || "-",
+        breakfast: hotel.breakfast,
+      }));
+  }, [form.brand]);
 
-  const subCategories = useMemo(() => categories[form.mainCategory] || [], [categories, form.mainCategory]);
+  const selectedBranch = useMemo(() => branches.find((b) => b.name === form.branch), [branches, form.branch]);
+  const subCategories = useMemo(() => MAIN_CATEGORIES[form.mainCategory] || [], [form.mainCategory]);
 
   return <div className="p-4 max-w-4xl mx-auto space-y-4">
     <h2 className="text-2xl font-bold">نموذج الشكاوى</h2>
@@ -46,16 +63,29 @@ const Complaints = () => {
       setResult({ complaintNo: data.complaint?.complaintNo, whatsappMessage: data.whatsappMessage, whatsappUrl: data.whatsappUrl, emailResult: data.emailResult });
       setForm(initial);
     }}>
-      <select className="h-11 rounded-lg bg-secondary border px-3" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as FormState["brand"] })}>{["Boudl", "Braira", "Narcissus", "Aber"].map((b) => <option key={b}>{b}</option>)}</select>
-      <select className="h-11 rounded-lg bg-secondary border px-3" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} required><option value="">اختر الفرع</option>{branches.map((b) => <option key={b}>{b}</option>)}</select>
+      <select className="h-11 rounded-lg bg-secondary border px-3" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as FormState["brand"], branch: "" })}>{["Boudl", "Braira", "Narcissus", "Aber"].map((b) => <option key={b}>{b}</option>)}</select>
+
+      <select className="h-11 rounded-lg bg-secondary border px-3" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} required>
+        <option value="">اختر الفرع</option>
+        {branches.map((b) => <option key={b.id} value={b.name}>{b.name}</option>)}
+      </select>
+
+      {selectedBranch ? (
+        <div className="md:col-span-2 rounded-lg border bg-secondary/50 p-2 text-xs text-muted-foreground">
+          {selectedBranch.city} · استقبال: {selectedBranch.phone} · الفطور: {selectedBranch.breakfast}
+        </div>
+      ) : null}
+
       <select className="h-11 rounded-lg bg-secondary border px-3" value={form.mainCategory} onChange={(e) => setForm({ ...form, mainCategory: e.target.value, subCategory: "" })} required>
         <option value="">اختر التصنيف الرئيسي</option>
-        {Object.keys(categories).map((category) => <option key={category} value={category}>{category}</option>)}
+        {Object.keys(MAIN_CATEGORIES).map((category) => <option key={category} value={category}>{category}</option>)}
       </select>
+
       <select className="h-11 rounded-lg bg-secondary border px-3" value={form.subCategory} onChange={(e) => setForm({ ...form, subCategory: e.target.value })} required>
         <option value="">اختر التصنيف الفرعي</option>
         {subCategories.map((item) => <option key={item} value={item}>{item}</option>)}
       </select>
+
       <input className="h-11 rounded-lg bg-secondary border px-3" placeholder="اسم الضيف" value={form.guestName} onChange={(e) => setForm({ ...form, guestName: e.target.value })} required />
       <input className="h-11 rounded-lg bg-secondary border px-3" dir="ltr" placeholder="جوال الحجز" value={form.bookingMobile} onChange={(e) => setForm({ ...form, bookingMobile: e.target.value })} required />
       <input className="h-11 rounded-lg bg-secondary border px-3" dir="ltr" placeholder="جوال التواصل" value={form.contactMobile} onChange={(e) => setForm({ ...form, contactMobile: e.target.value })} required />
