@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Bell, Library, UserRound, Users } from "lucide-react";
 import { Bell, FileUp, Library, UserRound, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
@@ -25,6 +26,25 @@ const Dashboard = () => {
     () => new Set(hiddenEmployees.map((name) => name.trim().toLowerCase()).filter(Boolean)),
     [hiddenEmployees],
   );
+
+  const visibleBookings = useMemo(
+    () => bookings.filter((row) => {
+      const agent = String(
+        row["Agent name"] ||
+        row["Agent Name"] ||
+        row["agent name"] ||
+        row["Employee"] ||
+        row["اسم الموظف"] ||
+        "",
+      ).trim().toLowerCase();
+      return !hiddenSet.has(agent);
+    }),
+    [bookings, hiddenSet],
+  );
+
+  const summary = useMemo(() => summarizeBookings(visibleBookings), [visibleBookings]);
+  const topEmployees = useMemo(() => processBookings(visibleBookings).slice(0, 4), [visibleBookings]);
+
 
   const visibleBookings = useMemo(
     () => bookings.filter((row) => {
