@@ -3,11 +3,19 @@ import { branches, type Branch, type BranchVerificationStatus } from "@/data/bra
 type BranchReviewItem = {
   branch: string;
   status: BranchVerificationStatus;
-  contacts: string[];
+  contactNumbers: string[];
   breakfast: string;
   topServices: string[];
   notes: string;
-  needsManualReview: string[];
+  missing: string[];
+  conflicting: string[];
+  needs_manual_review: string[];
+};
+
+type ReviewFlags = {
+  missing: string[];
+  conflicting: string[];
+  needs_manual_review: string[];
 };
 
 const criticalKeys: Array<keyof Branch["services"]> = [
@@ -28,16 +36,19 @@ const criticalKeys: Array<keyof Branch["services"]> = [
 
 const isMissing = (value: string) => value === "غير متوفر";
 
-const manualFlags = (branch: Branch): string[] => {
-  const flags: string[] = [];
+const reviewFlags = (branch: Branch): ReviewFlags => {
+  const missing: string[] = [];
+  const conflicting: string[] = [];
+  const needs_manual_review: string[] = [];
   const values = Object.entries(branch.services);
 
-  if (branch.contacts.length === 0) flags.push("missing: contact_numbers");
-  if (values.some(([, value]) => /غير محدد/.test(value))) flags.push("needs_manual_review: unspecified_capacity_or_scope");
-  if (values.some(([, value]) => /حسب الإمكانية/.test(value))) flags.push("needs_manual_review: subject_to_availability");
-  if (values.some(([, value]) => /تحت الإنشاء|صيانة/.test(value))) flags.push("conflicting: temporarily_unavailable_service");
+  if (branch.contacts.length === 0) missing.push("contact_numbers");
+  if (isMissing(branch.services.breakfast)) missing.push("breakfast");
+  if (values.some(([, value]) => /تحت الإنشاء|صيانة/.test(value))) conflicting.push("temporarily_unavailable_service");
+  if (values.some(([, value]) => /غير محدد/.test(value))) needs_manual_review.push("unspecified_capacity_or_scope");
+  if (values.some(([, value]) => /حسب الإمكانية/.test(value))) needs_manual_review.push("subject_to_availability");
 
-  return flags;
+  return { missing, conflicting, needs_manual_review };
 };
 
 const reviewItems: BranchReviewItem[] = branches.map((branch) => {
@@ -49,11 +60,11 @@ const reviewItems: BranchReviewItem[] = branches.map((branch) => {
   return {
     branch: branch.name,
     status: branch.verificationStatus,
-    contacts: branch.contacts.map((contact) => `${contact.label}: ${contact.value}`),
+    contactNumbers: branch.contacts.map((contact) => `${contact.label}: ${contact.value}`),
     breakfast: branch.services.breakfast,
     topServices: servicePairs,
     notes: `source=${branch.sourceRowRef}`,
-    needsManualReview: manualFlags(branch),
+    ...reviewFlags(branch),
   };
 });
 

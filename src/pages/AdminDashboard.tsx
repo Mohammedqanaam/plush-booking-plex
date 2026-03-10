@@ -120,6 +120,8 @@ const AdminDashboard = () => {
           }} />
           <button className="h-11 px-4 rounded-lg gold-gradient text-primary-foreground" onClick={() => fileInputRef.current?.click()}><FileText className="inline w-4 h-4" /> اختيار ملف CSV</button>
           <button className="h-11 px-4 rounded-lg border border-destructive/30" onClick={async () => { try { await api.resetBookings(); setMessage("تم تصفير البيانات"); } catch { setMessage("تعذر التصفير"); } }}>تصفير البيانات</button>
+          <button className="h-11 px-4 rounded-lg border" onClick={() => navigate("/admin/branches")}>إدارة الفروع</button>
+          <button className="h-11 px-4 rounded-lg border" onClick={() => navigate("/admin/knowledge-bank")}>إدارة بنك المعلومات</button>
           <button className="h-11 px-4 rounded-lg border" onClick={() => navigate("/admin/complaints")}>إدارة الشكاوى</button>
           <button className="h-11 px-4 rounded-lg border" onClick={() => navigate("/admin/discounts")}>إدارة الخصومات</button>
         </div>

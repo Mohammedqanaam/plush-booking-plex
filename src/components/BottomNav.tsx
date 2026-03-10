@@ -1,5 +1,4 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Library, Shield, TriangleAlert } from "lucide-react";
 import { Home, Library, Shield, TriangleAlert, Upload } from "lucide-react";
 
 const mainNavItems = [
