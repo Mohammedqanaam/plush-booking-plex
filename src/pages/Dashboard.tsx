@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bell, Library, UserRound, Users } from "lucide-react";
+import { Bell, FileUp, Library, UserRound, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { processBookings, summarizeBookings } from "@/lib/bookingProcessor";
@@ -9,6 +10,7 @@ const shortcuts = [
   { to: "/employees", label: "الموظفين", icon: Users },
   { to: "/complaints", label: "الشكاوى", icon: Bell },
   { to: "/branches", label: "الفروع", icon: UserRound },
+  { to: "/upload-center", label: "رفع البيانات", icon: FileUp },
 ];
 
 const Dashboard = () => {
@@ -42,6 +44,33 @@ const Dashboard = () => {
 
   const summary = useMemo(() => summarizeBookings(visibleBookings), [visibleBookings]);
   const topEmployees = useMemo(() => processBookings(visibleBookings).slice(0, 4), [visibleBookings]);
+
+
+  const visibleBookings = useMemo(
+    () => bookings.filter((row) => {
+      const agent = String(
+        row["Agent name"] ||
+        row["Agent Name"] ||
+        row["agent name"] ||
+        row["Employee"] ||
+        row["اسم الموظف"] ||
+        "",
+      ).trim().toLowerCase();
+      return !hiddenSet.has(agent);
+    }),
+    [bookings, hiddenSet],
+  );
+
+  const summary = useMemo(() => summarizeBookings(visibleBookings), [visibleBookings]);
+  const topEmployees = useMemo(() => processBookings(visibleBookings).slice(0, 4), [visibleBookings]);
+
+
+  useEffect(() => {
+    api.getBookings().then((d) => setBookings(d.bookings || [])).catch(() => setBookings([]));
+  }, []);
+
+  const summary = useMemo(() => summarizeBookings(bookings), [bookings]);
+  const topEmployees = useMemo(() => processBookings(bookings).slice(0, 4), [bookings]);
 
   return <div className="p-4 max-w-6xl mx-auto space-y-5">
     <div>
