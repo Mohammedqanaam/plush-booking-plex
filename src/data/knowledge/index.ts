@@ -93,6 +93,11 @@ const normalizeName = (name: string) => name
   .replace("نارسس", "نارسيس");
 const masterByName = new Map(masterHotels.map((h) => [normalizeName(h.name), h]));
 
+const asText = (value: unknown) => (typeof value === "string" ? value : "");
+
+const parseHours = (value: unknown) => {
+  const text = asText(value);
+  const match = text.match(/\d[^/]*[-–][^/\n]+|24\s*ساعة|24H/i);
 const parseHours = (value: string) => {
   const match = value.match(/\d[^/]*[-–][^/\n]+|24\s*ساعة|24H/i);
   return match ? match[0].trim() : "غير محدد";
@@ -118,6 +123,23 @@ const toBranchRecord = (item: (typeof hotelBranches)[number], idx: number): Bran
     managerName: "غير محدد",
     managerPhone: "غير متوفر",
     managerEmail: "غير متوفر",
+    breakfastInfo: asText(item.breakfast) || "غير متوفر",
+    lunchInfo: "منيو حسب الطلب",
+    dinnerInfo: "منيو حسب الطلب",
+    poolInfo: asText(item.pool) || "غير متوفر",
+    poolHours: parseHours(item.pool),
+    coffeeShopInfo: asText(item.coffeeShop) || "غير متوفر",
+    restaurantInfo: asText(item.restaurant) || "غير متوفر",
+    restaurantHours: parseHours(item.restaurant),
+    balconyInfo: asText(item.balcony) || "غير متوفر",
+    parkingInfo: master?.parking ?? "غير متوفر",
+    kidsSectionInfo: asText(item.kidsSection) || "غير متوفر",
+    jacuzziInfo: asText(item.jacuzzi) || "غير متوفر",
+    bathtubInfo: asText(item.jacuzzi).includes("بانيو") ? asText(item.jacuzzi) : "حسب نوع الغرفة",
+    spaInfo: asText(item.spa) || "غير متوفر",
+    spaHours: parseHours(item.spa),
+    laundryInfo: asText(item.laundry) || "غير متوفر",
+    outdoorSeatingInfo: asText(item.outdoorSeating) || "غير متوفر",
     breakfastInfo: item.breakfast,
     lunchInfo: "منيو حسب الطلب",
     dinnerInfo: "منيو حسب الطلب",
