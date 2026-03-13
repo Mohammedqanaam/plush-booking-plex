@@ -98,6 +98,8 @@ const asText = (value: unknown) => (typeof value === "string" ? value : "");
 const parseHours = (value: unknown) => {
   const text = asText(value);
   const match = text.match(/\d[^/]*[-–][^/\n]+|24\s*ساعة|24H/i);
+const parseHours = (value: string) => {
+  const match = value.match(/\d[^/]*[-–][^/\n]+|24\s*ساعة|24H/i);
   return match ? match[0].trim() : "غير محدد";
 };
 
@@ -138,6 +140,23 @@ const toBranchRecord = (item: (typeof hotelBranches)[number], idx: number): Bran
     spaHours: parseHours(item.spa),
     laundryInfo: asText(item.laundry) || "غير متوفر",
     outdoorSeatingInfo: asText(item.outdoorSeating) || "غير متوفر",
+    breakfastInfo: item.breakfast,
+    lunchInfo: "منيو حسب الطلب",
+    dinnerInfo: "منيو حسب الطلب",
+    poolInfo: item.pool,
+    poolHours: parseHours(item.pool),
+    coffeeShopInfo: item.coffeeShop,
+    restaurantInfo: item.restaurant,
+    restaurantHours: parseHours(item.restaurant),
+    balconyInfo: item.balcony,
+    parkingInfo: master?.parking ?? "غير متوفر",
+    kidsSectionInfo: item.kidsSection,
+    jacuzziInfo: item.jacuzzi,
+    bathtubInfo: item.jacuzzi.includes("بانيو") ? item.jacuzzi : "حسب نوع الغرفة",
+    spaInfo: item.spa,
+    spaHours: parseHours(item.spa),
+    laundryInfo: item.laundry,
+    outdoorSeatingInfo: item.outdoorSeating,
     gymInfo: master?.gym ?? "غير متوفر",
     gymHours: parseHours(master?.gym ?? ""),
     roomTypes: master?.roomTypes ? master.roomTypes.split("،").map((t) => t.trim()).filter(Boolean) : ["غير متوفر"],
