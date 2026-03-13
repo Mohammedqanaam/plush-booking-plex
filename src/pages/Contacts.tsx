@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Send, CheckCircle2, ChevronDown } from "lucide-react";
+import { Send, CheckCircle2, ChevronDown, PhoneCall } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { hotelBranches } from "@/data/hotels";
 import { api, type ContactRequest } from "@/lib/api";
 
@@ -47,10 +48,7 @@ const Contacts = () => {
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-2xl font-bold">طلبات التواصل</h2>
-        <p className="text-muted-foreground text-sm">أرسل طلب تواصل من فرعك</p>
-      </div>
+      <PageHeader title="طلبات التواصل" subtitle="أرسل طلب تواصل من الفرع بشكل سريع ومنظم." icon={PhoneCall} />
 
       {submitted ? (
         <div className="glass-card p-8 text-center space-y-3 animate-fade-in">

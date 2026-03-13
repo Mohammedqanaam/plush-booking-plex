@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
+import { CloudUpload } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 
 const UploadCenter = () => {
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-4">
+      <PageHeader title="مركز رفع البيانات" subtitle="إرشادات واضحة وسريعة للوصول إلى أدوات الرفع." icon={CloudUpload} />
       <div className="glass-card p-4 space-y-3">
-        <h2 className="text-2xl font-bold">مركز رفع البيانات</h2>
         <p className="text-xs text-muted-foreground">
           الصفحة للعرض فقط. رفع أو إعادة تعيين البيانات يتم من لوحة الأدمن بعد تسجيل الدخول.
         </p>

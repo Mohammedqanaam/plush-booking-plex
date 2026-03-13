@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Building2 } from "lucide-react";
 import { branches } from "@/data/branches";
+import PageHeader from "@/components/PageHeader";
 
 const Branches = () => {
   const [search, setSearch] = useState("");
@@ -26,6 +28,7 @@ const Branches = () => {
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
+      <PageHeader title="إدارة الفروع" subtitle="عرض معلومات الفروع والخدمات بشكل سريع ومرتب." icon={Building2} />
       <div className="glass-card p-4 space-y-3">
         <h2 className="text-2xl font-bold">إدارة الفروع</h2>
         <p className="text-xs text-muted-foreground">هذه الصفحة للعرض فقط. تعديل بيانات الفروع متاح فقط من لوحة الأدمن بعد تسجيل الدخول. <Link className="underline" to="/admin/login">تسجيل دخول الأدمن</Link></p>

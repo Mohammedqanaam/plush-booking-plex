@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { enterpriseApi } from "@/lib/enterpriseApi";
+import { ShieldAlert } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 
 type ErrorLog = {
   id: string;
@@ -17,7 +19,7 @@ const AdminErrors = () => {
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-3">
-      <h2 className="text-2xl font-bold">Error Dashboard</h2>
+      <PageHeader title="لوحة الأخطاء" subtitle="متابعة أخطاء النظام وسجلاتها لحظيًا." icon={ShieldAlert} />
       {logs.map((log) => (
         <div key={log.id} className="glass-card p-3 text-xs">
           <p><b>{log.source}</b> - {log.message}</p>

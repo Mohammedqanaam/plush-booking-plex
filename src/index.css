@@ -6,23 +6,23 @@
 
 @layer base {
   :root {
-    --background: 270 60% 5%;
+    --background: 246 56% 7%;
     --foreground: 0 0% 98%;
-    --card: 270 40% 8%;
+    --card: 246 34% 11%;
     --card-foreground: 0 0% 98%;
     --popover: 270 40% 8%;
     --popover-foreground: 0 0% 98%;
     --primary: 270 85% 62%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 270 30% 14%;
+    --secondary: 246 24% 16%;
     --secondary-foreground: 0 0% 94%;
-    --muted: 258 22% 16%;
-    --muted-foreground: 260 10% 55%;
+    --muted: 247 20% 18%;
+    --muted-foreground: 250 12% 68%;
     --accent: 270 75% 58%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 270 20% 16%;
+    --border: 246 20% 24%;
     --input: 270 20% 16%;
     --ring: 270 85% 62%;
     --radius: 0.75rem;
@@ -67,7 +67,11 @@
   .gold-gradient { background: linear-gradient(135deg, hsl(var(--gold)), hsl(var(--gold-glow))); }
   .custom-scrollbar { scrollbar-gutter: stable; }
   .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-  .custom-scrollbar::-webkit-scrollbar-thumb { background: #3d2b5e; border-radius: 3px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b3a68; border-radius: 3px; }
+  .interactive { @apply transition-all duration-200 ease-out; }
+  .touch-target { min-height: 44px; min-width: 44px; }
+  .page-surface { @apply glass-card p-4 md:p-5 space-y-3; }
+
   .table-scroll {
     overflow-x: auto;
     overscroll-behavior-x: contain;

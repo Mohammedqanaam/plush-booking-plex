@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { branches, type Branch } from "@/data/branches";
+import { Building2 } from "lucide-react";
 import { getAdminSession, hasPermission } from "@/lib/adminAuth";
+import PageHeader from "@/components/PageHeader";
 
 type EditableBranch = Record<string, Partial<Branch>>;
 
@@ -34,8 +36,8 @@ const AdminBranches = () => {
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
+      <PageHeader title="إدارة الفروع" subtitle="تحديث ومراجعة بيانات الفروع من لوحة الأدمن." icon={Building2} />
       <div className="glass-card p-4 space-y-3">
-        <h2 className="text-2xl font-bold">إدارة الفروع (لوحة الأدمن)</h2>
         <div className="grid gap-2 md:grid-cols-4">
           <input className="h-10 rounded-lg bg-secondary border px-3 md:col-span-2" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالفرع أو المدينة أو رقم التواصل" />
           <select className="h-10 rounded-lg bg-secondary border px-2" value={brand} onChange={(e) => setBrand(e.target.value)}>{brands.map((item) => <option key={item}>{item}</option>)}</select>

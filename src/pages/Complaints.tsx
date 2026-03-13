@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
-import { Copy, ExternalLink, MailCheck, MessageSquareWarning } from "lucide-react";
+import { Copy, ExternalLink, MailCheck, MessageSquareWarning, Siren } from "lucide-react";
 import { api } from "@/lib/api";
 import { branchRecords } from "@/data/knowledge";
+<<<<<<< codex/update-and-restructure-knowledge-bank
+import PageHeader from "@/components/PageHeader";
+=======
+>>>>>>> main
 
 type FormState = {
   brand: "Boudl" | "Braira" | "Narcissus" | "Aber";
@@ -18,7 +22,6 @@ type FormState = {
 };
 
 const initial: FormState = { brand: "Boudl", branch: "", mainCategory: "", subCategory: "", guestName: "", bookingMobile: "", contactMobile: "", suiteNumber: "", checkInDate: "", priority: "normal", notes: "" };
-
 type ResultState = { complaintNo: string; whatsappMessage: string; whatsappUrl: string; emailResult?: { sent?: boolean; reason?: string } };
 
 const MAIN_CATEGORIES: Record<string, string[]> = {
@@ -34,6 +37,9 @@ const Complaints = () => {
 
   const branches = useMemo(() => branchRecords
     .filter((row) => row.brand === form.brand)
+<<<<<<< codex/update-and-restructure-knowledge-bank
+    .map((row) => ({ id: row.id, name: row.branch, city: row.city, phone: row.hotelPhone || "-", breakfast: row.breakfastInfo })), [form.brand]);
+=======
     .map((row) => ({
       id: row.id,
       name: row.branch,
@@ -41,52 +47,45 @@ const Complaints = () => {
       phone: row.hotelPhone || "-",
       breakfast: row.breakfastInfo,
     })), [form.brand]);
+>>>>>>> main
 
   const selectedBranch = useMemo(() => branches.find((b) => b.name === form.branch), [branches, form.branch]);
   const subCategories = useMemo(() => MAIN_CATEGORIES[form.mainCategory] || [], [form.mainCategory]);
 
-  return <div className="p-4 max-w-4xl mx-auto space-y-4">
-    <h2 className="text-2xl font-bold">نموذج الشكاوى</h2>
+  return <div className="p-4 max-w-5xl mx-auto space-y-4">
+    <PageHeader title="نموذج الشكاوى" subtitle="واجهة سريعة وواضحة لالتقاط الشكوى وتحويلها فورًا." icon={Siren} />
+
     <form className="glass-card p-4 grid md:grid-cols-2 gap-3" onSubmit={async (e) => {
       e.preventDefault();
       const data = await api.submitComplaint(form as Record<string, unknown>);
       setResult({ complaintNo: data.complaint?.complaintNo, whatsappMessage: data.whatsappMessage, whatsappUrl: data.whatsappUrl, emailResult: data.emailResult });
       setForm(initial);
     }}>
-      <select className="h-11 rounded-lg bg-secondary border px-3" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as FormState["brand"], branch: "" })}>{["Boudl", "Braira", "Narcissus", "Aber"].map((b) => <option key={b}>{b}</option>)}</select>
-
-      <select className="h-11 rounded-lg bg-secondary border px-3" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} required>
-        <option value="">اختر الفرع</option>
-        {branches.map((b) => <option key={b.id} value={b.name}>{b.name}</option>)}
+      <select className="h-11 rounded-xl bg-secondary border px-3" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as FormState["brand"], branch: "" })}>{["Boudl", "Braira", "Narcissus", "Aber"].map((b) => <option key={b}>{b}</option>)}</select>
+      <select className="h-11 rounded-xl bg-secondary border px-3" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} required>
+        <option value="">اختر الفرع</option>{branches.map((b) => <option key={b.id} value={b.name}>{b.name}</option>)}
       </select>
 
-      {selectedBranch ? (
-        <div className="md:col-span-2 rounded-lg border bg-secondary/50 p-2 text-xs text-muted-foreground">
-          {selectedBranch.city} · استقبال: {selectedBranch.phone} · الفطور: {selectedBranch.breakfast}
-        </div>
-      ) : null}
+      {selectedBranch ? <div className="md:col-span-2 rounded-lg border bg-secondary/50 p-2 text-xs text-muted-foreground">{selectedBranch.city} · استقبال: {selectedBranch.phone} · الفطور: {selectedBranch.breakfast}</div> : null}
 
-      <select className="h-11 rounded-lg bg-secondary border px-3" value={form.mainCategory} onChange={(e) => setForm({ ...form, mainCategory: e.target.value, subCategory: "" })} required>
-        <option value="">اختر التصنيف الرئيسي</option>
-        {Object.keys(MAIN_CATEGORIES).map((category) => <option key={category} value={category}>{category}</option>)}
+      <select className="h-11 rounded-xl bg-secondary border px-3" value={form.mainCategory} onChange={(e) => setForm({ ...form, mainCategory: e.target.value, subCategory: "" })} required>
+        <option value="">اختر التصنيف الرئيسي</option>{Object.keys(MAIN_CATEGORIES).map((category) => <option key={category} value={category}>{category}</option>)}
+      </select>
+      <select className="h-11 rounded-xl bg-secondary border px-3" value={form.subCategory} onChange={(e) => setForm({ ...form, subCategory: e.target.value })} required>
+        <option value="">اختر التصنيف الفرعي</option>{subCategories.map((item) => <option key={item} value={item}>{item}</option>)}
       </select>
 
-      <select className="h-11 rounded-lg bg-secondary border px-3" value={form.subCategory} onChange={(e) => setForm({ ...form, subCategory: e.target.value })} required>
-        <option value="">اختر التصنيف الفرعي</option>
-        {subCategories.map((item) => <option key={item} value={item}>{item}</option>)}
-      </select>
-
-      <input className="h-11 rounded-lg bg-secondary border px-3" placeholder="اسم الضيف" value={form.guestName} onChange={(e) => setForm({ ...form, guestName: e.target.value })} required />
-      <input className="h-11 rounded-lg bg-secondary border px-3" dir="ltr" placeholder="جوال الحجز" value={form.bookingMobile} onChange={(e) => setForm({ ...form, bookingMobile: e.target.value })} required />
-      <input className="h-11 rounded-lg bg-secondary border px-3" dir="ltr" placeholder="جوال التواصل" value={form.contactMobile} onChange={(e) => setForm({ ...form, contactMobile: e.target.value })} required />
-      <input className="h-11 rounded-lg bg-secondary border px-3" dir="ltr" placeholder="رقم السويت" value={form.suiteNumber} onChange={(e) => setForm({ ...form, suiteNumber: e.target.value })} />
-      <input type="date" className="h-11 rounded-lg bg-secondary border px-3" value={form.checkInDate} onChange={(e) => setForm({ ...form, checkInDate: e.target.value })} />
-      <select className="h-11 rounded-lg bg-secondary border px-3" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as FormState["priority"] })}><option value="normal">أولوية عادية</option><option value="high">أولوية عالية</option></select>
-      <textarea className="md:col-span-2 rounded-lg bg-secondary border p-3" rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="الملاحظات" />
-      <button className="md:col-span-2 h-11 rounded-lg gold-gradient text-primary-foreground">إرسال الشكوى</button>
+      <input className="h-11 rounded-xl bg-secondary border px-3" placeholder="اسم الضيف" value={form.guestName} onChange={(e) => setForm({ ...form, guestName: e.target.value })} required />
+      <input className="h-11 rounded-xl bg-secondary border px-3" dir="ltr" placeholder="جوال الحجز" value={form.bookingMobile} onChange={(e) => setForm({ ...form, bookingMobile: e.target.value })} required />
+      <input className="h-11 rounded-xl bg-secondary border px-3" dir="ltr" placeholder="جوال التواصل" value={form.contactMobile} onChange={(e) => setForm({ ...form, contactMobile: e.target.value })} required />
+      <input className="h-11 rounded-xl bg-secondary border px-3" dir="ltr" placeholder="رقم السويت" value={form.suiteNumber} onChange={(e) => setForm({ ...form, suiteNumber: e.target.value })} />
+      <input type="date" className="h-11 rounded-xl bg-secondary border px-3" value={form.checkInDate} onChange={(e) => setForm({ ...form, checkInDate: e.target.value })} />
+      <select className="h-11 rounded-xl bg-secondary border px-3" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as FormState["priority"] })}><option value="normal">أولوية عادية</option><option value="high">أولوية عالية</option></select>
+      <textarea className="md:col-span-2 rounded-xl bg-secondary border p-3" rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="الملاحظات" />
+      <button className="md:col-span-2 h-11 rounded-xl gold-gradient text-primary-foreground">إرسال الشكوى</button>
     </form>
 
-    {result && <div className="glass-card p-4 space-y-3"><div className="flex items-center gap-2"><MessageSquareWarning className="w-5 h-5" /> تم إنشاء الشكوى: {result.complaintNo}</div><pre className="text-xs whitespace-pre-wrap bg-secondary p-3 rounded">{result.whatsappMessage}</pre><div className="flex gap-2"><button className="h-10 px-3 rounded border" onClick={() => navigator.clipboard.writeText(result.whatsappMessage)}><Copy className="inline w-4 h-4" /> نسخ</button><a className="h-10 px-3 rounded border inline-flex items-center gap-2" href={result.whatsappUrl} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /> فتح واتساب</a></div>
+    {result && <div className="glass-card p-4 space-y-3"><div className="flex items-center gap-2"><MessageSquareWarning className="w-5 h-5 text-primary" /> تم إنشاء الشكوى: {result.complaintNo}</div><pre className="text-xs whitespace-pre-wrap bg-secondary p-3 rounded">{result.whatsappMessage}</pre><div className="flex gap-2"><button className="h-10 px-3 rounded-lg border" onClick={() => navigator.clipboard.writeText(result.whatsappMessage)}><Copy className="inline w-4 h-4" /> نسخ</button><a className="h-10 px-3 rounded-lg border inline-flex items-center gap-2" href={result.whatsappUrl} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /> فتح واتساب</a></div>
       <p className="text-xs text-muted-foreground flex items-center gap-1"><MailCheck className="w-4 h-4" /> {result.emailResult?.sent ? "تم إرسال نسخة بريدية للشكوى" : "تعذر/تخطي إرسال البريد (راجع إعدادات البريد)"}</p></div>}
   </div>;
 };

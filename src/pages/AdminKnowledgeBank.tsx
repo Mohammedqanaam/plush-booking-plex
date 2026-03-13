@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
 import { getAdminSession, hasPermission } from "@/lib/adminAuth";
+<<<<<<< codex/update-and-restructure-knowledge-bank
+import { BookOpenText } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
+=======
+>>>>>>> main
 import { branchRecords, globalReferences } from "@/data/knowledge";
 
 const AdminKnowledgeBank = () => {
@@ -16,8 +21,13 @@ const AdminKnowledgeBank = () => {
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
+<<<<<<< codex/update-and-restructure-knowledge-bank
+      <PageHeader title="إدارة بنك المعلومات" subtitle="عرض منظم لسجلات الفروع والمراجع العامة." icon={BookOpenText} />
+      <div className="glass-card p-4 space-y-2">
+=======
       <div className="glass-card p-4 space-y-2">
         <h2 className="text-2xl font-bold">إدارة بنك المعلومات</h2>
+>>>>>>> main
         <input value={query} onChange={(e) => setQuery(e.target.value)} className="h-10 rounded-lg bg-secondary border px-3 w-full" placeholder="بحث بالفرع/المدينة/البراند" />
         <p className="text-xs text-muted-foreground">Global References: {globalReferences.length}</p>
       </div>

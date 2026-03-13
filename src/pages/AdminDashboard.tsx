@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, type ContactRequest } from "@/lib/api";
 import { clearAdminSession, getAdminSession, hasPermission, type UserRole } from "@/lib/adminAuth";
 import { processBookings } from "@/lib/bookingProcessor";
+import PageHeader from "@/components/PageHeader";
 
 type User = { username: string; role: UserRole };
 type EmployeeStat = { agent: string; confirmed: number; cancelled: number; total: number; cancelRate: number };
@@ -95,17 +96,17 @@ const AdminDashboard = () => {
 
   return (
     <div className="p-4 max-w-5xl mx-auto space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">لوحة الإدارة</h2>
-        <button className="h-10 px-4 rounded-lg border" onClick={async () => { await api.logout(); clearAdminSession(); navigate("/"); }}>
-          <LogOut className="inline w-4 h-4" /> تسجيل الخروج
-        </button>
-      </div>
+      <PageHeader
+        title="لوحة الإدارة"
+        subtitle="تحكم شامل بالمستخدمين، الإعدادات، والبيانات التشغيلية."
+        icon={Settings}
+        actions={<button className="h-10 px-4 rounded-lg border shrink-0" onClick={async () => { await api.logout(); clearAdminSession(); navigate("/"); }}><LogOut className="inline w-4 h-4" /> تسجيل الخروج</button>}
+      />
       <p className="text-xs text-muted-foreground">مرحباً {session?.username} ({ROLE_LABELS[(session?.role as UserRole) || "viewer"]})</p>
 
       <div className="flex gap-2 overflow-x-auto">
         {tabs.map((tab) => (
-          <button key={tab.id} onClick={() => (can(tab.perm) ? setTab(tab.id) : setMessage("ليست لديك صلاحية"))} className={`px-3 py-2 rounded-lg text-sm ${activeTab === tab.id ? "gold-gradient text-primary-foreground" : "glass-card"}`}>
+          <button key={tab.id} onClick={() => (can(tab.perm) ? setTab(tab.id) : setMessage("ليست لديك صلاحية"))} className={`px-3 py-2 rounded-xl text-sm inline-flex items-center gap-1 border border-border/40 ${activeTab === tab.id ? "gold-gradient text-primary-foreground" : "bg-secondary/50 hover:bg-secondary"}`}>
             <tab.icon className="inline w-4 h-4 ms-1" /> {tab.label}
           </button>
         ))}

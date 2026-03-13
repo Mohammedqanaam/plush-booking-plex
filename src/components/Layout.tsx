@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import BottomNav from "./BottomNav";
 import RiyadhClock from "./RiyadhClock";
 import { api } from "@/lib/api";
 import ViewerPreferences from "./ViewerPreferences";
+import ScrollTopButton from "./ScrollTopButton";
 
 const Layout = () => {
   const [siteTitle, setSiteTitle] = useState("Res");
   const [bannerText, setBannerText] = useState("");
+  const location = useLocation();
 
   useEffect(() => {
     api
@@ -27,22 +30,19 @@ const Layout = () => {
         </div>
       )}
 
-      {/* Header */}
-      <header className="safe-area-top sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-4 h-16 max-w-4xl mx-auto gap-2">
-          <h1 className="text-xl sm:text-lg font-bold gold-text leading-none">{siteTitle}</h1>
+      <header className="safe-area-top sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-4 h-16 max-w-6xl mx-auto gap-2">
+          <h1 className="text-lg sm:text-xl font-bold gold-text leading-none">{siteTitle}</h1>
           <div className="flex items-center gap-2"><ViewerPreferences /><RiyadhClock /></div>
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="flex-1 pb-20 overflow-y-auto">
+      <main className="flex-1 pb-24 overflow-y-auto custom-scrollbar" key={location.pathname}>
         <Outlet />
       </main>
 
-      {/* Bottom navigation */}
+      <ScrollTopButton />
       <BottomNav />
-
     </div>
   );
 };

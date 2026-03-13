@@ -138,6 +138,8 @@ const toBranchRecord = (item: (typeof hotelBranches)[number], idx: number): Bran
     spaHours: parseHours(item.spa),
     laundryInfo: asText(item.laundry) || "غير متوفر",
     outdoorSeatingInfo: asText(item.outdoorSeating) || "غير متوفر",
+<<<<<<< codex/update-and-restructure-knowledge-bank
+=======
     breakfastInfo: item.breakfast,
     lunchInfo: "منيو حسب الطلب",
     dinnerInfo: "منيو حسب الطلب",
@@ -155,6 +157,7 @@ const toBranchRecord = (item: (typeof hotelBranches)[number], idx: number): Bran
     spaHours: parseHours(item.spa),
     laundryInfo: item.laundry,
     outdoorSeatingInfo: item.outdoorSeating,
+>>>>>>> main
     gymInfo: master?.gym ?? "غير متوفر",
     gymHours: parseHours(master?.gym ?? ""),
     roomTypes: master?.roomTypes ? master.roomTypes.split("،").map((t) => t.trim()).filter(Boolean) : ["غير متوفر"],
