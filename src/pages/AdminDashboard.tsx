@@ -25,7 +25,7 @@ const AdminDashboard = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("viewer");
-  const [siteTitle, setSiteTitle] = useState("Worm-AI");
+  const [siteTitle, setSiteTitle] = useState("Res");
   const [bannerText, setBannerText] = useState("");
   const [reportMonth, setReportMonth] = useState("");
   const [reportYear, setReportYear] = useState("");
@@ -59,7 +59,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     api.getUsers().then((d) => setUsers(d.users || [])).catch(() => setUsers([]));
     api.getSettings().then((s) => {
-      setSiteTitle(s.siteTitle || "Worm-AI");
+      setSiteTitle(s.siteTitle || "Res");
       setBannerText(s.bannerText || "");
       setReportMonth(s.reportMonth || "");
       setReportYear(s.reportYear || "");

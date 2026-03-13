@@ -1,6 +1,6 @@
 {
-  "name": "WORM-AI Central Reservation Platform",
-  "short_name": "WORM-AI",
+  "name": "Res Central Reservation Platform",
+  "short_name": "Res",
   "description": "منصة الحجز المركزي",
   "start_url": "/",
   "display": "standalone",

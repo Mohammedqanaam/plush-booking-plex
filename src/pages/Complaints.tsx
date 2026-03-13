@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Copy, ExternalLink, MailCheck, MessageSquareWarning } from "lucide-react";
 import { api } from "@/lib/api";
-import { masterHotels } from "@/data/hotelMasterData";
+import { branchRecords } from "@/data/knowledge";
 
 type FormState = {
   brand: "Boudl" | "Braira" | "Narcissus" | "Aber";
@@ -28,29 +28,19 @@ const MAIN_CATEGORIES: Record<string, string[]> = {
   "الدفع والفوترة": ["مبلغ زائد", "استرداد", "طريقة الدفع"],
 };
 
-const brandArabicMap: Record<FormState["brand"], string> = {
-  Boudl: "بودل",
-  Braira: "بريرا",
-  Narcissus: "نارسس",
-  Aber: "عابر",
-};
-
 const Complaints = () => {
   const [form, setForm] = useState<FormState>(initial);
   const [result, setResult] = useState<ResultState | null>(null);
 
-  const branches = useMemo(() => {
-    const brandArabic = brandArabicMap[form.brand];
-    return masterHotels
-      .filter((hotel) => hotel.brand.includes(brandArabic))
-      .map((hotel) => ({
-        id: hotel.id,
-        name: hotel.name,
-        city: hotel.city,
-        phone: hotel.hotelPhone || "-",
-        breakfast: hotel.breakfast,
-      }));
-  }, [form.brand]);
+  const branches = useMemo(() => branchRecords
+    .filter((row) => row.brand === form.brand)
+    .map((row) => ({
+      id: row.id,
+      name: row.branch,
+      city: row.city,
+      phone: row.hotelPhone || "-",
+      breakfast: row.breakfastInfo,
+    })), [form.brand]);
 
   const selectedBranch = useMemo(() => branches.find((b) => b.name === form.branch), [branches, form.branch]);
   const subCategories = useMemo(() => MAIN_CATEGORIES[form.mainCategory] || [], [form.mainCategory]);
