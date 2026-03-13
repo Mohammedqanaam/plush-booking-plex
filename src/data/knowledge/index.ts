@@ -98,8 +98,6 @@ const asText = (value: unknown) => (typeof value === "string" ? value : "");
 const parseHours = (value: unknown) => {
   const text = asText(value);
   const match = text.match(/\d[^/]*[-–][^/\n]+|24\s*ساعة|24H/i);
-const parseHours = (value: string) => {
-  const match = value.match(/\d[^/]*[-–][^/\n]+|24\s*ساعة|24H/i);
   return match ? match[0].trim() : "غير محدد";
 };
 
