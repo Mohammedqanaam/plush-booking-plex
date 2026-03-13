@@ -48,6 +48,11 @@ const Dashboard = () => {
     <div className="p-4 max-w-6xl mx-auto space-y-4">
       <PageHeader title="Res Dashboard" subtitle="لوحة تشغيل يومية واضحة وسريعة لفريق الكول سنتر والمشرفين." showBack={false} />
 
+    <div className="p-4 max-w-6xl mx-auto space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold">Res Dashboard</h2>
+        <p className="text-xs text-muted-foreground">لوحة التشغيل اليومية للكول سنتر والمشرفين.</p>
+      </div>
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {kpis.map((kpi) => (
           <div key={kpi.label} className="glass-card p-4 hover:border-primary/40 transition">

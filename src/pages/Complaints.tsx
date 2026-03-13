@@ -2,7 +2,10 @@ import { useMemo, useState } from "react";
 import { Copy, ExternalLink, MailCheck, MessageSquareWarning, Siren } from "lucide-react";
 import { api } from "@/lib/api";
 import { branchRecords } from "@/data/knowledge";
+<<<<<<< codex/update-and-restructure-knowledge-bank
 import PageHeader from "@/components/PageHeader";
+=======
+>>>>>>> main
 
 type FormState = {
   brand: "Boudl" | "Braira" | "Narcissus" | "Aber";
@@ -34,7 +37,17 @@ const Complaints = () => {
 
   const branches = useMemo(() => branchRecords
     .filter((row) => row.brand === form.brand)
+<<<<<<< codex/update-and-restructure-knowledge-bank
     .map((row) => ({ id: row.id, name: row.branch, city: row.city, phone: row.hotelPhone || "-", breakfast: row.breakfastInfo })), [form.brand]);
+=======
+    .map((row) => ({
+      id: row.id,
+      name: row.branch,
+      city: row.city,
+      phone: row.hotelPhone || "-",
+      breakfast: row.breakfastInfo,
+    })), [form.brand]);
+>>>>>>> main
 
   const selectedBranch = useMemo(() => branches.find((b) => b.name === form.branch), [branches, form.branch]);
   const subCategories = useMemo(() => MAIN_CATEGORIES[form.mainCategory] || [], [form.mainCategory]);

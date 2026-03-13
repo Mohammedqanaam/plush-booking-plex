@@ -30,6 +30,7 @@ const Branches = () => {
     <div className="p-4 max-w-6xl mx-auto space-y-4">
       <PageHeader title="إدارة الفروع" subtitle="عرض معلومات الفروع والخدمات بشكل سريع ومرتب." icon={Building2} />
       <div className="glass-card p-4 space-y-3">
+        <h2 className="text-2xl font-bold">إدارة الفروع</h2>
         <p className="text-xs text-muted-foreground">هذه الصفحة للعرض فقط. تعديل بيانات الفروع متاح فقط من لوحة الأدمن بعد تسجيل الدخول. <Link className="underline" to="/admin/login">تسجيل دخول الأدمن</Link></p>
         <div className="grid gap-2 md:grid-cols-4">
           <input className="h-10 rounded-lg bg-secondary border px-3 md:col-span-2" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالفرع أو المدينة أو رقم التواصل" />
