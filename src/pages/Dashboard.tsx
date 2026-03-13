@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bell, Building2, FileUp, LibraryBig, Users, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Building2, FileUp, LibraryBig, Sparkles, UsersRound, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { processBookings, summarizeBookings } from "@/lib/bookingProcessor";
@@ -9,8 +9,8 @@ type Shortcut = { to: string; label: string; icon: LucideIcon; description: stri
 
 const shortcuts: Shortcut[] = [
   { to: "/knowledge-bank", label: "بنك المعلومات", icon: LibraryBig, description: "بحث سياسات وفروع" },
-  { to: "/employees", label: "الموظفون", icon: Users, description: "مؤشرات الأداء" },
-  { to: "/complaints", label: "الشكاوى", icon: Bell, description: "فتح ومتابعة الشكاوى" },
+  { to: "/employees", label: "الموظفون", icon: UsersRound, description: "مؤشرات الأداء" },
+  { to: "/complaints", label: "الشكاوى", icon: AlertTriangle, description: "فتح ومتابعة الشكاوى" },
   { to: "/branches", label: "الفروع", icon: Building2, description: "الخدمات والتواصل" },
   { to: "/upload-center", label: "مركز الرفع", icon: FileUp, description: "رفع الملفات" },
 ];
@@ -46,17 +46,12 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
-      <PageHeader title="Res Dashboard" subtitle="لوحة تشغيل يومية واضحة وسريعة لفريق الكول سنتر والمشرفين." showBack={false} />
+      <PageHeader title="Res Dashboard" subtitle="لوحة تشغيل يومية سريعة وواضحة لفريق الكول سنتر والمشرفين." showBack={false} icon={Sparkles} />
 
-    <div className="p-4 max-w-6xl mx-auto space-y-5">
-      <div>
-        <h2 className="text-2xl font-bold">Res Dashboard</h2>
-        <p className="text-xs text-muted-foreground">لوحة التشغيل اليومية للكول سنتر والمشرفين.</p>
-      </div>
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="glass-card p-4 hover:border-primary/40 transition">
-            <p className="text-xs text-muted-foreground mb-2">{kpi.label}</p>
+          <div key={kpi.label} className="page-surface hover:border-primary/40 interactive">
+            <p className="text-xs text-muted-foreground">{kpi.label}</p>
             <p className="text-3xl font-bold text-primary">{kpi.value}</p>
           </div>
         ))}
@@ -64,19 +59,22 @@ const Dashboard = () => {
 
       <section className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {shortcuts.map((item) => (
-          <Link key={item.to} to={item.to} className="glass-card p-3 flex flex-col gap-2 hover:border-primary/40 transition">
-            <div className="flex items-center gap-2 text-sm font-medium"><item.icon className="w-4 h-4 text-primary" />{item.label}</div>
+          <Link key={item.to} to={item.to} className="page-surface hover:border-primary/40 interactive">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <item.icon className="w-4 h-4 text-primary" />
+              {item.label}
+            </div>
             <p className="text-xs text-muted-foreground">{item.description}</p>
           </Link>
         ))}
       </section>
 
-      <section className="glass-card p-4">
-        <h3 className="font-semibold mb-3">أفضل الموظفين</h3>
+      <section className="page-surface">
+        <h3 className="font-semibold">أفضل الموظفين</h3>
         {topEmployees.length ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
             {topEmployees.map((employee) => (
-              <div key={employee.agent} className="rounded-xl border border-border/60 p-3">
+              <div key={employee.agent} className="rounded-xl border border-border/60 p-3 bg-background/30">
                 <p className="font-semibold text-sm truncate">{employee.agent}</p>
                 <p className="text-xs text-muted-foreground">مؤكد {employee.confirmed} · ملغي {employee.cancelled}</p>
               </div>
@@ -86,7 +84,6 @@ const Dashboard = () => {
           <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">لا توجد بيانات كافية لعرض أفضل الموظفين حالياً.</div>
         )}
       </section>
-    </div>
     </div>
   );
 };
