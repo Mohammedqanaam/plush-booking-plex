@@ -1,11 +1,8 @@
 import { useMemo, useState } from "react";
+import { BookOpenText, Search } from "lucide-react";
 import { getAdminSession, hasPermission } from "@/lib/adminAuth";
-<<<<<<< codex/update-and-restructure-knowledge-bank
-import { BookOpenText } from "lucide-react";
-import PageHeader from "@/components/PageHeader";
-=======
->>>>>>> main
 import { branchRecords, globalReferences } from "@/data/knowledge";
+import PageHeader from "@/components/PageHeader";
 
 const AdminKnowledgeBank = () => {
   const session = getAdminSession();
@@ -21,21 +18,25 @@ const AdminKnowledgeBank = () => {
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
-<<<<<<< codex/update-and-restructure-knowledge-bank
       <PageHeader title="إدارة بنك المعلومات" subtitle="عرض منظم لسجلات الفروع والمراجع العامة." icon={BookOpenText} />
-      <div className="glass-card p-4 space-y-2">
-=======
-      <div className="glass-card p-4 space-y-2">
-        <h2 className="text-2xl font-bold">إدارة بنك المعلومات</h2>
->>>>>>> main
-        <input value={query} onChange={(e) => setQuery(e.target.value)} className="h-10 rounded-lg bg-secondary border px-3 w-full" placeholder="بحث بالفرع/المدينة/البراند" />
-        <p className="text-xs text-muted-foreground">Global References: {globalReferences.length}</p>
+
+      <div className="page-surface">
+        <div className="relative">
+          <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-11 rounded-xl bg-secondary border px-10 w-full"
+            placeholder="بحث بالفرع/المدينة/البراند"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">إجمالي المراجع العامة: {globalReferences.length}</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-3">
         {filtered.map((row) => (
-          <article key={row.id} className="glass-card p-4 text-sm space-y-1">
-            <h3 className="font-semibold">{row.branch}</h3>
+          <article key={row.id} className="page-surface text-sm">
+            <h3 className="font-semibold text-base">{row.branch}</h3>
             <p>{row.brand} · {row.city}</p>
             <p className="text-muted-foreground">استقبال: {row.receptionPhone}</p>
           </article>

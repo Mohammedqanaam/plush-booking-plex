@@ -250,6 +250,12 @@ export const api = {
     return res.json();
   },
 
+  async getErrors() {
+    const res = await fetch(`${API_BASE}/errors`, { headers: authHeaders() });
+    if (!res.ok) throw new Error("تعذر تحميل الأخطاء");
+    return res.json() as Promise<{ errors: Array<{ id: string; source: string; message: string; createdAt: string }> }>;
+  },
+
   async sendChatMessage(
     message: string,
     sessionId?: string,

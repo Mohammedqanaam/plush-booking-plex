@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { ShieldAlert } from "lucide-react";
 import { api } from "@/lib/api";
+import PageHeader from "@/components/PageHeader";
 
 type AppError = {
   id: string;
@@ -17,14 +19,14 @@ const ErrorDashboard = () => {
 
   return (
     <div className="p-4 max-w-5xl mx-auto space-y-4">
-      <h2 className="text-2xl font-bold">Error Monitoring Dashboard</h2>
-      {errors.map((err) => (
-        <div key={err.id} className="glass-card p-3">
+      <PageHeader title="لوحة مراقبة الأخطاء" subtitle="عرض أخطاء النظام المسجلة لمتابعة الاستقرار." icon={ShieldAlert} />
+      {errors.length ? errors.map((err) => (
+        <div key={err.id} className="page-surface">
           <p className="text-sm font-semibold">{err.source}</p>
           <p className="text-xs text-muted-foreground">{err.message}</p>
           <p className="text-xs text-muted-foreground">{err.createdAt}</p>
         </div>
-      ))}
+      )) : <div className="page-surface text-sm text-muted-foreground">لا توجد أخطاء مسجلة حاليًا.</div>}
     </div>
   );
 };

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { BadgePercent } from "lucide-react";
 import { api } from "@/lib/api";
 import { enterpriseBrands, type BrandCode } from "@/data/enterprise";
+import PageHeader from "@/components/PageHeader";
 
 type Discount = {
   id: string;
@@ -31,12 +33,9 @@ const Discounts = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = async () => {
-    const [discountsData, settingsData] = await Promise.all([
-      api.listDiscounts(),
-      api.getSettings(),
-    ]);
+    const discountsData = await api.listDiscounts();
     setDiscounts(discountsData.discounts || []);
-    setEmployees(settingsData.enterprise?.employees || []);
+    setEmployees([]);
   };
 
   useEffect(() => {
@@ -72,14 +71,14 @@ const Discounts = () => {
 
   return (
     <div className="p-4 max-w-5xl mx-auto space-y-4">
-      <h2 className="text-2xl font-bold">قسم الخصومات</h2>
+      <PageHeader title="قسم الخصومات" subtitle="إدارة عروض الخصم حسب البراند." icon={BadgePercent} />
 
-      <div className="glass-card p-4">
+      <div className="page-surface">
         <h3 className="text-sm font-semibold mb-2">الموظفون المرتبطون بالخصومات</h3>
         <div className="flex flex-wrap gap-2">
           {employeeNames.length ? employeeNames.map((name) => (
             <span key={name} className="px-3 py-1 rounded-full bg-secondary text-xs">{name}</span>
-          )) : <span className="text-xs text-muted-foreground">لا يوجد موظفون مفعّلون - أضفهم من لوحة الإدارة.</span>}
+          )) : <span className="text-xs text-muted-foreground">لا يوجد موظفون مفعّلون مرتبطون حاليًا.</span>}
         </div>
       </div>
 
@@ -95,7 +94,7 @@ const Discounts = () => {
         ))}
       </div>
 
-      <form onSubmit={create} className="glass-card p-4 grid md:grid-cols-3 gap-2">
+      <form onSubmit={create} className="page-surface grid md:grid-cols-3 gap-2">
         <input className="bg-secondary rounded-lg p-2" placeholder="اسم الخصم" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} required />
         <input className="bg-secondary rounded-lg p-2" placeholder="كود الخصم" value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} required />
         <input className="bg-secondary rounded-lg p-2" type="number" min={1} max={100} value={draft.percent} onChange={(e) => setDraft({ ...draft, percent: Number(e.target.value) })} required />
@@ -111,7 +110,7 @@ const Discounts = () => {
         {current.map((d) => {
           const editing = editingId === d.id;
           return (
-            <div key={d.id} className="glass-card p-3 space-y-3">
+            <div key={d.id} className="page-surface">
               {editing ? (
                 <div className="grid md:grid-cols-3 gap-2">
                   <input className="bg-secondary rounded-lg p-2" value={d.title} onChange={(e) => setDiscounts((prev) => prev.map((item) => item.id === d.id ? { ...item, title: e.target.value } : item))} />

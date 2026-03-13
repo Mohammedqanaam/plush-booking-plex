@@ -1,5 +1,6 @@
 import { type ReactNode, useMemo, useState } from "react";
-import { Building2, FileText, LifeBuoy, PhoneCall, Search, ShieldCheck, Wrench } from "lucide-react";
+import { Building2, FileText, LifeBuoy, PhoneCall, Search, ShieldCheck, Sparkles, Wrench } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { knowledgeEntries, quickIntents } from "@/data/operations";
 
 type GroupKey = "الكل" | "أسئلة وأجوبة" | "سياسات" | "إجراءات" | "فروع" | "جهات اتصال" | "مرافق" | "تعاميم" | "حلول";
@@ -53,9 +54,9 @@ const HotelSearch = () => {
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
-      <div className="glass-card p-4 space-y-3">
-        <h2 className="text-2xl font-bold">مستكشف المعلومات التشغيلي</h2>
-        <p className="text-xs text-muted-foreground">واجهة Product UI عملية وسريعة — عربية RTL، باقتراحات لحظية وتسلسل معلومات واضح.</p>
+      <PageHeader title="مستكشف المعلومات التشغيلي" subtitle="بحث تشغيلي فوري مع تصنيفات واضحة واقتراحات سريعة." icon={Sparkles} />
+
+      <div className="page-surface">
 
         <div className="relative">
           <Search className="w-4 h-4 absolute right-3 top-3 text-muted-foreground" />
@@ -97,20 +98,20 @@ const HotelSearch = () => {
 
       <div className="space-y-3">
         {results.length === 0 ? (
-          <div className="glass-card p-5 text-sm text-muted-foreground">لا توجد نتائج مطابقة. جرّب كلمات أقصر أو اختر تصنيفًا مختلفًا.</div>
+          <div className="page-surface text-sm text-muted-foreground">لا توجد نتائج مطابقة. جرّب كلمات أقصر أو اختر تصنيفًا مختلفًا.</div>
         ) : (
           results.map((bucket) => (
             <section key={bucket.group} className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2">{groupIcons[bucket.group]} {bucket.group}</h3>
               <div className="grid md:grid-cols-2 gap-3">
                 {bucket.items.map((entry) => (
-                  <article key={entry.id} className="glass-card p-4 space-y-2">
+                  <article key={entry.id} className="page-surface">
                     <p className="text-xs text-primary">{entry.group}</p>
                     <h4 className="font-semibold">{entry.title}</h4>
                     <p className="text-sm text-muted-foreground">{entry.body}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {entry.tags.map((tag) => (
-                        <span key={tag} className="text-[11px] px-2 py-1 rounded bg-secondary">{tag}</span>
+                        <span key={tag} className="text-[11px] px-2 py-1 rounded bg-secondary border">{tag}</span>
                       ))}
                     </div>
                   </article>
