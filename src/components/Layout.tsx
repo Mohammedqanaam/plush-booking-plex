@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import ViewerPreferences from "./ViewerPreferences";
 
 const Layout = () => {
-  const [siteTitle, setSiteTitle] = useState("Worm-AI");
+  const [siteTitle, setSiteTitle] = useState("Res");
   const [bannerText, setBannerText] = useState("");
 
   useEffect(() => {

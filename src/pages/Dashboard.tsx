@@ -37,7 +37,7 @@ const Dashboard = () => {
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-5">
       <div>
-        <h2 className="text-2xl font-bold">Worm-AI / Res Dashboard</h2>
+        <h2 className="text-2xl font-bold">Res Dashboard</h2>
         <p className="text-xs text-muted-foreground">لوحة التشغيل اليومية للكول سنتر والمشرفين.</p>
       </div>
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">

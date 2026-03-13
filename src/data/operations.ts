@@ -10,7 +10,7 @@ export const themePresets: ThemePreset[] = [
   { id: "executive-dark-glass", name: "Executive Dark Glass", description: "رسمي، راقٍ، قوي" },
   { id: "luxury-lavender", name: "Luxury Lavender", description: "فاخر، مريح، جميل" },
   { id: "hospitality-premium-gold", name: "Hospitality Premium Gold", description: "فندقي دافئ ولمسات ذهبية" },
-  { id: "signature-cosmic", name: "Signature Cosmic Worm-AI", description: "هوية كونية حية بوهج سيان/بنفسجي" },
+  { id: "signature-cosmic", name: "Signature Cosmic Res", description: "هوية كونية حية بوهج سيان/بنفسجي" },
   { id: "signature-obsidian", name: "Signature Royal Obsidian", description: "أسود ملكي بطبقات أوبسيديان" },
 ];
 

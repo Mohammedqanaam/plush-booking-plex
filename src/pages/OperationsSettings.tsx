@@ -3,7 +3,7 @@ import { api } from "@/lib/api";
 import { themePresets } from "@/data/operations";
 
 const OperationsSettings = () => {
-  const [siteTitle, setSiteTitle] = useState("Worm-AI / Res Dashboard");
+  const [siteTitle, setSiteTitle] = useState("Res Dashboard");
   const [themePreset, setThemePreset] = useState(themePresets[3].id);
   const [msg, setMsg] = useState("");
 
