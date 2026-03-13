@@ -14,8 +14,6 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminBranches from "./pages/AdminBranches";
 import AdminKnowledgeBank from "./pages/AdminKnowledgeBank";
 import AdminComplaints from "./pages/AdminComplaints";
-import AdminBranches from "./pages/AdminBranches";
-import AdminKnowledgeBank from "./pages/AdminKnowledgeBank";
 import Complaints from "./pages/Complaints";
 import Contacts from "./pages/Contacts";
 import Dashboard from "./pages/Dashboard";
