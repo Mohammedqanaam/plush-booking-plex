@@ -11,7 +11,8 @@ type PageHeaderProps = {
 };
 
 const fallbackForPath = (pathname: string) => {
-  if (pathname.startsWith("/admin")) return "/admin";
+  if (pathname.startsWith("/admin") && pathname !== "/admin") return "/admin";
+  if (pathname === "/" || pathname === "/dashboard") return "/";
   return "/";
 };
 
@@ -25,14 +26,14 @@ const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: P
   };
 
   return (
-    <header className="glass-card p-4 md:p-5 space-y-3 sticky top-[68px] z-20">
+    <header className="page-surface sticky top-[68px] z-20 border-border/70">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
           {showBack ? (
             <button
               type="button"
               onClick={onBack}
-              className="h-10 w-10 shrink-0 rounded-xl border border-border bg-secondary/70 hover:bg-secondary transition"
+              className="touch-target h-11 w-11 shrink-0 rounded-2xl border border-border bg-secondary/80 hover:bg-secondary interactive"
               aria-label="رجوع"
             >
               <ArrowRight className="w-5 h-5 mx-auto" />
@@ -40,7 +41,7 @@ const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: P
           ) : null}
           <div className="min-w-0">
             <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-              {Icon ? <Icon className="w-5 h-5 text-primary" /> : null}
+              {Icon ? <Icon className="w-5 h-5 text-primary shrink-0" /> : null}
               <span className="truncate">{title}</span>
             </h2>
             {subtitle ? <p className="text-xs md:text-sm text-muted-foreground mt-1">{subtitle}</p> : null}
