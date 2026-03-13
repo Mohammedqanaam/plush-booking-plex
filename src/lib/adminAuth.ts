@@ -1,4 +1,5 @@
 export type UserRole = "superadmin" | "admin" | "editor" | "viewer";
+export type PermissionAction = "upload" | "manage_users" | "delete_users" | "edit_settings" | "view" | "manage_employees" | "manage_knowledge";
 
 export type AdminSession = {
   username: string;
@@ -13,7 +14,7 @@ export const getAdminSession = (): AdminSession | null => {
     const parsed = JSON.parse(stored);
     if (parsed?.username && parsed?.role) return parsed as AdminSession;
   } catch {
-    // stored value is not valid JSON – fall through and return null
+    // invalid JSON
   }
   return null;
 };
@@ -24,8 +25,8 @@ export const clearAdminSession = () => {
   sessionStorage.removeItem("admin_session");
 };
 
-export const hasPermission = (role: UserRole, action: string): boolean => {
-  const permissions: Record<UserRole, string[]> = {
+export const hasPermission = (role: UserRole, action: PermissionAction): boolean => {
+  const permissions: Record<UserRole, PermissionAction[]> = {
     superadmin: ["upload", "manage_users", "delete_users", "edit_settings", "view", "manage_employees", "manage_knowledge"],
     admin: ["upload", "manage_users", "edit_settings", "view", "manage_employees", "manage_knowledge"],
     editor: ["upload", "view"],

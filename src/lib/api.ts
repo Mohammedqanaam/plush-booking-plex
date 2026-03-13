@@ -174,7 +174,7 @@ export const api = {
 
   async getSettings(): Promise<AppSettings> {
     const res = await fetch(`${API_BASE}/settings`).catch(() => null);
-    if (!res || !res.ok) return { siteTitle: "Worm-AI", bannerText: "" };
+    if (!res || !res.ok) return { siteTitle: "Res", bannerText: "" };
     return res.json();
   },
 

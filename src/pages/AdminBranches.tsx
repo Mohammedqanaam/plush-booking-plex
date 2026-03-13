@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { branches, type Branch } from "@/data/branches";
+import { Building2 } from "lucide-react";
 import { getAdminSession, hasPermission } from "@/lib/adminAuth";
+import PageHeader from "@/components/PageHeader";
 
 type EditableBranch = Record<string, Partial<Branch>>;
 
@@ -28,26 +30,14 @@ const AdminBranches = () => {
     });
   }, [brand, search, status]);
 
-<<<<<<< copilot/fix-branch-data-issues
-  const selected = branches.find((b) => b.id === selectedId) ?? filtered[0];
-
-  const updateBranchNote = (id: string, notes: string) => {
-    setEdits((prev) => ({ ...prev, [id]: { ...prev[id], notes } }));
-  };
-
-  if (!canManage) return <div className="p-4">ليس لديك صلاحية إدارة بيانات الفروع.</div>;
-=======
   const selected = filtered.find((b) => b.id === selectedId) ?? filtered[0];
 
-  if (!canManage) {
-    return <div className="p-4">ليس لديك صلاحية إدارة الفروع.</div>;
-  }
->>>>>>> main
+  if (!canManage) return <div className="p-4">ليس لديك صلاحية إدارة بيانات الفروع.</div>;
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
+      <PageHeader title="إدارة الفروع" subtitle="تحديث ومراجعة بيانات الفروع من لوحة الأدمن." icon={Building2} />
       <div className="glass-card p-4 space-y-3">
-        <h2 className="text-2xl font-bold">إدارة الفروع (لوحة الأدمن)</h2>
         <div className="grid gap-2 md:grid-cols-4">
           <input className="h-10 rounded-lg bg-secondary border px-3 md:col-span-2" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالفرع أو المدينة أو رقم التواصل" />
           <select className="h-10 rounded-lg bg-secondary border px-2" value={brand} onChange={(e) => setBrand(e.target.value)}>{brands.map((item) => <option key={item}>{item}</option>)}</select>
@@ -55,33 +45,13 @@ const AdminBranches = () => {
         </div>
       </div>
 
-<<<<<<< copilot/fix-branch-data-issues
-      <div className="glass-card p-4 table-scroll custom-scrollbar">
-        <table className="min-w-[900px] w-full text-sm">
-          <thead>
-            <tr className="text-right border-b">
-              <th className="p-2">الفرع</th><th className="p-2">المدينة</th><th className="p-2">البراند</th><th className="p-2">الهاتف</th><th className="p-2">الإفطار</th><th className="p-2">المسبح</th><th className="p-2">الحالة</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((branch) => (
-              <tr key={branch.id} className="border-b/40 hover:bg-secondary/20 cursor-pointer" onClick={() => setSelectedId(branch.id)}>
-                <td className="p-2">{branch.name}</td>
-                <td className="p-2">{branch.city}</td>
-                <td className="p-2">{branch.brand}</td>
-                <td className="p-2">{branch.contacts[0]?.value ?? "—"}</td>
-                <td className="p-2">{branch.services.breakfast}</td>
-                <td className="p-2">{branch.services.pool}</td>
-                <td className="p-2">{branch.verificationStatus}</td>
-=======
       <div className="glass-card p-4 overflow-x-auto custom-scrollbar">
         <table className="min-w-[900px] w-full text-sm">
-          <thead><tr className="text-right border-b"><th className="p-2">الفرع</th><th className="p-2">المدينة</th><th className="p-2">البراند</th><th className="p-2">الهاتف</th><th className="p-2">الحالة</th></tr></thead>
+          <thead><tr className="text-right border-b"><th className="p-2">الفرع</th><th className="p-2">المدينة</th><th className="p-2">البراند</th><th className="p-2">الهاتف</th><th className="p-2">الإفطار</th><th className="p-2">الحالة</th></tr></thead>
           <tbody>
             {filtered.map((branch) => (
               <tr key={branch.id} className="border-b/40 hover:bg-secondary/20 cursor-pointer" onClick={() => setSelectedId(branch.id)}>
-                <td className="p-2">{branch.name}</td><td className="p-2">{branch.city}</td><td className="p-2">{branch.brand}</td><td className="p-2">{branch.contacts[0]?.value ?? "—"}</td><td className="p-2">{branch.verificationStatus}</td>
->>>>>>> main
+                <td className="p-2">{branch.name}</td><td className="p-2">{branch.city}</td><td className="p-2">{branch.brand}</td><td className="p-2">{branch.contacts[0]?.value ?? "—"}</td><td className="p-2">{branch.services.breakfast}</td><td className="p-2">{branch.verificationStatus}</td>
               </tr>
             ))}
           </tbody>
@@ -91,18 +61,8 @@ const AdminBranches = () => {
       {selected ? (
         <div className="glass-card p-4 space-y-3">
           <h3 className="text-lg font-semibold">تفاصيل {selected.name}</h3>
-<<<<<<< copilot/fix-branch-data-issues
-          <div className="grid md:grid-cols-2 gap-2 text-sm">
-            {Object.entries(selected.services).map(([key, value]) => <p key={key}><span className="text-muted-foreground">{key}:</span> {value}</p>)}
-          </div>
-          <div className="space-y-1 text-sm">
-            <p className="font-medium">أرقام التواصل</p>
-            {selected.contacts.map((c) => <p key={`${c.label}-${c.value}`}>{c.label}: {c.value}</p>)}
-          </div>
-          <textarea className="w-full rounded-lg bg-secondary border p-2 min-h-24" value={edits[selected.id]?.notes ?? selected.notes ?? ""} onChange={(e) => updateBranchNote(selected.id, e.target.value)} placeholder="ملاحظات تشغيلية (محليًا)" />
-=======
+          <div className="grid md:grid-cols-2 gap-2 text-sm">{Object.entries(selected.services).map(([key, value]) => <p key={key}><span className="text-muted-foreground">{key}:</span> {value}</p>)}</div>
           <textarea className="w-full rounded-lg bg-secondary border p-2 min-h-24" value={edits[selected.id]?.notes ?? selected.notes ?? ""} onChange={(e) => setEdits((prev) => ({ ...prev, [selected.id]: { ...prev[selected.id], notes: e.target.value } }))} placeholder="ملاحظات تشغيلية (تعديل أدمن)" />
->>>>>>> main
         </div>
       ) : null}
     </div>
