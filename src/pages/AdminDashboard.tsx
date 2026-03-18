@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, FileText, LogOut, MessageSquareMore, Settings, Upload, User, UserPlus, Users } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, type ContactRequest } from "@/lib/api";
+import { isEmployeeHidden, normalizeHiddenEmployees, parseHiddenEmployeesInput } from "@/lib/employeeVisibility";
 import { clearAdminSession, getAdminSession, hasPermission, type UserRole } from "@/lib/adminAuth";
 import { processBookings } from "@/lib/bookingProcessor";
 import PageHeader from "@/components/PageHeader";
@@ -39,6 +40,8 @@ const AdminDashboard = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const hiddenEmployeesList = useMemo(() => parseHiddenEmployeesInput(hiddenEmployees), [hiddenEmployees]);
+
   const tabs = useMemo(
     () => [
       { id: "upload" as const, label: "رفع CSV", icon: Upload, perm: "upload" },
@@ -64,7 +67,7 @@ const AdminDashboard = () => {
       setBannerText(s.bannerText || "");
       setReportMonth(s.reportMonth || "");
       setReportYear(s.reportYear || "");
-      setHiddenEmployees((s.hiddenEmployees || []).join(", "));
+      setHiddenEmployees(normalizeHiddenEmployees(s.hiddenEmployees || []).join(", "));
       setComplaintEmail(s.complaintEmail || "");
       setComplaintEmailWebhook(s.complaintEmailWebhook || "");
       setComplaintWhatsappNumber(s.complaintWhatsappNumber || "");
@@ -152,7 +155,8 @@ const AdminDashboard = () => {
           <input className="h-10 rounded-lg bg-secondary border px-3" value={complaintEmailWebhook} onChange={(e) => setComplaintEmailWebhook(e.target.value)} placeholder="رابط Webhook للشكاوى" dir="ltr" />
           <input className="h-10 rounded-lg bg-secondary border px-3 md:col-span-2" value={complaintWhatsappNumber} onChange={(e) => setComplaintWhatsappNumber(e.target.value)} placeholder="رقم واتساب استقبال الشكاوى (مثال: 9665XXXXXXXX)" dir="ltr" />
           <button className="h-10 rounded-lg gold-gradient text-primary-foreground md:col-span-2" onClick={async () => {
-            await api.updateSettings({ siteTitle, bannerText, reportMonth, reportYear, hiddenEmployees: hiddenEmployees.split(",").map((x) => x.trim()).filter(Boolean), complaintEmail, complaintEmailWebhook, complaintWhatsappNumber });
+            await api.updateSettings({ siteTitle, bannerText, reportMonth, reportYear, hiddenEmployees: hiddenEmployeesList, complaintEmail, complaintEmailWebhook, complaintWhatsappNumber });
+            setHiddenEmployees(hiddenEmployeesList.join(", "));
             setMessage("تم حفظ الإعدادات");
           }}><Download className="inline w-4 h-4" /> حفظ الإعدادات</button>
         </div>
@@ -167,21 +171,33 @@ const AdminDashboard = () => {
             {employeeStats
               .filter((e) => !employeeSearch.trim() || e.agent.toLowerCase().includes(employeeSearch.trim().toLowerCase()))
               .map((employee) => {
-                const isHidden = hiddenEmployees.split(",").map((x) => x.trim()).filter(Boolean).includes(employee.agent);
+                const isHidden = isEmployeeHidden(employee.agent, hiddenEmployeesList);
                 return <div className="border rounded-lg p-3 flex items-center justify-between gap-2" key={employee.agent}>
                   <div>
                     <p className="font-semibold">{employee.agent}</p>
                     <p className="text-xs text-muted-foreground">مؤكد: {employee.confirmed} | ملغي: {employee.cancelled} | إجمالي: {employee.total}</p>
                   </div>
                   <button className="h-9 px-3 rounded border" onClick={() => {
-                    const current = hiddenEmployees.split(",").map((x) => x.trim()).filter(Boolean);
-                    const next = isHidden ? current.filter((name) => name !== employee.agent) : [...current, employee.agent];
+                    const next = isHidden
+                      ? hiddenEmployeesList.filter((name) => !isEmployeeHidden(name, [employee.agent]))
+                      : normalizeHiddenEmployees([...hiddenEmployeesList, employee.agent]);
                     setHiddenEmployees(next.join(", "));
                   }}>{isHidden ? "إظهار" : "إخفاء"}</button>
                 </div>;
               })}
           </div>
-          <p className="text-xs text-muted-foreground">بعد التعديل اضغط "حفظ الإعدادات" من تبويب الإعدادات لتثبيت قائمة الإخفاء.</p>
+          <div className="flex flex-wrap gap-2 items-center justify-between">
+            <p className="text-xs text-muted-foreground">يمكنك حفظ الإخفاء مباشرة من هنا، وسيتم تطبيقه فوراً على اللوحات والصفحات.</p>
+            <button className="h-10 px-4 rounded-lg gold-gradient text-primary-foreground" onClick={async () => {
+              try {
+                await api.updateSettings({ hiddenEmployees: hiddenEmployeesList });
+                setHiddenEmployees(hiddenEmployeesList.join(", "));
+                setMessage("تم حفظ حالة الإخفاء للموظفين");
+              } catch {
+                setMessage("تعذر حفظ حالة الإخفاء");
+              }
+            }}>حفظ حالة الإخفاء</button>
+          </div>
         </div>
       )}
 

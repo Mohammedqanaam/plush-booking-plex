@@ -3,6 +3,7 @@ import { AlertTriangle, Building2, FileUp, LibraryBig, Sparkles, UsersRound, typ
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { processBookings, summarizeBookings } from "@/lib/bookingProcessor";
+import { normalizeEmployeeName, normalizeHiddenEmployees } from "@/lib/employeeVisibility";
 import PageHeader from "@/components/PageHeader";
 
 type Shortcut = { to: string; label: string; icon: LucideIcon; description: string };
@@ -21,14 +22,14 @@ const Dashboard = () => {
 
   useEffect(() => {
     api.getBookings().then((d) => setBookings(d.bookings || [])).catch(() => setBookings([]));
-    api.getSettings().then((s) => setHiddenEmployees(s.hiddenEmployees || [])).catch(() => setHiddenEmployees([]));
+    api.getSettings().then((s) => setHiddenEmployees(normalizeHiddenEmployees(s.hiddenEmployees || []))).catch(() => setHiddenEmployees([]));
   }, []);
 
-  const hiddenSet = useMemo(() => new Set(hiddenEmployees.map((name) => name.trim().toLowerCase()).filter(Boolean)), [hiddenEmployees]);
+  const hiddenSet = useMemo(() => new Set(hiddenEmployees.map((name) => normalizeEmployeeName(name)).filter(Boolean)), [hiddenEmployees]);
 
   const visibleBookings = useMemo(
     () => bookings.filter((row) => {
-      const agent = String(row["Agent name"] || row["Agent Name"] || row["agent name"] || row["Employee"] || row["اسم الموظف"] || "").trim().toLowerCase();
+      const agent = normalizeEmployeeName(String(row["Agent name"] || row["Agent Name"] || row["agent name"] || row["Employee"] || row["اسم الموظف"] || ""));
       return !hiddenSet.has(agent);
     }),
     [bookings, hiddenSet],

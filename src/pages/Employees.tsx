@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, UsersRound } from "lucide-react";
 import { api } from "@/lib/api";
+import { isEmployeeHidden, normalizeHiddenEmployees } from "@/lib/employeeVisibility";
 import { processBookings } from "@/lib/bookingProcessor";
 import { getAdminSession, hasPermission } from "@/lib/adminAuth";
 import PageHeader from "@/components/PageHeader";
@@ -14,14 +15,14 @@ const Employees = () => {
   const canManage = session ? hasPermission(session.role, "manage_employees") : false;
 
   useEffect(() => {
-    api.getSettings().then((s) => setHidden(s.hiddenEmployees || []));
+    api.getSettings().then((s) => setHidden(normalizeHiddenEmployees(s.hiddenEmployees || [])));
     api.getBookings().then((d) => setRows(processBookings(d.bookings || []))).catch(() => setRows([]));
   }, []);
 
   const shown = useMemo(
     () => rows
       .filter((r) => r.agent.toLowerCase().includes(search.toLowerCase()))
-      .map((r) => ({ ...r, display: renames[r.agent] || r.agent, isHidden: hidden.includes(r.agent) })),
+      .map((r) => ({ ...r, display: renames[r.agent] || r.agent, isHidden: isEmployeeHidden(r.agent, hidden) })),
     [rows, search, renames, hidden],
   );
 
@@ -40,12 +41,12 @@ const Employees = () => {
             <div key={employee.agent} className="border border-border/60 rounded-xl p-3 space-y-2 bg-card/50">
               {canManage ? <input className="h-10 rounded-lg border px-2 w-full bg-secondary" value={employee.display} onChange={(e) => setRenames((p) => ({ ...p, [employee.agent]: e.target.value }))} /> : <p className="font-medium text-sm">{employee.display}</p>}
               <p className="text-xs text-muted-foreground">مؤكد: {employee.confirmed} | ملغي: {employee.cancelled} | الإجمالي: {employee.total} | نسبة الإلغاء: {employee.cancelRate}%</p>
-              {canManage ? <button className="h-9 px-3 rounded-lg border" onClick={() => setHidden((p) => p.includes(employee.agent) ? p.filter((n) => n !== employee.agent) : [...p, employee.agent])}>{employee.isHidden ? "إظهار" : "إخفاء"}</button> : null}
+              {canManage ? <button className="h-9 px-3 rounded-lg border" onClick={() => setHidden((current) => employee.isHidden ? current.filter((name) => !isEmployeeHidden(name, [employee.agent])) : normalizeHiddenEmployees([...current, employee.agent]))}>{employee.isHidden ? "إظهار" : "إخفاء"}</button> : null}
             </div>
           )) : <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">لا توجد نتائج مطابقة للبحث.</div>}
         </div>
 
-        {canManage ? <button className="h-11 px-4 rounded-xl gold-gradient text-primary-foreground" onClick={() => api.updateSettings({ hiddenEmployees: hidden }).then(() => alert("تم حفظ الإعدادات"))}>حفظ حالة الإخفاء</button> : null}
+        {canManage ? <button className="h-11 px-4 rounded-xl gold-gradient text-primary-foreground" onClick={() => api.updateSettings({ hiddenEmployees: normalizeHiddenEmployees(hidden) }).then(() => alert("تم حفظ الإعدادات"))}>حفظ حالة الإخفاء</button> : null}
       </div>
     </div>
   );
