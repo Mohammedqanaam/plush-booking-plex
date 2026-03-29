@@ -98,25 +98,25 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="p-4 max-w-5xl mx-auto space-y-5">
+    <div className="p-4 max-w-6xl mx-auto space-y-5">
       <PageHeader
         title="لوحة الإدارة"
         subtitle="تحكم شامل بالمستخدمين، الإعدادات، والبيانات التشغيلية."
         icon={Settings}
-        actions={<button className="h-10 px-4 rounded-lg border shrink-0" onClick={async () => { await api.logout(); clearAdminSession(); navigate("/"); }}><LogOut className="inline w-4 h-4" /> تسجيل الخروج</button>}
+        actions={<button className="h-10 px-4 rounded-xl border border-border/70 bg-secondary/40 shrink-0 inline-flex items-center gap-2" onClick={async () => { await api.logout(); clearAdminSession(); navigate("/"); }}><LogOut className="w-4 h-4" /> تسجيل الخروج</button>}
       />
       <p className="text-xs text-muted-foreground">مرحباً {session?.username} ({ROLE_LABELS[(session?.role as UserRole) || "viewer"]})</p>
 
-      <div className="flex gap-2 overflow-x-auto">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {tabs.map((tab) => (
-          <button key={tab.id} onClick={() => (can(tab.perm) ? setTab(tab.id) : setMessage("ليست لديك صلاحية"))} className={`px-3 py-2 rounded-xl text-sm inline-flex items-center gap-1 border border-border/40 ${activeTab === tab.id ? "gold-gradient text-primary-foreground" : "bg-secondary/50 hover:bg-secondary"}`}>
+          <button key={tab.id} onClick={() => (can(tab.perm) ? setTab(tab.id) : setMessage("ليست لديك صلاحية"))} className={`px-3 py-2 rounded-xl text-sm inline-flex items-center gap-2 border interactive ${activeTab === tab.id ? "border-primary/50 bg-primary/15 text-primary" : "border-border/50 bg-secondary/40 hover:bg-secondary text-muted-foreground hover:text-foreground"}`}>
             <tab.icon className="inline w-4 h-4 ms-1" /> {tab.label}
           </button>
         ))}
       </div>
 
       {activeTab === "upload" && (
-        <div className="glass-card p-4 space-y-3">
+        <div className="page-surface space-y-3">
           <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={async (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
@@ -133,19 +133,19 @@ const AdminDashboard = () => {
 
       {activeTab === "users" && (
         <div className="grid md:grid-cols-2 gap-4">
-          <form className="glass-card p-4 space-y-2" onSubmit={async (e) => { e.preventDefault(); try { await api.createUser(username, password, role); setMessage("تمت الإضافة"); setUsername(""); setPassword(""); } catch { setMessage("تعذر إضافة المستخدم"); } }}>
+          <form className="page-surface space-y-2" onSubmit={async (e) => { e.preventDefault(); try { await api.createUser(username, password, role); setMessage("تمت الإضافة"); setUsername(""); setPassword(""); } catch { setMessage("تعذر إضافة المستخدم"); } }}>
             <h3 className="font-semibold"><UserPlus className="inline w-4 h-4" /> إضافة مستخدم</h3>
             <input className="w-full h-10 rounded-lg bg-secondary border px-3" dir="ltr" placeholder="اسم المستخدم" value={username} onChange={(e) => setUsername(e.target.value)} />
             <input className="w-full h-10 rounded-lg bg-secondary border px-3" dir="ltr" type="password" placeholder="كلمة المرور" value={password} onChange={(e) => setPassword(e.target.value)} />
             <select className="w-full h-10 rounded-lg bg-secondary border px-3" value={role} onChange={(e) => setRole(e.target.value as UserRole)}><option value="viewer">مشاهد</option><option value="editor">محرر</option><option value="admin">مسؤول</option><option value="superadmin">مدير عام</option></select>
             <button className="h-10 px-4 rounded-lg gold-gradient text-primary-foreground">حفظ</button>
           </form>
-          <div className="glass-card p-4 space-y-2">{users.map((u) => <div className="flex justify-between border-b pb-2" key={u.username}><span>{u.username} ({ROLE_LABELS[u.role]})</span><button onClick={async () => { await api.deleteUser(u.username); setUsers((prev) => prev.filter((x) => x.username !== u.username)); }}>حذف</button></div>)}</div>
+          <div className="page-surface space-y-2">{users.map((u) => <div className="flex justify-between border-b border-border/50 pb-2" key={u.username}><span>{u.username} ({ROLE_LABELS[u.role]})</span><button className="text-destructive" onClick={async () => { await api.deleteUser(u.username); setUsers((prev) => prev.filter((x) => x.username !== u.username)); }}>حذف</button></div>)}</div>
         </div>
       )}
 
       {activeTab === "settings" && (
-        <div className="glass-card p-4 grid md:grid-cols-2 gap-3">
+        <div className="page-surface grid md:grid-cols-2 gap-3">
           <input className="h-10 rounded-lg bg-secondary border px-3" value={siteTitle} onChange={(e) => setSiteTitle(e.target.value)} placeholder="عنوان الموقع" />
           <input className="h-10 rounded-lg bg-secondary border px-3" value={bannerText} onChange={(e) => setBannerText(e.target.value)} placeholder="نص الشريط العلوي" />
           <input className="h-10 rounded-lg bg-secondary border px-3" value={reportMonth} onChange={(e) => setReportMonth(e.target.value)} placeholder="فلتر الشهر" />
@@ -163,7 +163,7 @@ const AdminDashboard = () => {
       )}
 
       {activeTab === "employees" && (
-        <div className="glass-card p-4 space-y-3">
+        <div className="page-surface space-y-3">
           <div className="flex gap-2 flex-wrap">
             <input className="h-10 rounded-lg bg-secondary border px-3 flex-1 min-w-64" value={employeeSearch} onChange={(e) => setEmployeeSearch(e.target.value)} placeholder="بحث باسم الموظف" />
           </div>
@@ -201,11 +201,11 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {activeTab === "requests" && <div className="glass-card p-4 space-y-2">{requests.map((r) => <div key={r.id} className="border-b pb-2"><div>{r.customerName} - {r.branchName}</div><div className="text-xs">{r.phone}</div></div>)}</div>}
+      {activeTab === "requests" && <div className="page-surface space-y-2">{requests.map((r) => <div key={r.id} className="border-b border-border/50 pb-2"><div>{r.customerName} - {r.branchName}</div><div className="text-xs">{r.phone}</div></div>)}</div>}
 
       {activeTab === "profile" && (
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="glass-card p-4 space-y-3">
+          <div className="page-surface space-y-3">
             <h3 className="font-semibold"><User className="inline w-4 h-4 ms-1" /> معلومات الحساب</h3>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">اسم المستخدم</p>
@@ -216,7 +216,7 @@ const AdminDashboard = () => {
               <p className="font-medium">{ROLE_LABELS[(session?.role as UserRole) || "viewer"]}</p>
             </div>
           </div>
-          <form className="glass-card p-4 space-y-2" onSubmit={async (e) => {
+          <form className="page-surface space-y-2" onSubmit={async (e) => {
             e.preventDefault();
             if (newPassword !== confirmPassword) { setMessage("كلمتا المرور غير متطابقتين"); return; }
             if (newPassword.length < 8) { setMessage("كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل"); return; }
@@ -238,7 +238,7 @@ const AdminDashboard = () => {
           </form>
         </div>
       )}
-      {message && <p className="text-xs text-muted-foreground">{message}</p>}
+      {message && <p className="text-xs rounded-xl border border-border/60 bg-secondary/35 p-3 text-muted-foreground">{message}</p>}
     </div>
   );
 };

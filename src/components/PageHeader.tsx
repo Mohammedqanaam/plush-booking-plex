@@ -26,7 +26,7 @@ const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: P
   };
 
   return (
-    <header className="page-surface sticky top-[68px] z-20 border-border/70">
+    <header className="page-surface sticky top-[84px] md:top-[104px] z-20 border-border/70">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
           {showBack ? (
@@ -41,10 +41,14 @@ const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: P
           ) : null}
           <div className="min-w-0">
             <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-              {Icon ? <Icon className="w-5 h-5 text-primary shrink-0" /> : null}
+              {Icon ? (
+                <span className="icon-chip h-8 w-8">
+                  <Icon className="w-4 h-4 shrink-0" />
+                </span>
+              ) : null}
               <span className="truncate">{title}</span>
             </h2>
-            {subtitle ? <p className="text-xs md:text-sm text-muted-foreground mt-1">{subtitle}</p> : null}
+            {subtitle ? <p className="text-xs md:text-sm text-muted-foreground mt-1.5 max-w-2xl">{subtitle}</p> : null}
           </div>
         </div>
         {actions ? <div className="shrink-0">{actions}</div> : null}

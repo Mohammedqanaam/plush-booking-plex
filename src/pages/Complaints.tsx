@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Copy, ExternalLink, MailCheck, OctagonAlert, SendHorizonal } from "lucide-react";
+import { Copy, ExternalLink, MailCheck, OctagonAlert, SendHorizonal, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { branchRecords } from "@/data/knowledge";
 import PageHeader from "@/components/PageHeader";
@@ -39,8 +39,8 @@ const Complaints = () => {
   const selectedBranch = useMemo(() => branches.find((b) => b.name === form.branch), [branches, form.branch]);
   const subCategories = useMemo(() => MAIN_CATEGORIES[form.mainCategory] || [], [form.mainCategory]);
 
-  return <div className="p-4 max-w-5xl mx-auto space-y-4">
-    <PageHeader title="نموذج الشكاوى" subtitle="واجهة سريعة وواضحة لالتقاط الشكوى وتحويلها فورًا." icon={OctagonAlert} />
+  return <div className="p-4 max-w-6xl mx-auto space-y-4">
+    <PageHeader title="إدارة الشكاوى" subtitle="نموذج عملي وسريع لموظف الكول سنتر مع وضوح كامل للحقول والإجراءات." icon={OctagonAlert} />
 
     <form className="page-surface grid md:grid-cols-2 gap-3" onSubmit={async (e) => {
       e.preventDefault();
@@ -48,31 +48,31 @@ const Complaints = () => {
       setResult({ complaintNo: data.complaint?.complaintNo, whatsappMessage: data.whatsappMessage, whatsappUrl: data.whatsappUrl, emailResult: data.emailResult });
       setForm(initial);
     }}>
-      <select className="h-11 rounded-xl bg-secondary border px-3" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as FormState["brand"], branch: "" })}>{["Boudl", "Braira", "Narcissus", "Aber"].map((b) => <option key={b}>{b}</option>)}</select>
-      <select className="h-11 rounded-xl bg-secondary border px-3" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} required>
+      <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as FormState["brand"], branch: "" })}>{["Boudl", "Braira", "Narcissus", "Aber"].map((b) => <option key={b}>{b}</option>)}</select>
+      <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} required>
         <option value="">اختر الفرع</option>{branches.map((b) => <option key={b.id} value={b.name}>{b.name}</option>)}
       </select>
 
-      {selectedBranch ? <div className="md:col-span-2 rounded-xl border bg-secondary/50 p-3 text-xs text-muted-foreground">{selectedBranch.city} · استقبال: {selectedBranch.phone} · الفطور: {selectedBranch.breakfast}</div> : null}
+      {selectedBranch ? <div className="md:col-span-2 rounded-xl border border-border/70 bg-secondary/30 p-3 text-xs text-muted-foreground">{selectedBranch.city} · استقبال: {selectedBranch.phone} · الفطور: {selectedBranch.breakfast}</div> : null}
 
-      <select className="h-11 rounded-xl bg-secondary border px-3" value={form.mainCategory} onChange={(e) => setForm({ ...form, mainCategory: e.target.value, subCategory: "" })} required>
-        <option value="">اختر التصنيف الرئيسي</option>{Object.keys(MAIN_CATEGORIES).map((category) => <option key={category} value={category}>{category}</option>)}
+      <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={form.mainCategory} onChange={(e) => setForm({ ...form, mainCategory: e.target.value, subCategory: "" })} required>
+        <option value="">اختر التصنيف الرئيسي</option>{Object.keys(MAIN_CATEGORIES).map((item) => <option key={item}>{item}</option>)}
       </select>
-      <select className="h-11 rounded-xl bg-secondary border px-3" value={form.subCategory} onChange={(e) => setForm({ ...form, subCategory: e.target.value })} required>
+      <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={form.subCategory} onChange={(e) => setForm({ ...form, subCategory: e.target.value })} required>
         <option value="">اختر التصنيف الفرعي</option>{subCategories.map((item) => <option key={item} value={item}>{item}</option>)}
       </select>
 
-      <input className="h-11 rounded-xl bg-secondary border px-3" placeholder="اسم الضيف" value={form.guestName} onChange={(e) => setForm({ ...form, guestName: e.target.value })} required />
-      <input className="h-11 rounded-xl bg-secondary border px-3" dir="ltr" placeholder="جوال الحجز" value={form.bookingMobile} onChange={(e) => setForm({ ...form, bookingMobile: e.target.value })} required />
-      <input className="h-11 rounded-xl bg-secondary border px-3" dir="ltr" placeholder="جوال التواصل" value={form.contactMobile} onChange={(e) => setForm({ ...form, contactMobile: e.target.value })} required />
-      <input className="h-11 rounded-xl bg-secondary border px-3" dir="ltr" placeholder="رقم السويت" value={form.suiteNumber} onChange={(e) => setForm({ ...form, suiteNumber: e.target.value })} />
-      <input type="date" className="h-11 rounded-xl bg-secondary border px-3" value={form.checkInDate} onChange={(e) => setForm({ ...form, checkInDate: e.target.value })} />
-      <select className="h-11 rounded-xl bg-secondary border px-3" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as FormState["priority"] })}><option value="normal">أولوية عادية</option><option value="high">أولوية عالية</option></select>
-      <textarea className="md:col-span-2 rounded-xl bg-secondary border p-3" rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="الملاحظات" />
+      <input className="h-11 rounded-xl bg-secondary/70 border px-3" placeholder="اسم الضيف" value={form.guestName} onChange={(e) => setForm({ ...form, guestName: e.target.value })} required />
+      <input className="h-11 rounded-xl bg-secondary/70 border px-3" dir="ltr" placeholder="جوال الحجز" value={form.bookingMobile} onChange={(e) => setForm({ ...form, bookingMobile: e.target.value })} required />
+      <input className="h-11 rounded-xl bg-secondary/70 border px-3" dir="ltr" placeholder="جوال التواصل" value={form.contactMobile} onChange={(e) => setForm({ ...form, contactMobile: e.target.value })} required />
+      <input className="h-11 rounded-xl bg-secondary/70 border px-3" dir="ltr" placeholder="رقم السويت" value={form.suiteNumber} onChange={(e) => setForm({ ...form, suiteNumber: e.target.value })} />
+      <input type="date" className="h-11 rounded-xl bg-secondary/70 border px-3" value={form.checkInDate} onChange={(e) => setForm({ ...form, checkInDate: e.target.value })} />
+      <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as FormState["priority"] })}><option value="normal">أولوية عادية</option><option value="high">أولوية عالية</option></select>
+      <textarea className="md:col-span-2 rounded-xl bg-secondary/70 border p-3" rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="الملاحظات" />
       <button className="md:col-span-2 h-11 rounded-xl gold-gradient text-primary-foreground inline-flex items-center justify-center gap-2"><SendHorizonal className="w-4 h-4" />إرسال الشكوى</button>
     </form>
 
-    {result && <div className="page-surface"><div className="flex items-center gap-2"><OctagonAlert className="w-5 h-5 text-primary" /> تم إنشاء الشكوى: {result.complaintNo}</div><pre className="text-xs whitespace-pre-wrap bg-secondary p-3 rounded-xl">{result.whatsappMessage}</pre><div className="flex gap-2"><button className="h-10 px-3 rounded-lg border" onClick={() => navigator.clipboard.writeText(result.whatsappMessage)}><Copy className="inline w-4 h-4" /> نسخ</button><a className="h-10 px-3 rounded-lg border inline-flex items-center gap-2" href={result.whatsappUrl} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /> فتح واتساب</a></div>
+    {result && <div className="page-surface space-y-3"><div className="flex items-center gap-2 font-medium"><ShieldCheck className="w-5 h-5 text-primary" /> تم إنشاء الشكوى: {result.complaintNo}</div><pre className="text-xs whitespace-pre-wrap bg-secondary/40 p-3 rounded-xl border border-border/70">{result.whatsappMessage}</pre><div className="flex gap-2 flex-wrap"><button className="h-10 px-3 rounded-lg border border-border/70 inline-flex items-center gap-2" onClick={() => navigator.clipboard.writeText(result.whatsappMessage)}><Copy className="w-4 h-4" /> نسخ الرسالة</button><a className="h-10 px-3 rounded-lg border border-border/70 inline-flex items-center gap-2" href={result.whatsappUrl} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /> فتح واتساب</a></div>
       <p className="text-xs text-muted-foreground flex items-center gap-1"><MailCheck className="w-4 h-4" /> {result.emailResult?.sent ? "تم إرسال نسخة بريدية للشكوى" : "تعذر/تخطي إرسال البريد (راجع إعدادات البريد)"}</p></div>}
   </div>;
 };
