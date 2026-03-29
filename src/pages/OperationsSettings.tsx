@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { Palette } from "lucide-react";
+import { CheckCheck, Palette, Type } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { themePresets } from "@/data/operations";
 
@@ -16,18 +16,28 @@ const OperationsSettings = () => {
     });
   }, []);
 
-  return <div className="p-4 max-w-4xl mx-auto">
-    <PageHeader title="الإعدادات والتحكم" subtitle="تخصيص اسم المنصة والثيمات بسهولة." icon={Palette} />
-    <div className="glass-card p-4 space-y-3">
-      <input className="w-full h-10 rounded-lg bg-secondary border px-3" value={siteTitle} onChange={(e) => setSiteTitle(e.target.value)} placeholder="اسم المنصة" />
-      <select className="w-full h-10 rounded-lg bg-secondary border px-3" value={themePreset} onChange={(e) => setThemePreset(e.target.value)}>
-        {themePresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name} — {preset.description}</option>)}
-      </select>
-      <button className="h-10 px-4 rounded-lg gold-gradient text-primary-foreground" onClick={async () => {
-        await api.updateSettings({ siteTitle, themePreset });
-        setMsg("تم حفظ الإعدادات والثيم");
-      }}>حفظ</button>
-      {msg && <p className="text-sm">{msg}</p>}
+  return <div className="p-4 max-w-5xl mx-auto space-y-4">
+    <PageHeader title="الإعدادات والتحكم" subtitle="تخصيص اسم المنصة والثيم بطريقة عملية ومتناسقة مع الهوية البصرية." icon={Palette} />
+    <div className="page-surface space-y-4">
+      <div className="space-y-1">
+        <label className="text-sm inline-flex items-center gap-1"><Type className="w-4 h-4 text-primary" /> اسم المنصة</label>
+        <input className="w-full h-11 rounded-xl bg-secondary/70 border px-3" value={siteTitle} onChange={(e) => setSiteTitle(e.target.value)} placeholder="اسم المنصة" />
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-sm inline-flex items-center gap-1"><Palette className="w-4 h-4 text-primary" /> الثيم</label>
+        <select className="w-full h-11 rounded-xl bg-secondary/70 border px-3" value={themePreset} onChange={(e) => setThemePreset(e.target.value)}>
+          {themePresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name} — {preset.description}</option>)}
+        </select>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button className="h-11 px-4 rounded-xl gold-gradient text-primary-foreground" onClick={async () => {
+          await api.updateSettings({ siteTitle, themePreset });
+          setMsg("تم حفظ الإعدادات والثيم بنجاح");
+        }}>حفظ الإعدادات</button>
+      </div>
+      {msg && <p className="text-xs rounded-xl border border-emerald-400/30 bg-emerald-400/10 text-emerald-200 p-3 inline-flex items-center gap-1"><CheckCheck className="w-4 h-4" /> {msg}</p>}
     </div>
   </div>;
 };
