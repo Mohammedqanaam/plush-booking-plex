@@ -59,7 +59,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="p-4 max-w-7xl mx-auto space-y-4 md:space-y-5">
+    <div className="px-3 py-4 sm:px-4 md:px-5 md:py-5 max-w-7xl mx-auto space-y-4 md:space-y-5">
       <PageHeader
         title="لوحة التشغيل اليومية"
         subtitle="تجربة تشغيل هادئة وواضحة لفريق الكول سنتر والمشرفين مع اختصارات سريعة ومؤشرات مباشرة."
