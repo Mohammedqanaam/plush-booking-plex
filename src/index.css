@@ -78,13 +78,22 @@
 
 @layer utilities {
   .app-shell {
-    width: min(100%, 1280px);
+    width: min(100% - 1.5rem, 1280px);
     margin-inline: auto;
     min-height: 100dvh;
+    border-radius: clamp(0px, 1.6vw, 18px);
+    overflow: clip;
     background:
       radial-gradient(1200px 500px at 70% -80px, hsl(261 76% 66% / 0.12), transparent),
       hsl(var(--background));
     box-shadow: 0 0 0 1px hsl(var(--border) / 0.35), 0 24px 60px hsl(230 42% 6% / 0.62);
+  }
+
+  @media (max-width: 767px) {
+    .app-shell {
+      width: 100%;
+      border-radius: 0;
+    }
   }
 
   .safe-area-top {
