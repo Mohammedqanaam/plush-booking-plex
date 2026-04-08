@@ -78,7 +78,7 @@
 
 @layer utilities {
   .app-shell {
-    width: min(100% - 1.5rem, 1280px);
+    width: min(100% - 2rem, 1360px);
     margin-inline: auto;
     min-height: 100dvh;
     border-radius: clamp(0px, 1.6vw, 18px);
@@ -94,6 +94,13 @@
       width: 100%;
       border-radius: 0;
     }
+  }
+
+  .content-container {
+    width: 100%;
+    max-width: 1360px;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 2vw, 1.5rem);
   }
 
   .safe-area-top {
@@ -139,7 +146,7 @@
   }
 
   .page-surface {
-    @apply glass-card p-4 md:p-5;
+    @apply glass-card p-5 md:p-6;
   }
 
   .section-title {
@@ -165,7 +172,7 @@
   }
 
   .kpi-value {
-    @apply text-3xl md:text-[2rem] font-bold tracking-tight;
+    @apply text-4xl md:text-[2.65rem] font-bold tracking-tight leading-none;
   }
 }
 
