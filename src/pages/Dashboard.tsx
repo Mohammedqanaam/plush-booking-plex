@@ -59,7 +59,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="px-3 py-4 sm:px-4 md:px-5 md:py-5 max-w-7xl mx-auto space-y-4 md:space-y-5">
+    <div className="space-y-6 md:space-y-7 pb-8">
       <PageHeader
         title="لوحة التشغيل اليومية"
         subtitle="تجربة تشغيل هادئة وواضحة لفريق الكول سنتر والمشرفين مع اختصارات سريعة ومؤشرات مباشرة."
@@ -67,51 +67,67 @@ const Dashboard = () => {
         icon={Sparkles}
       />
 
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, index) => (
-          <div key={kpi.label} className="page-surface card-hover">
-            <p className="text-xs text-muted-foreground">{kpi.label}</p>
-            <p className="kpi-value text-primary">{kpi.value}</p>
-            <div className="mt-2 h-1 rounded-full bg-secondary/80 overflow-hidden">
+          <div key={kpi.label} className="page-surface card-hover min-h-[146px] flex flex-col justify-between">
+            <p className="text-sm text-muted-foreground">{kpi.label}</p>
+            <p className="kpi-value text-primary mt-4">{kpi.value}</p>
+            <div className="mt-4 h-1 rounded-full bg-secondary/80 overflow-hidden">
               <span className="block h-full gold-gradient" style={{ width: `${35 + index * 18}%` }} />
             </div>
           </div>
         ))}
       </section>
 
-      <section className="page-surface space-y-3">
+      <section className="page-surface space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h3 className="section-title">اختصارات سريعة</h3>
           <span className="text-xs text-muted-foreground">وصول أسرع للأقسام الأكثر استخدامًا</span>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-5 gap-4">
           {shortcuts.map((item) => (
-            <Link key={item.to} to={item.to} className="rounded-2xl border border-border/70 bg-secondary/25 p-3 card-hover text-right">
+            <Link
+              key={item.to}
+              to={item.to}
+              className="rounded-3xl border border-border/70 bg-secondary/25 p-5 card-hover text-right min-h-[168px] flex flex-col justify-between"
+            >
               <div className="flex items-center justify-between gap-3">
                 <span className="icon-chip">
                   <item.icon className="w-4 h-4" />
                 </span>
                 <ArrowLeft className="w-4 h-4 text-muted-foreground" />
               </div>
-              <p className="mt-3 text-sm font-semibold">{item.label}</p>
-              <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+              <div>
+                <p className="mt-3 text-lg font-semibold">{item.label}</p>
+                <p className="text-sm text-muted-foreground mt-1.5">{item.description}</p>
+              </div>
             </Link>
           ))}
         </div>
       </section>
 
       <section className="page-surface">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="icon-chip">
-            <Crown className="w-4 h-4" />
-          </span>
-          <h3 className="section-title">أفضل الموظفين</h3>
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="icon-chip">
+              <Crown className="w-4 h-4" />
+            </span>
+            <h3 className="section-title">أفضل الموظفين</h3>
+          </div>
+          <button type="button" className="text-xs text-primary hover:text-primary/80 interactive">
+            عرض الكل
+          </button>
         </div>
         {topEmployees.length ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {topEmployees.map((employee, index) => (
-              <div key={employee.agent} className="rounded-xl border border-border/70 p-3 bg-secondary/25">
-                <p className="font-semibold text-sm truncate">{index + 1}. {employee.agent}</p>
+              <div key={employee.agent} className="rounded-2xl border border-border/70 p-4 bg-secondary/25 min-h-[140px]">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-primary/40 bg-primary/10 px-2 text-xs font-semibold text-primary">
+                    #{index + 1}
+                  </span>
+                  <p className="font-semibold text-base truncate">{employee.agent}</p>
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">مؤكد {employee.confirmed} · ملغي {employee.cancelled}</p>
                 <p className="text-xs text-primary mt-2">معدل إلغاء {employee.cancelRate}%</p>
               </div>

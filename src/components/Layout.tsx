@@ -20,6 +20,7 @@ const Layout = () => {
   const [siteTitle, setSiteTitle] = useState("Res");
   const [bannerText, setBannerText] = useState("");
   const location = useLocation();
+  const lastUpdatedAt = new Date().toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
 
   useEffect(() => {
     api
@@ -39,27 +40,26 @@ const Layout = () => {
         </div>
       )}
 
-      <header className="safe-area-top sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-xl">
-        <div className="px-3 sm:px-4 py-2 max-w-7xl mx-auto space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="text-lg sm:text-xl font-bold leading-none tracking-tight">
+      <header className="safe-area-top sticky top-0 z-40 border-b border-border/60 bg-background/82 backdrop-blur-xl">
+        <div className="content-container h-[76px] flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold leading-none tracking-tight whitespace-nowrap">
               <span className="gold-gradient bg-clip-text text-transparent">{siteTitle}</span>
             </h1>
-            <div className="flex items-center gap-2">
-              <ViewerPreferences />
-              <RiyadhClock />
-            </div>
+            <span className="hidden lg:inline-flex text-xs text-muted-foreground px-3 py-2 rounded-2xl border border-border/60 bg-secondary/30">
+              الرئيسية
+            </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-2 overflow-auto pb-1">
+          <nav className="hidden md:flex items-center justify-center gap-2 overflow-auto">
             {desktopNav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm border interactive whitespace-nowrap ${
+                  `inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm border interactive whitespace-nowrap ${
                     isActive
-                      ? "border-primary/50 bg-primary/12 text-primary"
+                      ? "border-primary/50 bg-primary/14 text-primary"
                       : "border-border/60 bg-secondary/30 text-muted-foreground hover:text-foreground"
                   }`
                 }
@@ -69,12 +69,29 @@ const Layout = () => {
               </NavLink>
             ))}
           </nav>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden lg:block">
+              <RiyadhClock />
+            </div>
+            <ViewerPreferences />
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 min-h-0 pb-24 md:pb-8 overflow-y-auto custom-scrollbar" key={location.pathname}>
-        <Outlet />
+      <main className="flex-1 min-h-0 pb-24 md:pb-10 overflow-y-auto custom-scrollbar" key={location.pathname}>
+        <div className="content-container pt-6 md:pt-7">
+          <Outlet />
+        </div>
       </main>
+
+      <footer className="hidden md:block border-t border-border/55 bg-secondary/20">
+        <div className="content-container h-[80px] flex items-center justify-between text-xs text-muted-foreground">
+          <p>نظام الكول سنتر</p>
+          <p>الإصدار 2.1.0</p>
+          <p>آخر تحديث اليوم {lastUpdatedAt}</p>
+        </div>
+      </footer>
 
       <ScrollTopButton />
       <BottomNav />
