@@ -274,6 +274,64 @@ export const branchRecords: BranchRecord[] = branchSeedRows
   })
   .filter((row): row is BranchRecord => Boolean(row));
 
+// Merge branches from hotelBranches that are not already represented in the seed records
+const seedKeySet = new Set(branchRecords.map((r) => r.employeeKey));
+hotelBranches.forEach((item, index) => {
+  const branch = item.name.replace(/\s+/g, " ").trim();
+  if (!branch) return;
+  const key = canonicalKey(branch);
+  if (seedKeySet.has(key)) return;
+  const manager = managerByBranch.get(key);
+  const meal = mealByBranch.get(key);
+  const halls = hallByBranch.get(key) || "غير متوفر";
+  const rooms = roomsByBranch.get(key) || [];
+  const city = item.city || cityFromBranch(branch);
+  branchRecords.push({
+    id: `kb-${key}`,
+    employeeKey: key,
+    brand: detectBrand(branch),
+    branch,
+    city,
+    region: regionMap[city] || "غير محدد",
+    overview: `${branch} - ${city}`,
+    receptionPhone: item.phone || "غير متوفر",
+    hotelPhone: item.phone || "غير متوفر",
+    salesPhone: halls,
+    hallPhone: halls,
+    whatsappNumber: manager?.mobile || "غير متوفر",
+    managerName: manager?.name || "غير محدد",
+    managerPhone: manager?.mobile || "غير متوفر",
+    managerEmail: manager?.email || "غير متوفر",
+    breakfastInfo: meal?.breakfast || item.breakfast || "غير متوفر",
+    lunchInfo: meal?.lunch || "غير متوفر",
+    dinnerInfo: meal?.dinner || "غير متوفر",
+    poolInfo: item.pool || "غير متوفر",
+    poolHours: item.pool || "غير محدد",
+    coffeeShopInfo: item.coffeeShop || "غير متوفر",
+    restaurantInfo: item.restaurant || "غير متوفر",
+    restaurantHours: item.restaurant || "غير محدد",
+    balconyInfo: item.balcony || "غير متوفر",
+    parkingInfo: "غير متوفر",
+    kidsSectionInfo: item.kidsSection || "غير متوفر",
+    jacuzziInfo: item.jacuzzi || "غير متوفر",
+    bathtubInfo: item.jacuzzi || "غير متوفر",
+    spaInfo: item.spa || "غير متوفر",
+    spaHours: item.spa || "غير محدد",
+    laundryInfo: item.laundry || "غير متوفر",
+    outdoorSeatingInfo: item.outdoorSeating || "غير متوفر",
+    gymInfo: "غير متوفر",
+    gymHours: "غير محدد",
+    roomTypes: rooms.length ? rooms.map((room) => `${room.room_type} (${room.room_size})`).filter(Boolean) : ["غير متوفر"],
+    hallPackages: [halls, "غير متوفر"],
+    notes: "تمت تعبئة السجل من بيانات الفروع التشغيلية (hotelBranches).",
+    attachments: [],
+    sourceFiles: ["hotels.ts"],
+    visibility: "public",
+    priority: -(index + 1),
+  });
+  seedKeySet.add(key);
+});
+
 const uniqueByKey = new Map<string, BranchRecord>();
 branchRecords.forEach((row) => {
   if (!uniqueByKey.has(row.employeeKey)) uniqueByKey.set(row.employeeKey, row);
