@@ -17,7 +17,7 @@ const BottomNav = () => {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/70 bg-card/92 backdrop-blur-xl safe-area-bottom">
       <div className="flex items-center justify-around h-[74px] max-w-xl mx-auto px-2">
         {mainNavItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path);
           return (
             <button
               key={item.path}

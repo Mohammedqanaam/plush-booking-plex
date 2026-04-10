@@ -90,6 +90,9 @@ const KnowledgeBank = () => {
       </section>
 
       <div className="grid md:grid-cols-2 gap-3">
+        <p className="md:col-span-2 text-xs text-muted-foreground">
+          {results.length} نتيجة
+        </p>
         {results.length ? results.map((item) => (
           <button key={item.id} className="page-surface text-right card-hover" onClick={() => setSelected(item)}>
             <div className="flex items-center justify-between gap-2 mb-2">

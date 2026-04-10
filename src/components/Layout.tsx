@@ -16,6 +16,18 @@ const desktopNav = [
   { to: "/settings", label: "الإعدادات", icon: Settings2 },
 ];
 
+function getCurrentPageLabel(pathname: string): string {
+  if (pathname === "/") return "الرئيسية";
+  const match = desktopNav.slice(1).find((item) => pathname.startsWith(item.to));
+  if (match) return match.label;
+  if (pathname.startsWith("/admin")) return "الأدمن";
+  if (pathname.startsWith("/search")) return "البحث";
+  if (pathname.startsWith("/upload-center")) return "مركز الرفع";
+  if (pathname.startsWith("/contacts")) return "التواصل";
+  if (pathname.startsWith("/policies")) return "السياسات";
+  return "الرئيسية";
+}
+
 const Layout = () => {
   const [siteTitle, setSiteTitle] = useState("Res");
   const [bannerText, setBannerText] = useState("");
@@ -47,7 +59,7 @@ const Layout = () => {
               <span className="gold-gradient bg-clip-text text-transparent">{siteTitle}</span>
             </h1>
             <span className="hidden lg:inline-flex text-xs text-muted-foreground px-3 py-2 rounded-2xl border border-border/60 bg-secondary/30">
-              الرئيسية
+              {getCurrentPageLabel(location.pathname)}
             </span>
           </div>
 

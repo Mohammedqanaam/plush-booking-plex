@@ -63,6 +63,7 @@ const Branches = () => {
 
       <div className="grid lg:grid-cols-[1.4fr_.9fr] gap-3">
         <section className="page-surface table-scroll">
+          <p className="text-xs text-muted-foreground mb-2">{filtered.length} فرع</p>
           <table className="min-w-[920px] w-full text-sm">
             <thead><tr className="text-right border-b border-border/60 text-muted-foreground"><th className="p-2.5">الفرع</th><th className="p-2.5">المدينة</th><th className="p-2.5">البراند</th><th className="p-2.5">الهاتف</th><th className="p-2.5">الإفطار</th><th className="p-2.5">المسبح</th><th className="p-2.5">الحالة</th></tr></thead>
             <tbody>

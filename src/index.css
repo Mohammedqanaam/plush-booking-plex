@@ -28,6 +28,10 @@
     --radius: 1rem;
     --gold: 42 60% 66%;
     --gold-glow: 31 64% 78%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 230 38% 13%;
   }
 
   :root[data-theme="light"] {
@@ -41,6 +45,10 @@
     --muted-foreground: 260 10% 35%;
     --border: 260 20% 82%;
     --input: 260 20% 82%;
+    --success: 142 71% 35%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 40%;
+    --warning-foreground: 0 0% 98%;
   }
 
   * {
