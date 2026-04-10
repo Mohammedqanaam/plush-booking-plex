@@ -101,7 +101,7 @@ export function processBookings(rows: BookingRow[]): AgentStats[] {
       ...item,
       cancelRate: item.total ? Number(((item.cancelled / item.total) * 100).toFixed(1)) : 0,
     }))
-    .sort((a, b) => b.total - a.total)
+    .sort((a, b) => b.confirmed - a.confirmed || b.total - a.total)
 }
 
 export function summarizeBookings(rows: BookingRow[]) {
