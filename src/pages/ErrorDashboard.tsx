@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { enterpriseApi } from "@/lib/enterpriseApi";
 
 type AppError = {
   id: string;
@@ -12,7 +12,7 @@ const ErrorDashboard = () => {
   const [errors, setErrors] = useState<AppError[]>([]);
 
   useEffect(() => {
-    api.getErrors().then((data) => setErrors(data.errors || [])).catch(() => setErrors([]));
+    enterpriseApi.getErrorLogs().then((data) => setErrors(data.logs || [])).catch(() => setErrors([]));
   }, []);
 
   return (

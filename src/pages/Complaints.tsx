@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Copy, ExternalLink, MailCheck, OctagonAlert, SendHorizonal, ShieldCheck } from "lucide-react";
+import { AlertCircle, Copy, ExternalLink, MailCheck, OctagonAlert, SendHorizonal, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { branchRecords } from "@/data/knowledge";
 import PageHeader from "@/components/PageHeader";
@@ -31,6 +31,7 @@ const MAIN_CATEGORIES: Record<string, string[]> = {
 const Complaints = () => {
   const [form, setForm] = useState<FormState>(initial);
   const [result, setResult] = useState<ResultState | null>(null);
+  const [submitError, setSubmitError] = useState("");
 
   const branches = useMemo(() => branchRecords
     .filter((row) => row.brand === form.brand)
@@ -44,9 +45,14 @@ const Complaints = () => {
 
     <form className="page-surface grid md:grid-cols-2 gap-3" onSubmit={async (e) => {
       e.preventDefault();
-      const data = await api.submitComplaint(form as Record<string, unknown>);
-      setResult({ complaintNo: data.complaint?.complaintNo, whatsappMessage: data.whatsappMessage, whatsappUrl: data.whatsappUrl, emailResult: data.emailResult });
-      setForm(initial);
+      setSubmitError("");
+      try {
+        const data = await api.submitComplaint(form as Record<string, unknown>);
+        setResult({ complaintNo: data.complaint?.complaintNo, whatsappMessage: data.whatsappMessage, whatsappUrl: data.whatsappUrl, emailResult: data.emailResult });
+        setForm(initial);
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : "تعذر إرسال الشكوى. يرجى المحاولة مجدداً.");
+      }
     }}>
       <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as FormState["brand"], branch: "" })}>{["Boudl", "Braira", "Narcissus", "Aber"].map((b) => <option key={b}>{b}</option>)}</select>
       <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} required>
@@ -70,6 +76,7 @@ const Complaints = () => {
       <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as FormState["priority"] })}><option value="normal">أولوية عادية</option><option value="high">أولوية عالية</option></select>
       <textarea className="md:col-span-2 rounded-xl bg-secondary/70 border p-3" rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="الملاحظات" />
       <button className="md:col-span-2 h-11 rounded-xl gold-gradient text-primary-foreground inline-flex items-center justify-center gap-2"><SendHorizonal className="w-4 h-4" />إرسال الشكوى</button>
+      {submitError && <p className="md:col-span-2 text-xs rounded-xl border border-rose-400/30 bg-rose-400/10 text-rose-300 p-3 inline-flex items-center gap-1"><AlertCircle className="w-4 h-4" /> {submitError}</p>}
     </form>
 
     {result && <div className="page-surface space-y-3"><div className="flex items-center gap-2 font-medium"><ShieldCheck className="w-5 h-5 text-primary" /> تم إنشاء الشكوى: {result.complaintNo}</div><pre className="text-xs whitespace-pre-wrap bg-secondary/40 p-3 rounded-xl border border-border/70">{result.whatsappMessage}</pre><div className="flex gap-2 flex-wrap"><button className="h-10 px-3 rounded-lg border border-border/70 inline-flex items-center gap-2" onClick={() => navigator.clipboard.writeText(result.whatsappMessage)}><Copy className="w-4 h-4" /> نسخ الرسالة</button><a className="h-10 px-3 rounded-lg border border-border/70 inline-flex items-center gap-2" href={result.whatsappUrl} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /> فتح واتساب</a></div>

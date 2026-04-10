@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { CheckCheck, Palette, Type } from "lucide-react";
+import { AlertCircle, CheckCheck, Palette, Type } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { themePresets } from "@/data/operations";
 
@@ -8,12 +8,13 @@ const OperationsSettings = () => {
   const [siteTitle, setSiteTitle] = useState("Res Dashboard");
   const [themePreset, setThemePreset] = useState(themePresets[3].id);
   const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     api.getSettings().then((s) => {
       if (s.siteTitle) setSiteTitle(s.siteTitle);
-      if ((s as Record<string, string>).themePreset) setThemePreset((s as Record<string, string>).themePreset);
-    });
+      if (s.themePreset) setThemePreset(s.themePreset);
+    }).catch(() => {});
   }, []);
 
   return <div className="p-4 max-w-5xl mx-auto space-y-4">
@@ -33,11 +34,18 @@ const OperationsSettings = () => {
 
       <div className="flex items-center gap-2">
         <button className="h-11 px-4 rounded-xl gold-gradient text-primary-foreground" onClick={async () => {
-          await api.updateSettings({ siteTitle, themePreset });
-          setMsg("تم حفظ الإعدادات والثيم بنجاح");
+          setMsg("");
+          setError("");
+          try {
+            await api.updateSettings({ siteTitle, themePreset });
+            setMsg("تم حفظ الإعدادات والثيم بنجاح");
+          } catch {
+            setError("تعذر حفظ الإعدادات. يرجى المحاولة مجدداً.");
+          }
         }}>حفظ الإعدادات</button>
       </div>
       {msg && <p className="text-xs rounded-xl border border-emerald-400/30 bg-emerald-400/10 text-emerald-200 p-3 inline-flex items-center gap-1"><CheckCheck className="w-4 h-4" /> {msg}</p>}
+      {error && <p className="text-xs rounded-xl border border-rose-400/30 bg-rose-400/10 text-rose-300 p-3 inline-flex items-center gap-1"><AlertCircle className="w-4 h-4" /> {error}</p>}
     </div>
   </div>;
 };

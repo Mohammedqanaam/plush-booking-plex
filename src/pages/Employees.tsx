@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { BadgeCheck, Eye, EyeOff, Search, SlidersHorizontal, UsersRound } from "lucide-react";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { isEmployeeHidden, normalizeHiddenEmployees } from "@/lib/employeeVisibility";
 import { processBookings } from "@/lib/bookingProcessor";
@@ -60,7 +61,9 @@ const Employees = () => {
             <button
               className="h-11 px-4 rounded-xl gold-gradient text-primary-foreground"
               onClick={() =>
-                api.updateSettings({ hiddenEmployees: normalizeHiddenEmployees(hidden) }).then(() => alert("تم حفظ حالة الإخفاء"))
+                api.updateSettings({ hiddenEmployees: normalizeHiddenEmployees(hidden) })
+                  .then(() => toast.success("تم حفظ حالة الإخفاء"))
+                  .catch(() => toast.error("تعذر حفظ الإعدادات"))
               }
             >
               حفظ إعدادات الإخفاء
