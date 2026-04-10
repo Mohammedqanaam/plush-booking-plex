@@ -69,7 +69,7 @@ const Employees = () => {
         </div>
 
         <div className="table-scroll">
-          <p className="text-xs text-muted-foreground mb-2">{shown.length} موظف</p>
+          <p className="text-xs text-muted-foreground mb-2">{shown.length} {shown.length === 1 ? "موظف" : "موظفون"}</p>
           <table className="min-w-[880px] w-full text-sm">
             <thead>
               <tr className="text-muted-foreground border-b border-border/60">

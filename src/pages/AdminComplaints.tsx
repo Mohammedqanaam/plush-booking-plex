@@ -25,7 +25,7 @@ const AdminComplaints = () => {
   return <div className="p-4 max-w-6xl mx-auto space-y-4">
     <PageHeader title="إدارة الشكاوى" subtitle="متابعة الشكاوى وتحديث حالتها بشكل مباشر." icon={Siren} />
     <input className="h-10 w-full rounded-lg bg-secondary border px-3" placeholder="بحث برقم الشكوى / اسم الضيف / الفرع / الجوال" value={q} onChange={(e) => setQ(e.target.value)} />
-    <p className="text-xs text-muted-foreground">{filtered.length} شكوى</p>
+    <p className="text-xs text-muted-foreground">{filtered.length} {filtered.length === 1 ? "شكوى" : "شكاوى"}</p>
     <div className="space-y-2">{filtered.map((r) => <div key={r.complaintNo} className="glass-card p-3 grid md:grid-cols-5 gap-2 items-center"><div className="font-semibold">{r.complaintNo}</div><div>{r.guestName}<div className="text-xs text-muted-foreground">{r.branch}</div></div><div className="text-xs" dir="ltr">{r.contactMobile}</div><span className={`text-xs rounded-full px-2 py-1 w-fit ${colors[r.status]}`}>{r.status}</span><select className="h-9 rounded bg-secondary border px-2" value={r.status} onChange={async (e) => { const status = e.target.value as ComplaintStatus; await api.updateComplaint({ complaintNo: r.complaintNo, status }); setRows((prev) => prev.map((x) => x.complaintNo === r.complaintNo ? { ...x, status } : x)); }}><option value="open">مفتوحة</option><option value="under_review">قيد المراجعة</option><option value="closed">مغلقة</option></select></div>)}</div>
   </div>;
 };
