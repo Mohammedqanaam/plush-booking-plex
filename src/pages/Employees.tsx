@@ -4,7 +4,7 @@ import { api, type AppSettings } from "@/lib/api";
 import { normalizeHiddenEmployees } from "@/lib/employeeVisibility";
 import { processBookings } from "@/lib/bookingProcessor";
 import { getAdminSession, hasPermission } from "@/lib/adminAuth";
-import { buildEmployeeRows, extractAdjustmentPayload, type EmployeeRow } from "@/lib/employeePerformance";
+import { buildEmployeeRows, employeeKeyFromName, extractAdjustmentPayload, type EmployeeRow } from "@/lib/employeePerformance";
 import PageHeader from "@/components/PageHeader";
 
 const Employees = () => {
@@ -143,7 +143,7 @@ const Employees = () => {
                     onClick={() =>
                       setHidden((current) =>
                         employee.hiddenFromPerformance
-                          ? current.filter((name) => name !== employee.employeeKey)
+                          ? current.filter((name) => employeeKeyFromName(name) !== employee.employeeKey)
                           : normalizeHiddenEmployees([...current, employee.employeeKey]),
                       )
                     }
@@ -194,7 +194,7 @@ const Employees = () => {
                           onClick={() =>
                             setHidden((current) =>
                               employee.hiddenFromPerformance
-                                ? current.filter((name) => name !== employee.employeeKey)
+                                ? current.filter((name) => employeeKeyFromName(name) !== employee.employeeKey)
                                 : normalizeHiddenEmployees([...current, employee.employeeKey]),
                             )
                           }
