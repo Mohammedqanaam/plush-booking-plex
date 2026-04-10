@@ -145,8 +145,19 @@
     min-width: 44px;
   }
 
+
+
+  .mobile-bottom-nav {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.55rem);
+    box-shadow: 0 -14px 34px hsl(230 42% 4% / 0.35);
+  }
+
   .page-surface {
-    @apply glass-card p-5 md:p-6;
+    @apply glass-card p-4 md:p-6;
+  }
+
+  .interactive:focus-visible {
+    @apply ring-2 ring-primary/45;
   }
 
   .section-title {

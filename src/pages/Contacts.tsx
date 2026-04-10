@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Send, CheckCircle2, ChevronDown, PhoneCall, Clock3 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
-import { hotelBranches } from "@/data/hotels";
 import { api, type ContactRequest } from "@/lib/api";
+import { branchInventoryByBrand, brandOptions, type BrandKey } from "@/data/knowledge";
 
 interface ContactForm {
+  brand: BrandKey;
   branchName: string;
   customerName: string;
   phone: string;
@@ -12,11 +13,13 @@ interface ContactForm {
 }
 
 const Contacts = () => {
-  const [form, setForm] = useState<ContactForm>({ branchName: "", customerName: "", phone: "", note: "" });
+  const [form, setForm] = useState<ContactForm>({ brand: "Boudl", branchName: "", customerName: "", phone: "", note: "" });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recentRequests, setRecentRequests] = useState<ContactRequest[]>([]);
+
+  const branchOptions = useMemo(() => branchInventoryByBrand[form.brand], [form.brand]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,10 +27,15 @@ const Contacts = () => {
     setError(null);
 
     try {
-      const result = await api.createContactRequest(form);
+      const result = await api.createContactRequest({
+        branchName: form.branchName,
+        customerName: form.customerName,
+        phone: form.phone,
+        note: `${form.brand} | ${form.note}`,
+      });
       setSubmitted(true);
       setRecentRequests((prev) => [result.request, ...prev].slice(0, 5));
-      setForm({ branchName: "", customerName: "", phone: "", note: "" });
+      setForm((prev) => ({ ...prev, branchName: "", customerName: "", phone: "", note: "" }));
       setTimeout(() => setSubmitted(false), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "تعذر إرسال الطلب");
@@ -37,11 +45,10 @@ const Contacts = () => {
   };
 
   const inputClass = "w-full h-11 px-4 rounded-xl bg-secondary/70 border border-border text-foreground placeholder:text-muted-foreground text-sm";
-  const groups = [...new Set(hotelBranches.map((h) => h.group))];
 
   return (
-    <div className="p-4 max-w-5xl mx-auto space-y-5">
-      <PageHeader title="طلبات التواصل" subtitle="واجهة سريعة لموظف الكول سنتر لإرسال طلبات التواصل بشكل مرتب." icon={PhoneCall} />
+    <div className="p-3 md:p-4 max-w-5xl mx-auto space-y-5 pb-28 md:pb-8">
+      <PageHeader title="طلبات التواصل" subtitle="واجهة أسرع للوصول إلى فروع كل براند بدون تداخل بيانات." icon={PhoneCall} />
 
       {submitted ? (
         <div className="page-surface text-center space-y-3 animate-fade-in">
@@ -52,24 +59,28 @@ const Contacts = () => {
       ) : (
         <form onSubmit={handleSubmit} className="page-surface space-y-4">
           <div className="grid md:grid-cols-2 gap-3">
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">البراند</label>
+              <select
+                value={form.brand}
+                onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value as BrandKey, branchName: "" }))}
+                className={`${inputClass} appearance-none`}
+              >
+                {brandOptions.map((brand) => (
+                  <option key={brand}>{brand}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium">اسم الفرع</label>
               <div className="relative">
-                <select
-                  required
-                  value={form.branchName}
-                  onChange={(e) => setForm({ ...form, branchName: e.target.value })}
-                  className={`${inputClass} appearance-none pl-10`}
-                >
+                <select required value={form.branchName} onChange={(e) => setForm({ ...form, branchName: e.target.value })} className={`${inputClass} appearance-none pl-10`}>
                   <option value="">-- اختر الفرع --</option>
-                  {groups.map((group) => (
-                    <optgroup key={group} label={`── ${group} ──`}>
-                      {hotelBranches.filter((h) => h.group === group).map((h) => (
-                        <option key={h.id} value={h.name}>
-                          {h.name} - {h.city}
-                        </option>
-                      ))}
-                    </optgroup>
+                  {branchOptions.map((branch) => (
+                    <option key={branch} value={branch}>
+                      {branch}
+                    </option>
                   ))}
                 </select>
                 <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -102,7 +113,9 @@ const Contacts = () => {
       )}
 
       <div className="page-surface space-y-2">
-        <h3 className="text-sm font-semibold inline-flex items-center gap-1"><Clock3 className="w-4 h-4 text-primary" /> آخر الطلبات المرسلة من هذه الجلسة</h3>
+        <h3 className="text-sm font-semibold inline-flex items-center gap-1">
+          <Clock3 className="w-4 h-4 text-primary" /> آخر الطلبات المرسلة من هذه الجلسة
+        </h3>
         {recentRequests.length ? (
           recentRequests.map((req) => (
             <div key={req.id} className="rounded-xl border border-border/70 bg-secondary/25 p-3 flex items-center justify-between">

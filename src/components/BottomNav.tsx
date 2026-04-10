@@ -14,8 +14,8 @@ const BottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/70 bg-card/92 backdrop-blur-xl safe-area-bottom">
-      <div className="flex items-center justify-around h-[74px] max-w-xl mx-auto px-2">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/70 bg-card/92 backdrop-blur-xl safe-area-bottom mobile-bottom-nav">
+      <div className="flex items-center justify-around h-[76px] max-w-xl mx-auto px-2 pb-1">
         {mainNavItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (

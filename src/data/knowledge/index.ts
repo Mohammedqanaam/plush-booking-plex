@@ -1,10 +1,43 @@
+import seed from "@/data/knowledge_bank_seed.json";
 import { hotelBranches } from "@/data/hotels";
-import { masterHotels } from "@/data/hotelMasterData";
 
-export type BrandKey = "Braira" | "Boudl" | "Aber" | "Narcissus";
+export type BrandKey = "Braira" | "Boudl" | "Aber" | "Narcissus" | "ZMN";
+export type KnowledgeSection =
+  | "Overview"
+  | "Contacts"
+  | "Meals"
+  | "Facilities"
+  | "Rooms"
+  | "Halls & Packages"
+  | "Policies"
+  | "Response Protocols"
+  | "Discounts"
+  | "Attachments"
+  | "Operational Notes";
+
+export type KnowledgeCategory =
+  | "سياسات"
+  | "فروع"
+  | "جهات اتصال"
+  | "وجبات"
+  | "غرف"
+  | "مرافق"
+  | "قاعات"
+  | "خصومات"
+  | "تعاميم"
+  | "حلول"
+  | "إجراءات";
+
+export type AttachmentItem = {
+  title: string;
+  type: "pdf" | "png" | "jpg" | "jpeg" | "webp" | "mp4" | "mp3";
+  url: string;
+  source: "seed" | "official";
+};
 
 export type BranchRecord = {
   id: string;
+  employeeKey: string;
   brand: BrandKey;
   branch: string;
   city: string;
@@ -40,10 +73,25 @@ export type BranchRecord = {
   roomTypes: string[];
   hallPackages: string[];
   notes: string;
-  attachments: Array<{ title: string; type: "pdf" | "image" | "circular"; url: string }>;
+  attachments: AttachmentItem[];
   sourceFiles: string[];
   visibility: "public" | "internal";
   priority: number;
+};
+
+export type KnowledgeItem = {
+  id: string;
+  category: KnowledgeCategory;
+  section: KnowledgeSection;
+  title: string;
+  summary: string;
+  details: string;
+  brand?: BrandKey;
+  branch?: string;
+  tags: string[];
+  relatedPhones: string[];
+  attachments: AttachmentItem[];
+  responseProtocol?: string;
 };
 
 export type GlobalReference = {
@@ -57,180 +105,326 @@ export type GlobalReference = {
   attachmentUrl?: string;
 };
 
+const managerRows = (seed.managers || []) as Array<{ name: string; email: string; mobile: string; hotel: string; region: string }>;
+const hallRows = (seed.hall_contacts || []) as Array<{ branch: string; hall_contact: string }>;
+const mealRows = (seed.meal_info || []) as Array<{ branch: string; breakfast: string; lunch: string; dinner: string }>;
+const roomRows = (seed.room_types || []) as Array<{ branch: string; room_type: string; room_size: string; room_description: string }>;
+const branchSeedRows = (seed.branches || []) as Array<Record<string, string>>;
+
+const normalizeArabic = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const aliasPairs: Array<[string, string]> = [
+  ["barirra", "braira"],
+  ["qurtubah", "qurtbah"],
+  ["al ahsa", "ahsa"],
+  [" الاحساء", " الاحسا"],
+  ["قرطبه", "قرطبة"],
+];
+
+const canonicalKey = (value: string) => {
+  let normalized = normalizeArabic(value)
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/g, "");
+
+  aliasPairs.forEach(([from, to]) => {
+    normalized = normalized.replaceAll(from, to);
+  });
+  return normalized;
+};
+
 const brandMap: Record<string, BrandKey> = {
-  "بريرا": "Braira",
-  "بودل": "Boudl",
-  "عابر": "Aber",
-  "نارسس": "Narcissus",
-  "نارسيس": "Narcissus",
+  بريرا: "Braira",
+  بودل: "Boudl",
+  عابر: "Aber",
+  نارسس: "Narcissus",
+  نارسيس: "Narcissus",
+  "زمن": "ZMN",
+  "z'mn": "ZMN",
 };
 
-const regionMap: Record<string, string> = {
-  "الرياض": "الوسطى",
-  "جدة": "الغربية",
-  "الخبر": "الشرقية",
-  "الدمام": "الشرقية",
-  "الأحساء": "الشرقية",
-  "الجبيل": "الشرقية",
-  "القصيم": "القصيم",
-  "المجمعة": "الوسطى",
-  "وادي الدواسر": "الوسطى",
-  "أبها": "الجنوبية",
-  "خميس مشيط": "الجنوبية",
-  "جازان": "الجنوبية",
-  "مكة": "الغربية",
-  "الطائف": "الغربية",
-  "حفر الباطن": "الشرقية",
+const detectBrand = (branchName: string): BrandKey => {
+  const normalized = normalizeArabic(branchName);
+  if (normalized.includes("بريرا")) return "Braira";
+  if (normalized.includes("بودل")) return "Boudl";
+  if (normalized.includes("عابر")) return "Aber";
+  if (normalized.includes("نارس")) return "Narcissus";
+  if (normalized.includes("زمن") || normalized.includes("zmn") || normalized.includes("z'mn")) return "ZMN";
+
+  const fromHotels = hotelBranches.find((item) => canonicalKey(item.name) === canonicalKey(branchName));
+  return fromHotels ? brandMap[fromHotels.group] || "Boudl" : "Boudl";
 };
 
-const normalizeName = (name: string) => name
-  .replace(/[أإآ]/g, "ا")
-  .replace(/ى/g, "ي")
-  .replace(/ة/g, "ه")
-  .replace(/\s+/g, " ")
-  .trim()
-  .replace("قرطبه", "قرطبة")
-  .replace("نارسس", "نارسيس");
-const masterByName = new Map(masterHotels.map((h) => [normalizeName(h.name), h]));
-
-const asText = (value: unknown) => (typeof value === "string" ? value : "");
-
-const parseHours = (value: unknown) => {
-  const text = asText(value);
-  const match = text.match(/\d[^/]*[-–][^/\n]+|24\s*ساعة|24H/i);
-  return match ? match[0].trim() : "غير محدد";
-};
-
-const toBranchRecord = (item: (typeof hotelBranches)[number], idx: number): BranchRecord => {
-  const canonicalName = normalizeName(item.name);
-  const master = masterByName.get(canonicalName);
-  const brand = brandMap[item.group] ?? "Boudl";
-
-  return {
-    id: item.id,
-    brand,
-    branch: canonicalName,
-    city: item.city,
-    region: regionMap[item.city] ?? "غير محدد",
-    overview: `${canonicalName} - ${item.city}`,
-    receptionPhone: item.phone || "غير متوفر",
-    hotelPhone: master?.hotelPhone ?? item.phone ?? "غير متوفر",
-    salesPhone: master?.salesPhone ?? "غير متوفر",
-    hallPhone: master?.salesPhone ?? "غير متوفر",
-    whatsappNumber: master?.salesPhone ?? "غير متوفر",
-    managerName: "غير محدد",
-    managerPhone: "غير متوفر",
-    managerEmail: "غير متوفر",
-    breakfastInfo: asText(item.breakfast) || "غير متوفر",
-    lunchInfo: "منيو حسب الطلب",
-    dinnerInfo: "منيو حسب الطلب",
-    poolInfo: asText(item.pool) || "غير متوفر",
-    poolHours: parseHours(item.pool),
-    coffeeShopInfo: asText(item.coffeeShop) || "غير متوفر",
-    restaurantInfo: asText(item.restaurant) || "غير متوفر",
-    restaurantHours: parseHours(item.restaurant),
-    balconyInfo: asText(item.balcony) || "غير متوفر",
-    parkingInfo: master?.parking ?? "غير متوفر",
-    kidsSectionInfo: asText(item.kidsSection) || "غير متوفر",
-    jacuzziInfo: asText(item.jacuzzi) || "غير متوفر",
-    bathtubInfo: asText(item.jacuzzi).includes("بانيو") ? asText(item.jacuzzi) : "حسب نوع الغرفة",
-    spaInfo: asText(item.spa) || "غير متوفر",
-    spaHours: parseHours(item.spa),
-    laundryInfo: asText(item.laundry) || "غير متوفر",
-    outdoorSeatingInfo: asText(item.outdoorSeating) || "غير متوفر",
-    gymInfo: master?.gym ?? "غير متوفر",
-    gymHours: parseHours(master?.gym ?? ""),
-    roomTypes: master?.roomTypes ? master.roomTypes.split("،").map((t) => t.trim()).filter(Boolean) : ["غير متوفر"],
-    hallPackages: [master?.meetingHall ?? "غير متوفر", master?.weddingPackage ?? "غير متوفر"],
-    notes: "تم ترحيل البيانات من مصادر التشغيل الحالية مع توحيد أسماء الفروع.",
-    attachments: [],
-    sourceFiles: ["src/data/hotels.ts", "src/data/hotelMasterData.ts", "src/data/knowledge_bank_seed.json"],
-    visibility: "public",
-    priority: 1000 - idx,
-  };
-};
-
-const deduped = new Map<string, BranchRecord>();
-for (const [idx, row] of hotelBranches.entries()) {
-  const branch = toBranchRecord(row, idx);
-  const key = `${branch.brand}::${normalizeName(branch.branch)}`;
-  if (!deduped.has(key)) deduped.set(key, branch);
-}
-
-
-const ensureBranch = (record: BranchRecord) => {
-  const key = `${record.brand}::${normalizeName(record.branch)}`;
-  if (!deduped.has(key)) deduped.set(key, record);
-};
-
-ensureBranch({
-  ...toBranchRecord({ id: "nr-royal-alias", name: "نارسيس رويال", group: "نارسيس", city: "الرياض", phone: "114061515", pool: "غير محدد", breakfast: "غير محدد", restaurant: "غير محدد", coffeeShop: "غير محدد", balcony: "غير محدد", spa: "غير محدد", jacuzzi: "غير محدد", kidsSection: "غير محدد", laundry: "غير محدد", outdoorSeating: "غير محدد" }, 999),
-  branch: "نارسيس رويال",
-});
-ensureBranch({
-  ...toBranchRecord({ id: "nr-hamra-alias", name: "نارسيس الحمرا", group: "نارسيس", city: "جدة", phone: "122617700", pool: "غير محدد", breakfast: "غير محدد", restaurant: "غير محدد", coffeeShop: "غير محدد", balcony: "غير محدد", spa: "غير محدد", jacuzzi: "غير محدد", kidsSection: "غير محدد", laundry: "غير محدد", outdoorSeating: "غير محدد" }, 998),
-  branch: "نارسيس الحمرا",
-});
-ensureBranch({
-  ...toBranchRecord({ id: "nr-riyadh", name: "نارس الرياض", group: "نارسيس", city: "الرياض", phone: "112946300", pool: "--", breakfast: "--", restaurant: "--", coffeeShop: "--", balcony: "--", spa: "--", jacuzzi: "--", kidsSection: "--", laundry: "--", outdoorSeating: "--" }, 997),
-  branch: "نارس الرياض",
-});
-ensureBranch({
-  ...toBranchRecord({ id: "bd-shati-alias", name: "بودل الشاطي", group: "بودل", city: "الخبر", phone: "138091117", pool: "غير محدد", breakfast: "غير محدد", restaurant: "غير محدد", coffeeShop: "غير محدد", balcony: "غير محدد", spa: "غير محدد", jacuzzi: "غير محدد", kidsSection: "غير محدد", laundry: "غير محدد", outdoorSeating: "غير محدد" }, 996),
-  branch: "بودل الشاطي",
-});
-
-export const branchRecords: BranchRecord[] = [...deduped.values()].sort((a, b) => a.brand.localeCompare(b.brand) || a.branch.localeCompare(b.branch));
-
-export const branchesByBrand: Record<BrandKey, BranchRecord[]> = {
-  Braira: branchRecords.filter((row) => row.brand === "Braira"),
-  Boudl: branchRecords.filter((row) => row.brand === "Boudl"),
-  Aber: branchRecords.filter((row) => row.brand === "Aber"),
-  Narcissus: branchRecords.filter((row) => row.brand === "Narcissus"),
-};
-
-export const quickIntents = ["سياسة الإلغاء", "رقم الاستقبال", "الإفطار", "المسبح", "الغرف", "القاعات", "بروتوكول الرد"];
+const phoneFromHotels = new Map(hotelBranches.map((item) => [canonicalKey(item.name), item.phone]));
+const managerByBranch = new Map(managerRows.map((row) => [canonicalKey(row.hotel), row]));
+const hallByBranch = new Map(hallRows.map((row) => [canonicalKey(row.branch), row.hall_contact]));
+const mealByBranch = new Map(mealRows.map((row) => [canonicalKey(row.branch), row]));
+const roomsByBranch = roomRows.reduce((acc, room) => {
+  const key = canonicalKey(room.branch);
+  if (!acc.has(key)) acc.set(key, [] as typeof roomRows);
+  acc.get(key)?.push(room);
+  return acc;
+}, new Map<string, typeof roomRows>());
 
 export const globalReferences: GlobalReference[] = [
   {
     id: "cancellation-policy",
     title: "سياسة الإلغاء",
     category: "Cancellation Policy",
-    summary: "يتم تطبيق سياسة الإلغاء حسب نوع السعر وقناة الحجز، وغالبًا الإلغاء المجاني قبل 24 ساعة.",
-    responseProtocol: "ابدأ بالتحقق من نوع الحجز (مسترد/غير مسترد) ثم اشرح للضيف آخر وقت للإلغاء دون رسوم.",
-    internalSteps: ["التحقق من رقم الحجز", "تأكيد نافذة الإلغاء", "تحديث الحالة في النظام", "إرسال تأكيد للضيف"],
-    relatedNotes: "في حال عدم الحضور تطبق سياسة No Show إن وجدت.",
+    summary: "يتم تطبيق سياسة الإلغاء حسب نوع السعر وقناة الحجز. تحقق من نافذة الإلغاء قبل تأكيد أي رسوم.",
+    responseProtocol: "نراجع نوع الحجز أولًا، ثم نوضح آخر وقت للإلغاء المجاني، ثم نؤكد الرسوم المحتملة بشكل واضح ومهذب.",
+    internalSteps: ["التحقق من رقم الحجز", "تحديد نوع السعر", "تأكيد موعد الإلغاء", "توثيق المحادثة بالنظام"],
+    relatedNotes: "في حالات عدم الحضور يتم الرجوع إلى سياسة No Show المعتمدة.",
     attachmentUrl: "/docs/policies/cancellation-policy.pdf",
   },
   {
     id: "no-show-policy",
     title: "سياسة عدم الحضور",
     category: "No Show Policy",
-    summary: "عدم حضور الضيف بدون إلغاء مسبق قد ينتج عنه رسوم ليلة واحدة أو كامل الحجز حسب السياسة.",
-    responseProtocol: "وضح للضيف الفرق بين الإلغاء وعدم الحضور، وراجع شروط الحجز قبل تأكيد أي رسوم.",
-    internalSteps: ["التحقق من وقت الوصول", "مراجعة شروط السعر", "تسجيل الحالة No Show", "تصعيد الحالات الاستثنائية"],
+    summary: "عدم حضور الضيف دون إلغاء مسبق قد يترتب عليه رسوم حسب سياسة السعر.",
+    responseProtocol: "اشرح الفرق بين الإلغاء وعدم الحضور، مع توضيح سبب الرسوم استنادًا لنوع الحجز.",
+    internalSteps: ["مراجعة وقت الوصول", "تأكيد السياسة", "تسجيل No Show", "التصعيد للحالات الاستثنائية"],
   },
   {
-    id: "central-reservation-protocol",
+    id: "reservation-protocol",
     title: "بروتوكول الحجز المركزي",
     category: "Central Reservation Protocol",
-    summary: "إجراءات موحدة لموظفي الكول سنتر للتعامل مع الاستفسارات والحجوزات والتعديلات.",
-    responseProtocol: "التزم بسيناريو الترحيب، ثم اجمع البيانات الأساسية، ثم اعرض الخيارات بدقة.",
-    internalSteps: ["التحية والتحقق", "جمع البيانات", "تأكيد السعر والسياسات", "تثبيت الحجز"],
-  },
-  {
-    id: "response-scripts",
-    title: "الردود الجاهزة",
-    category: "Response Scripts",
-    summary: "نماذج ردود جاهزة للسياسات الشائعة، والخدمات، والتصعيد.",
-    responseProtocol: "اختر النص الأقرب لحالة الضيف ثم خصّصه باسم الفرع والسياسة.",
-    internalSteps: ["تحديد نية العميل", "اختيار السكربت", "التخصيص", "التوثيق"],
+    summary: "خطوات موحدة للتعامل مع الاستفسارات والحجوزات والتعديلات.",
+    responseProtocol: "ترحيب + تحقق + عرض الخيارات + تأكيد السياسات + إغلاق احترافي.",
+    internalSteps: ["التحية والتحقق", "تجميع البيانات", "عرض الخيارات", "التأكيد النهائي"],
   },
 ];
+
+const regionMap: Record<string, string> = {
+  الرياض: "الوسطى",
+  جدة: "الغربية",
+  الخبر: "الشرقية",
+  الدمام: "الشرقية",
+  الاحساء: "الشرقية",
+  الأحساء: "الشرقية",
+  القصيم: "القصيم",
+  أبها: "الجنوبية",
+};
+
+const cityFromBranch = (branch: string) => {
+  const match = hotelBranches.find((item) => canonicalKey(item.name) === canonicalKey(branch));
+  return match?.city || "غير محدد";
+};
+
+export const branchRecords: BranchRecord[] = branchSeedRows
+  .map((row, index) => {
+    const branch = String(row.branch || "").replace(/\s+/g, " ").trim();
+    if (!branch) return null;
+    const key = canonicalKey(branch);
+    const manager = managerByBranch.get(key);
+    const meal = mealByBranch.get(key);
+    const halls = hallByBranch.get(key) || "غير متوفر";
+    const rooms = roomsByBranch.get(key) || [];
+    const city = cityFromBranch(branch);
+
+    return {
+      id: `kb-${key}`,
+      employeeKey: key,
+      brand: detectBrand(branch),
+      branch,
+      city,
+      region: regionMap[city] || "غير محدد",
+      overview: `${branch} - ${city}`,
+      receptionPhone: phoneFromHotels.get(key) || "غير متوفر",
+      hotelPhone: phoneFromHotels.get(key) || "غير متوفر",
+      salesPhone: halls,
+      hallPhone: halls,
+      whatsappNumber: manager?.mobile || "غير متوفر",
+      managerName: manager?.name || "غير محدد",
+      managerPhone: manager?.mobile || "غير متوفر",
+      managerEmail: manager?.email || "غير متوفر",
+      breakfastInfo: meal?.breakfast || row.breakfast || "غير متوفر",
+      lunchInfo: meal?.lunch || "غير متوفر",
+      dinnerInfo: meal?.dinner || "غير متوفر",
+      poolInfo: row.pool || "غير متوفر",
+      poolHours: row.pool || "غير محدد",
+      coffeeShopInfo: row.coffee_shop || "غير متوفر",
+      restaurantInfo: row.restaurant || "غير متوفر",
+      restaurantHours: row.restaurant || "غير محدد",
+      balconyInfo: row.view_balcony || "غير متوفر",
+      parkingInfo: row.parking || "غير متوفر",
+      kidsSectionInfo: row.kids_section || "غير متوفر",
+      jacuzziInfo: row.jacuzzi_bathtub || "غير متوفر",
+      bathtubInfo: row.jacuzzi_bathtub || "غير متوفر",
+      spaInfo: row.spa || "غير متوفر",
+      spaHours: row.spa || "غير محدد",
+      laundryInfo: row.laundry || "غير متوفر",
+      outdoorSeatingInfo: row.outdoor_seating || "غير متوفر",
+      gymInfo: row.club || "غير متوفر",
+      gymHours: row.club || "غير محدد",
+      roomTypes: rooms.length ? rooms.map((room) => `${room.room_type} (${room.room_size})`).filter(Boolean) : ["غير متوفر"],
+      hallPackages: [row.meeting_hall || "غير متوفر", row.wedding_package || "غير متوفر"],
+      notes: "تمت تعبئة السجل من ملف seed التشغيلي الحالي المعتمد داخل المشروع.",
+      attachments: [],
+      sourceFiles: [seed.source_file || "knowledge_bank_seed.json"],
+      visibility: "public",
+      priority: 1000 - index,
+    } as BranchRecord;
+  })
+  .filter((row): row is BranchRecord => Boolean(row));
+
+const uniqueByKey = new Map<string, BranchRecord>();
+branchRecords.forEach((row) => {
+  if (!uniqueByKey.has(row.employeeKey)) uniqueByKey.set(row.employeeKey, row);
+});
+
+export const canonicalBranchRecords = [...uniqueByKey.values()].sort((a, b) => a.brand.localeCompare(b.brand) || a.branch.localeCompare(b.branch));
+
+export const branchesByBrand: Record<BrandKey, BranchRecord[]> = {
+  Braira: canonicalBranchRecords.filter((row) => row.brand === "Braira"),
+  Boudl: canonicalBranchRecords.filter((row) => row.brand === "Boudl"),
+  Aber: canonicalBranchRecords.filter((row) => row.brand === "Aber"),
+  Narcissus: canonicalBranchRecords.filter((row) => row.brand === "Narcissus"),
+  ZMN: canonicalBranchRecords.filter((row) => row.brand === "ZMN"),
+};
+
+export const quickIntents = ((seed.quickIntents || []) as string[]).filter(Boolean);
+
+const protocolTemplate = (branch: string) =>
+  `الرد المقترح للضيف:\nنشكر تواصلكم، وسيتم تزويدكم بالتفاصيل الدقيقة الخاصة بفرع ${branch}.\n\nآلية التنفيذ الداخلية:\n1) تأكيد الفرع ونوع الطلب.\n2) مراجعة السياسة أو الخدمة من بنك المعلومات.\n3) تزويد الضيف بالرد الرسمي وتوثيق المحادثة.`;
+
+export const searchableKnowledgeItems: KnowledgeItem[] = canonicalBranchRecords.flatMap((row) => [
+  {
+    id: `${row.id}-overview`,
+    category: "فروع" as const,
+    section: "Overview" as const,
+    title: `${row.branch} - نظرة عامة`,
+    summary: `${row.brand} · ${row.city}`,
+    details: `${row.overview}\nالمنطقة: ${row.region}\n${row.notes}`,
+    brand: row.brand,
+    branch: row.branch,
+    tags: [row.brand, row.city, "branch-overview"],
+    relatedPhones: [row.hotelPhone],
+    attachments: row.attachments,
+  },
+  {
+    id: `${row.id}-contacts`,
+    category: "جهات اتصال" as const,
+    section: "Contacts" as const,
+    title: `${row.branch} - أرقام التواصل`,
+    summary: `الاستقبال: ${row.receptionPhone}`,
+    details: `فندق: ${row.hotelPhone}\nالمبيعات: ${row.salesPhone}\nالقاعات: ${row.hallPhone}\nالواتساب: ${row.whatsappNumber}\nالمدير: ${row.managerName}\nجوال المدير: ${row.managerPhone}\nبريد المدير: ${row.managerEmail}`,
+    brand: row.brand,
+    branch: row.branch,
+    tags: [row.brand, "contacts", "phones"],
+    relatedPhones: [row.hotelPhone, row.hallPhone, row.managerPhone],
+    attachments: row.attachments,
+  },
+  {
+    id: `${row.id}-meals`,
+    category: "وجبات" as const,
+    section: "Meals" as const,
+    title: `${row.branch} - الوجبات`,
+    summary: row.breakfastInfo,
+    details: `الإفطار: ${row.breakfastInfo}\nالغداء: ${row.lunchInfo}\nالعشاء: ${row.dinnerInfo}`,
+    brand: row.brand,
+    branch: row.branch,
+    tags: [row.brand, "meals", "breakfast"],
+    relatedPhones: [row.hotelPhone],
+    attachments: row.attachments,
+  },
+  {
+    id: `${row.id}-facilities`,
+    category: "مرافق" as const,
+    section: "Facilities" as const,
+    title: `${row.branch} - المرافق`,
+    summary: row.poolInfo,
+    details: `المسبح: ${row.poolInfo}\nالمطعم: ${row.restaurantInfo}\nالقهوة: ${row.coffeeShopInfo}\nالنادي: ${row.gymInfo}\nالسبا: ${row.spaInfo}\nمواقف السيارات: ${row.parkingInfo}\nقسم الأطفال: ${row.kidsSectionInfo}`,
+    brand: row.brand,
+    branch: row.branch,
+    tags: [row.brand, "facilities"],
+    relatedPhones: [row.hotelPhone],
+    attachments: row.attachments,
+  },
+  {
+    id: `${row.id}-rooms`,
+    category: "غرف" as const,
+    section: "Rooms" as const,
+    title: `${row.branch} - الغرف`,
+    summary: row.roomTypes[0],
+    details: row.roomTypes.join("\n"),
+    brand: row.brand,
+    branch: row.branch,
+    tags: [row.brand, "rooms"],
+    relatedPhones: [row.hotelPhone],
+    attachments: row.attachments,
+  },
+  {
+    id: `${row.id}-halls`,
+    category: "قاعات" as const,
+    section: "Halls & Packages" as const,
+    title: `${row.branch} - القاعات والباقات`,
+    summary: row.hallPackages[0],
+    details: `القاعات: ${row.hallPackages[0]}\nباقة العرسان: ${row.hallPackages[1]}\nرقم القاعات: ${row.hallPhone}`,
+    brand: row.brand,
+    branch: row.branch,
+    tags: [row.brand, "halls", "packages"],
+    relatedPhones: [row.hallPhone],
+    attachments: row.attachments,
+  },
+  {
+    id: `${row.id}-protocol`,
+    category: "إجراءات" as const,
+    section: "Response Protocols" as const,
+    title: `${row.branch} - بروتوكول الرد`,
+    summary: "نص جاهز لموظف الحجز المركزي.",
+    details: protocolTemplate(row.branch),
+    brand: row.brand,
+    branch: row.branch,
+    tags: [row.brand, "protocol"],
+    relatedPhones: [row.hotelPhone, row.managerPhone],
+    attachments: row.attachments,
+    responseProtocol: protocolTemplate(row.branch),
+  },
+]);
+
+export const policyKnowledgeItems: KnowledgeItem[] = globalReferences.map((row) => ({
+  id: row.id,
+  category: "سياسات",
+  section: "Policies",
+  title: row.title,
+  summary: row.summary,
+  details: `ملخص: ${row.summary}\n\nالخطوات الداخلية:\n- ${row.internalSteps.join("\n- ")}\n\nملاحظات: ${row.relatedNotes || "لا يوجد"}`,
+  tags: [row.category, "policy"],
+  relatedPhones: [],
+  attachments: row.attachmentUrl
+    ? [
+        {
+          title: row.title,
+          type: "pdf",
+          url: row.attachmentUrl,
+          source: "official",
+        },
+      ]
+    : [],
+  responseProtocol: row.responseProtocol,
+}));
+
+export const knowledgeCatalog: Record<BrandKey, { brand: BrandKey; branches: BranchRecord[] }> = {
+  Braira: { brand: "Braira", branches: branchesByBrand.Braira },
+  Boudl: { brand: "Boudl", branches: branchesByBrand.Boudl },
+  Aber: { brand: "Aber", branches: branchesByBrand.Aber },
+  Narcissus: { brand: "Narcissus", branches: branchesByBrand.Narcissus },
+  ZMN: { brand: "ZMN", branches: branchesByBrand.ZMN },
+};
+
+export const brandOptions: BrandKey[] = ["Braira", "Boudl", "Aber", "Narcissus", "ZMN"];
 
 export const branchInventoryByBrand = {
   Braira: branchesByBrand.Braira.map((b) => b.branch),
   Boudl: branchesByBrand.Boudl.map((b) => b.branch),
   Aber: branchesByBrand.Aber.map((b) => b.branch),
   Narcissus: branchesByBrand.Narcissus.map((b) => b.branch),
+  ZMN: branchesByBrand.ZMN.map((b) => b.branch),
 };

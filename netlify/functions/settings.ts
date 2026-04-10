@@ -7,6 +7,8 @@ type SiteSettings = {
   reportMonth: string;
   reportYear: string;
   hiddenEmployees: string[];
+  employeeAliases: Record<string, string>;
+  employeeAdjustments: Record<string, Record<string, string | number>>;
   complaintEmail: string;
   complaintEmailWebhook: string;
   complaintWhatsappNumber: string;
@@ -18,6 +20,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
   reportMonth: "",
   reportYear: "",
   hiddenEmployees: [],
+  employeeAliases: {},
+  employeeAdjustments: {},
   complaintEmail: "",
   complaintEmailWebhook: "",
   complaintWhatsappNumber: "",
@@ -58,6 +62,19 @@ export default async (req: Request) => {
       reportMonth: body.reportMonth !== undefined ? String(body.reportMonth) : current.reportMonth,
       reportYear: body.reportYear !== undefined ? String(body.reportYear) : current.reportYear,
       hiddenEmployees: Array.isArray(body.hiddenEmployees) ? body.hiddenEmployees.map(String) : current.hiddenEmployees,
+      employeeAliases:
+        body.employeeAliases && typeof body.employeeAliases === "object"
+          ? Object.fromEntries(Object.entries(body.employeeAliases).map(([key, value]) => [String(key), String(value)]))
+          : current.employeeAliases,
+      employeeAdjustments:
+        body.employeeAdjustments && typeof body.employeeAdjustments === "object"
+          ? Object.fromEntries(
+              Object.entries(body.employeeAdjustments).map(([key, value]) => [
+                String(key),
+                typeof value === "object" && value !== null ? (value as Record<string, string | number>) : {},
+              ]),
+            )
+          : current.employeeAdjustments,
       complaintEmail: body.complaintEmail !== undefined ? String(body.complaintEmail) : current.complaintEmail,
       complaintEmailWebhook: body.complaintEmailWebhook !== undefined ? String(body.complaintEmailWebhook) : current.complaintEmailWebhook,
       complaintWhatsappNumber: body.complaintWhatsappNumber !== undefined ? String(body.complaintWhatsappNumber) : current.complaintWhatsappNumber,

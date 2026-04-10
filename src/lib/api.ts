@@ -4,6 +4,8 @@ export type AppSettings = {
   reportMonth?: string;
   reportYear?: string;
   hiddenEmployees?: string[];
+  employeeAliases?: Record<string, string>;
+  employeeAdjustments?: Record<string, Record<string, string | number>>;
   complaintEmail?: string;
   complaintEmailWebhook?: string;
   complaintWhatsappNumber?: string;

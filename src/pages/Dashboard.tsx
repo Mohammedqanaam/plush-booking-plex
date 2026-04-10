@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Building2,
   Crown,
+  EyeOff,
   FileUp,
   LibraryBig,
   Sparkles,
@@ -13,7 +14,9 @@ import {
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { processBookings, summarizeBookings } from "@/lib/bookingProcessor";
-import { normalizeEmployeeName, normalizeHiddenEmployees } from "@/lib/employeeVisibility";
+import { normalizeHiddenEmployees } from "@/lib/employeeVisibility";
+import { getAdminSession, hasPermission } from "@/lib/adminAuth";
+import { buildEmployeeRows } from "@/lib/employeePerformance";
 import PageHeader from "@/components/PageHeader";
 
 type Shortcut = { to: string; label: string; icon: LucideIcon; description: string };
@@ -29,27 +32,37 @@ const shortcuts: Shortcut[] = [
 const Dashboard = () => {
   const [bookings, setBookings] = useState<Record<string, string | number | undefined>[]>([]);
   const [hiddenEmployees, setHiddenEmployees] = useState<string[]>([]);
+  const [employeeAliases, setEmployeeAliases] = useState<Record<string, string>>({});
+  const [employeeAdjustments, setEmployeeAdjustments] = useState<Record<string, Record<string, string | number>>>({});
+  const session = getAdminSession();
+  const canManage = session ? hasPermission(session.role, "manage_employees") : false;
 
   useEffect(() => {
     api.getBookings().then((d) => setBookings(d.bookings || [])).catch(() => setBookings([]));
-    api.getSettings().then((s) => setHiddenEmployees(normalizeHiddenEmployees(s.hiddenEmployees || []))).catch(() => setHiddenEmployees([]));
+    api
+      .getSettings()
+      .then((s) => {
+        setHiddenEmployees(normalizeHiddenEmployees(s.hiddenEmployees || []));
+        setEmployeeAliases(s.employeeAliases || {});
+        setEmployeeAdjustments(s.employeeAdjustments || {});
+      })
+      .catch(() => {
+        setHiddenEmployees([]);
+        setEmployeeAliases({});
+        setEmployeeAdjustments({});
+      });
   }, []);
 
-  const hiddenSet = useMemo(() => new Set(hiddenEmployees.map((name) => normalizeEmployeeName(name)).filter(Boolean)), [hiddenEmployees]);
-
-  const visibleBookings = useMemo(
-    () =>
-      bookings.filter((row) => {
-        const agent = normalizeEmployeeName(
-          String(row["Agent name"] || row["Agent Name"] || row["agent name"] || row["Employee"] || row["اسم الموظف"] || ""),
-        );
-        return !hiddenSet.has(agent);
-      }),
-    [bookings, hiddenSet],
-  );
-
-  const summary = useMemo(() => summarizeBookings(visibleBookings), [visibleBookings]);
-  const topEmployees = useMemo(() => processBookings(visibleBookings).slice(0, 4), [visibleBookings]);
+  const summary = useMemo(() => summarizeBookings(bookings), [bookings]);
+  const topEmployees = useMemo(() => {
+    const rows = buildEmployeeRows({
+      stats: processBookings(bookings),
+      hiddenEmployees,
+      aliases: employeeAliases,
+      adjustments: employeeAdjustments,
+    });
+    return rows.filter((row) => (canManage ? true : !row.hiddenFromPerformance)).slice(0, 4);
+  }, [bookings, hiddenEmployees, employeeAliases, employeeAdjustments, canManage]);
 
   const kpis = [
     { label: "إجمالي الحجوزات", value: summary.total },
@@ -59,7 +72,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-6 md:space-y-7 pb-8">
+    <div className="space-y-6 md:space-y-7 pb-12 md:pb-8">
       <PageHeader
         title="لوحة التشغيل اليومية"
         subtitle="تجربة تشغيل هادئة وواضحة لفريق الكول سنتر والمشرفين مع اختصارات سريعة ومؤشرات مباشرة."
@@ -114,22 +127,27 @@ const Dashboard = () => {
             </span>
             <h3 className="section-title">أفضل الموظفين</h3>
           </div>
-          <button type="button" className="text-xs text-primary hover:text-primary/80 interactive">
+          <Link to="/employees" className="text-xs text-primary hover:text-primary/80 interactive">
             عرض الكل
-          </button>
+          </Link>
         </div>
         {topEmployees.length ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {topEmployees.map((employee, index) => (
-              <div key={employee.agent} className="rounded-2xl border border-border/70 p-4 bg-secondary/25 min-h-[140px]">
+              <div key={employee.employeeKey} className="rounded-2xl border border-border/70 p-4 bg-secondary/25 min-h-[140px]">
                 <div className="flex items-center gap-2">
                   <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-primary/40 bg-primary/10 px-2 text-xs font-semibold text-primary">
                     #{index + 1}
                   </span>
-                  <p className="font-semibold text-base truncate">{employee.agent}</p>
+                  <p className="font-semibold text-base truncate">{employee.displayName}</p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">مؤكد {employee.confirmed} · ملغي {employee.cancelled}</p>
                 <p className="text-xs text-primary mt-2">معدل إلغاء {employee.cancelRate}%</p>
+                {canManage && employee.hiddenFromPerformance ? (
+                  <p className="text-[11px] text-amber-300 mt-2 inline-flex items-center gap-1">
+                    <EyeOff className="w-3 h-3" /> مخفي عن العرض العام
+                  </p>
+                ) : null}
               </div>
             ))}
           </div>

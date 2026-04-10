@@ -34,3 +34,7 @@ export const hasPermission = (role: UserRole, action: PermissionAction): boolean
   };
   return permissions[role]?.includes(action) ?? false;
 };
+
+
+export const canManagePerformance = (session: AdminSession | null) =>
+  !!session && hasPermission(session.role, "manage_employees");
