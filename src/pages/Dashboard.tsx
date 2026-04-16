@@ -38,7 +38,7 @@ const Dashboard = () => {
     [bookings, hiddenSet],
   );
 
-  const summary = useMemo(() => summarizeBookings(visibleBookings), [visibleBookings]);
+  const summary = useMemo(() => summarizeBookings(bookings), [bookings]);
   const topEmployees = useMemo(() => processBookings(visibleBookings).slice(0, 4), [visibleBookings]);
 
   const kpis = [
@@ -83,7 +83,7 @@ const Dashboard = () => {
         ))}
       </section>
 
-      <section className="section-block space-y-4">
+      <section className="page-surface space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h3 className="section-title">اختصارات سريعة</h3>
           <span className="text-xs text-muted-foreground">وصول أسرع للأقسام الأكثر استخدامًا</span>
@@ -110,7 +110,7 @@ const Dashboard = () => {
         </div>
       </section>
 
-      <section className="section-block">
+      <section className="page-surface">
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <span className="icon-chip">

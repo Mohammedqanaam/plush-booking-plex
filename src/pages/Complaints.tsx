@@ -33,14 +33,9 @@ const Complaints = () => {
   const [result, setResult] = useState<ResultState | null>(null);
   const [submitError, setSubmitError] = useState("");
 
-  const branches = useMemo(
-    () =>
-      branchRecords
-        .filter((row) => row.brand === form.brand)
-        .map((row) => ({ id: row.id, name: row.branch, city: row.city, phone: row.hotelPhone || "-", breakfast: row.breakfastInfo }))
-        .sort((a, b) => a.name.localeCompare(b.name, "ar")),
-    [form.brand],
-  );
+  const branches = useMemo(() => branchRecords
+    .filter((row) => row.brand === form.brand)
+    .map((row) => ({ id: row.id, name: row.branch, city: row.city, phone: row.hotelPhone || "-", breakfast: row.breakfastInfo })), [form.brand]);
 
   const selectedBranch = useMemo(() => branches.find((b) => b.name === form.branch), [branches, form.branch]);
   const subCategories = useMemo(() => MAIN_CATEGORIES[form.mainCategory] || [], [form.mainCategory]);
@@ -48,7 +43,7 @@ const Complaints = () => {
   return <div className="p-4 max-w-6xl mx-auto space-y-4">
     <PageHeader title="إدارة الشكاوى" subtitle="نموذج عملي وسريع لموظف الكول سنتر مع وضوح كامل للحقول والإجراءات." icon={OctagonAlert} />
 
-    <form className="section-block grid md:grid-cols-2 gap-3" onSubmit={async (e) => {
+    <form className="page-surface grid md:grid-cols-2 gap-3" onSubmit={async (e) => {
       e.preventDefault();
       setSubmitError("");
       try {
@@ -63,8 +58,6 @@ const Complaints = () => {
       <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} required>
         <option value="">اختر الفرع</option>{branches.map((b) => <option key={b.id} value={b.name}>{b.name}</option>)}
       </select>
-
-      {!branches.length ? <div className="md:col-span-2 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs text-amber-200">لا توجد فروع مرتبطة بهذا البراند حاليًا، يرجى مراجعة بيانات الفروع في بنك المعلومات.</div> : null}
 
       {selectedBranch ? <div className="md:col-span-2 rounded-xl border border-border/70 bg-secondary/30 p-3 text-xs text-muted-foreground">{selectedBranch.city} · استقبال: {selectedBranch.phone} · الفطور: {selectedBranch.breakfast}</div> : null}
 

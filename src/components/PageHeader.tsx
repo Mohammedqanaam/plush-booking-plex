@@ -26,7 +26,7 @@ const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: P
   };
 
   return (
-    <header className="page-surface sticky top-[calc(76px+env(safe-area-inset-top))] z-20 border-border/70 py-5 md:py-6">
+    <header className="page-surface sticky top-[88px] z-20 border-border/70 py-5 md:py-6">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
           {showBack ? (

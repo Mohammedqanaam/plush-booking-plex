@@ -40,7 +40,7 @@ const Layout = () => {
         </div>
       )}
 
-      <header className="safe-area-top sticky top-0 z-40 border-b border-border/60 bg-background/86 backdrop-blur-xl">
+      <header className="safe-area-top sticky top-0 z-40 border-b border-border/60 bg-background/82 backdrop-blur-xl">
         <div className="content-container h-[76px] flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <h1 className="text-lg sm:text-xl font-bold leading-none tracking-tight whitespace-nowrap">
@@ -79,7 +79,7 @@ const Layout = () => {
         </div>
       </header>
 
-      <main className="flex-1 min-h-0 pb-28 md:pb-10 overflow-y-auto custom-scrollbar" key={location.pathname}>
+      <main className="flex-1 min-h-0 pb-24 md:pb-10 overflow-y-auto custom-scrollbar" key={location.pathname}>
         <div className="content-container pt-6 md:pt-7">
           <Outlet />
         </div>
