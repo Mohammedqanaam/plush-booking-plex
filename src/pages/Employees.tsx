@@ -39,7 +39,7 @@ const Employees = () => {
         icon={UsersRound}
       />
 
-      <div className="page-surface space-y-3">
+      <div className="section-block space-y-3">
         <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
           <div className="relative">
             <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />

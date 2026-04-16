@@ -15,8 +15,8 @@ const KnowledgeBank = () => {
   const [selected, setSelected] = useState<{ title: string; summary: string; details: string; tags: string[]; branch?: string; brand?: string } | null>(null);
 
   const branchOptions = useMemo(() => {
-    if (brand === "الكل") return ["الكل", ...branchRecords.map((b) => b.branch)];
-    return ["الكل", ...branchesByBrand[brand].map((b) => b.branch)];
+    if (brand === "الكل") return ["الكل", ...new Set(branchRecords.map((b) => b.branch))];
+    return ["الكل", ...new Set(branchesByBrand[brand].map((b) => b.branch))];
   }, [brand]);
 
   const results = useMemo(() => {
@@ -56,7 +56,7 @@ const KnowledgeBank = () => {
     <div className="p-4 max-w-7xl mx-auto space-y-4">
       <PageHeader title="بنك المعلومات" subtitle="بحث فوري ومصنف لسياسات التشغيل وبيانات الفروع مع تجربة قراءة مريحة." icon={BookOpenCheck} />
 
-      <section className="page-surface space-y-3">
+      <section className="section-block space-y-3">
         <p className="text-xs text-muted-foreground">الصفحة للعرض فقط وتعمل كمرجع تشغيلي سريع لفريق الكول سنتر.</p>
         <div className="grid md:grid-cols-4 gap-2">
           <div className="relative md:col-span-2">

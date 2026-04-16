@@ -59,6 +59,7 @@
     overflow-x: hidden;
     text-wrap: pretty;
     background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(232 24% 9%) 100%);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   button,
@@ -147,6 +148,7 @@
 
   .page-surface {
     @apply glass-card p-5 md:p-6;
+    border-color: hsl(var(--border) / 0.58);
   }
 
   .section-title {
@@ -161,6 +163,7 @@
 
   .card-hover {
     @apply interactive hover:-translate-y-0.5 hover:border-primary/45;
+    box-shadow: 0 10px 24px hsl(232 44% 5% / 0.06);
   }
 
   .soft-divider {
@@ -173,6 +176,11 @@
 
   .kpi-value {
     @apply text-4xl md:text-[2.65rem] font-bold tracking-tight leading-none;
+  }
+
+  .section-block {
+    @apply page-surface;
+    background: linear-gradient(145deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.68));
   }
 }
 

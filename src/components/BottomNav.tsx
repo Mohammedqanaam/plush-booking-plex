@@ -15,7 +15,7 @@ const BottomNav = () => {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/70 bg-card/92 backdrop-blur-xl safe-area-bottom">
-      <div className="flex items-center justify-around h-[74px] max-w-xl mx-auto px-2">
+      <div className="flex items-center justify-around h-[78px] max-w-xl mx-auto px-2 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
         {mainNavItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -29,7 +29,7 @@ const BottomNav = () => {
               <span className={`inline-flex items-center justify-center w-8 h-8 rounded-xl ${isActive ? "bg-primary/14 border border-primary/40" : "bg-secondary/40 border border-border/60"}`}>
                 <item.icon className="w-[17px] h-[17px]" />
               </span>
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-[10px] font-semibold">{item.label}</span>
               {isActive && <span className="absolute -bottom-0.5 w-7 h-0.5 gold-gradient rounded-full" />}
             </button>
           );
