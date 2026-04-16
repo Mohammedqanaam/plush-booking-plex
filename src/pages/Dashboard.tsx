@@ -1,15 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  Building2,
-  Crown,
-  FileUp,
-  LibraryBig,
-  Sparkles,
-  UsersRound,
-  type LucideIcon,
-} from "lucide-react";
+import { AlertTriangle, ArrowLeft, Building2, CheckCircle2, Crown, FileUp, LibraryBig, Layers3, Sparkles, UsersRound, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { processBookings, summarizeBookings } from "@/lib/bookingProcessor";
@@ -48,14 +38,22 @@ const Dashboard = () => {
     [bookings, hiddenSet],
   );
 
-  const summary = useMemo(() => summarizeBookings(visibleBookings), [visibleBookings]);
+  const summary = useMemo(() => summarizeBookings(bookings), [bookings]);
   const topEmployees = useMemo(() => processBookings(visibleBookings).slice(0, 4), [visibleBookings]);
 
   const kpis = [
-    { label: "إجمالي الحجوزات", value: summary.total },
-    { label: "المؤكد", value: summary.confirmed },
-    { label: "الملغي", value: summary.cancelled },
-    { label: "نسبة الإلغاء", value: `${summary.cancelRate}%` },
+    {
+      label: "إجمالي الحجوزات",
+      value: summary.total,
+      icon: Layers3,
+      helper: "يشمل جميع الحجوزات بكل الحالات (بما فيها الملغية).",
+    },
+    {
+      label: "الحجوزات المؤكدة",
+      value: summary.confirmed,
+      icon: CheckCircle2,
+      helper: "يعرض الحجوزات المؤكدة فقط.",
+    },
   ];
 
   return (
@@ -67,13 +65,19 @@ const Dashboard = () => {
         icon={Sparkles}
       />
 
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="grid md:grid-cols-2 gap-4">
         {kpis.map((kpi, index) => (
-          <div key={kpi.label} className="page-surface card-hover min-h-[146px] flex flex-col justify-between">
-            <p className="text-sm text-muted-foreground">{kpi.label}</p>
+          <div key={kpi.label} className="page-surface card-hover min-h-[180px] flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">{kpi.label}</p>
+              <span className="icon-chip">
+                <kpi.icon className="w-4 h-4" />
+              </span>
+            </div>
             <p className="kpi-value text-primary mt-4">{kpi.value}</p>
-            <div className="mt-4 h-1 rounded-full bg-secondary/80 overflow-hidden">
-              <span className="block h-full gold-gradient" style={{ width: `${35 + index * 18}%` }} />
+            <p className="text-xs text-muted-foreground leading-6 mt-2">{kpi.helper}</p>
+            <div className="mt-4 h-1.5 rounded-full bg-secondary/80 overflow-hidden">
+              <span className="block h-full gold-gradient" style={{ width: `${56 + index * 28}%` }} />
             </div>
           </div>
         ))}
@@ -128,8 +132,8 @@ const Dashboard = () => {
                   </span>
                   <p className="font-semibold text-base truncate">{employee.agent}</p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">مؤكد {employee.confirmed} · ملغي {employee.cancelled}</p>
-                <p className="text-xs text-primary mt-2">معدل إلغاء {employee.cancelRate}%</p>
+                <p className="text-xs text-muted-foreground mt-1">مؤكد {employee.confirmed} · إجمالي {employee.total}</p>
+                <p className="text-xs text-primary mt-2">أداء مؤكد مستقر</p>
               </div>
             ))}
           </div>
