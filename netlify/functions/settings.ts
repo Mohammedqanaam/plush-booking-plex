@@ -10,6 +10,14 @@ type SiteSettings = {
   complaintEmail: string;
   complaintEmailWebhook: string;
   complaintWhatsappNumber: string;
+  employeeAdjustments: Record<string, {
+    confirmedAdjustment?: number;
+    cancelledAdjustment?: number;
+    adjustmentReason?: string;
+    notes?: string;
+    updatedBy?: string;
+    updatedAt?: string;
+  }>;
 };
 
 const DEFAULT_SETTINGS: SiteSettings = {
@@ -21,6 +29,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   complaintEmail: "",
   complaintEmailWebhook: "",
   complaintWhatsappNumber: "",
+  employeeAdjustments: {},
 };
 
 const json = (data: unknown, status = 200) =>
@@ -61,6 +70,7 @@ export default async (req: Request) => {
       complaintEmail: body.complaintEmail !== undefined ? String(body.complaintEmail) : current.complaintEmail,
       complaintEmailWebhook: body.complaintEmailWebhook !== undefined ? String(body.complaintEmailWebhook) : current.complaintEmailWebhook,
       complaintWhatsappNumber: body.complaintWhatsappNumber !== undefined ? String(body.complaintWhatsappNumber) : current.complaintWhatsappNumber,
+      employeeAdjustments: typeof body.employeeAdjustments === "object" && body.employeeAdjustments ? body.employeeAdjustments : current.employeeAdjustments,
     };
 
     await store.setJSON("site", updated);

@@ -1,7 +1,7 @@
 import { hotelBranches } from "@/data/hotels";
 import { masterHotels } from "@/data/hotelMasterData";
 
-export type BrandKey = "Braira" | "Boudl" | "Aber" | "Narcissus";
+export type BrandKey = "Braira" | "Boudl" | "Aber" | "Narcissus" | "Z'MN";
 
 export type BranchRecord = {
   id: string;
@@ -63,6 +63,8 @@ const brandMap: Record<string, BrandKey> = {
   "عابر": "Aber",
   "نارسس": "Narcissus",
   "نارسيس": "Narcissus",
+  "زمـن": "Z'MN",
+  "زمن": "Z'MN",
 };
 
 const regionMap: Record<string, string> = {
@@ -187,6 +189,7 @@ export const branchesByBrand: Record<BrandKey, BranchRecord[]> = {
   Boudl: branchRecords.filter((row) => row.brand === "Boudl"),
   Aber: branchRecords.filter((row) => row.brand === "Aber"),
   Narcissus: branchRecords.filter((row) => row.brand === "Narcissus"),
+  "Z'MN": branchRecords.filter((row) => row.brand === "Z'MN"),
 };
 
 export const quickIntents = ["سياسة الإلغاء", "رقم الاستقبال", "الإفطار", "المسبح", "الغرف", "القاعات", "بروتوكول الرد"];
@@ -233,4 +236,5 @@ export const branchInventoryByBrand = {
   Boudl: branchesByBrand.Boudl.map((b) => b.branch),
   Aber: branchesByBrand.Aber.map((b) => b.branch),
   Narcissus: branchesByBrand.Narcissus.map((b) => b.branch),
+  "Z'MN": branchesByBrand["Z'MN"].map((b) => b.branch),
 };

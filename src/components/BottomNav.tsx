@@ -1,12 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { BookOpenCheck, LayoutDashboard, ShieldEllipsis, TriangleAlert, UploadCloud } from "lucide-react";
+import { BookOpenCheck, Building2, LayoutDashboard, PhoneCall, UsersRound } from "lucide-react";
 
 const mainNavItems = [
   { path: "/", label: "الرئيسية", icon: LayoutDashboard },
   { path: "/knowledge-bank", label: "المعرفة", icon: BookOpenCheck },
-  { path: "/upload-center", label: "الرفع", icon: UploadCloud },
-  { path: "/complaints", label: "الشكاوى", icon: TriangleAlert },
-  { path: "/admin", label: "الأدمن", icon: ShieldEllipsis },
+  { path: "/employees", label: "الموظفون", icon: UsersRound },
+  { path: "/contacts", label: "التواصل", icon: PhoneCall },
+  { path: "/branches", label: "الفروع", icon: Building2 },
 ];
 
 const BottomNav = () => {

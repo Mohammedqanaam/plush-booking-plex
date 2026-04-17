@@ -201,7 +201,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {activeTab === "requests" && <div className="page-surface space-y-2">{requests.map((r) => <div key={r.id} className="border-b border-border/50 pb-2"><div>{r.customerName} - {r.branchName}</div><div className="text-xs">{r.phone}</div></div>)}</div>}
+      {activeTab === "requests" && <div className="page-surface space-y-2">{requests.map((r) => <div key={r.id} className="border-b border-border/50 pb-2 flex items-center justify-between gap-2"><div><div className="font-medium">{r.requestNo} · {r.guestName}</div><div className="text-xs text-muted-foreground">{r.brand} · {r.branchName} · {r.guestPhone}</div><div className="text-xs text-muted-foreground">السبب: {r.reason}</div></div><button className="h-8 px-3 rounded-lg border" onClick={async ()=>{await api.updateContactRequestStatus(r.id, r.status === "new" ? "done" : "new"); setRequests((prev)=>prev.map((x)=>x.id===r.id ? {...x, status: x.status === "new" ? "done" : "new"} : x));}}>{r.status === "new" ? "تعليم كمكتمل" : "إعادته جديد"}</button></div>)}</div>}
 
       {activeTab === "profile" && (
         <div className="grid md:grid-cols-2 gap-4">

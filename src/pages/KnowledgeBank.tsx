@@ -9,7 +9,7 @@ const categories: ResultCategory[] = ["سياسات", "فروع", "جهات ات
 
 const KnowledgeBank = () => {
   const [query, setQuery] = useState("");
-  const [brand, setBrand] = useState<"الكل" | "Braira" | "Boudl" | "Aber" | "Narcissus">("الكل");
+  const [brand, setBrand] = useState<"الكل" | "Braira" | "Boudl" | "Aber" | "Narcissus" | "Z'MN">("الكل");
   const [branch, setBranch] = useState("الكل");
   const [category, setCategory] = useState<"الكل" | ResultCategory>("الكل");
   const [selected, setSelected] = useState<{ title: string; summary: string; details: string; tags: string[]; branch?: string; brand?: string } | null>(null);
@@ -64,7 +64,7 @@ const KnowledgeBank = () => {
             <input className="h-11 rounded-xl bg-secondary/70 border px-10 w-full" placeholder="ابحث بالكلمات والحروف" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={brand} onChange={(e) => { setBrand(e.target.value as typeof brand); setBranch("الكل"); }}>
-            <option value="الكل">كل البراندات</option><option value="Braira">Braira</option><option value="Boudl">Boudl</option><option value="Aber">Aber</option><option value="Narcissus">Narcissus</option>
+            <option value="الكل">كل البراندات</option><option value="Braira">Braira</option><option value="Boudl">Boudl</option><option value="Aber">Aber</option><option value="Narcissus">Narcissus</option><option value="Z'MN">Z'MN</option>
           </select>
           <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={branch} onChange={(e) => setBranch(e.target.value)}>{branchOptions.map((b) => <option key={b}>{b}</option>)}</select>
         </div>
