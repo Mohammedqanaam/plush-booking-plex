@@ -36,10 +36,10 @@ const Layout = () => {
     <div className="app-shell flex flex-col">
       {bannerText && <div className="bg-primary/12 text-center py-2 px-4 text-xs text-primary border-b border-border/40">{bannerText}</div>}
 
-      <header className="safe-area-top sticky top-0 z-40 border-b border-border/60 bg-background/82 backdrop-blur-xl">
+      <header className="safe-area-top sticky top-0 z-40 border-b border-[#D4AF37]/20 bg-background/90 backdrop-blur-xl">
         <div className="content-container h-[76px] flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <h1 className="text-lg sm:text-xl font-bold leading-none tracking-tight whitespace-nowrap">
+            <h1 className="text-lg sm:text-xl font-black leading-none tracking-tight whitespace-nowrap">
               <span className="gold-gradient bg-clip-text text-transparent">{siteTitle}</span>
             </h1>
           </div>
@@ -52,8 +52,8 @@ const Layout = () => {
                 className={({ isActive }) =>
                   `inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm border interactive whitespace-nowrap ${
                     isActive
-                      ? "border-primary/50 bg-primary/14 text-primary"
-                      : "border-border/60 bg-secondary/30 text-muted-foreground hover:text-foreground"
+                      ? "border-[#D4AF37]/45 bg-[#D4AF37]/10 text-[#D4AF37]"
+                      : "border-[#D4AF37]/20 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-[#D4AF37]/35"
                   }`
                 }
               >
@@ -78,7 +78,7 @@ const Layout = () => {
         </div>
       </main>
 
-      <footer className="hidden md:block border-t border-border/55 bg-secondary/20">
+      <footer className="hidden md:block border-t border-[#D4AF37]/20 bg-secondary/20">
         <div className="content-container h-[80px] flex items-center justify-between text-xs text-muted-foreground">
           <p>نظام الكول سنتر</p>
           <p>الإصدار 2.2.0</p>
