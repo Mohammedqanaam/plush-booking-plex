@@ -1,3 +1,13 @@
+
+export type EmployeeAdjustment = {
+  confirmedAdjustment?: number;
+  cancelledAdjustment?: number;
+  adjustmentReason?: string;
+  notes?: string;
+  updatedBy?: string;
+  updatedAt?: string;
+};
+
 export type AppSettings = {
   siteTitle?: string;
   bannerText?: string;
@@ -8,14 +18,17 @@ export type AppSettings = {
   complaintEmailWebhook?: string;
   complaintWhatsappNumber?: string;
   themePreset?: string;
+  employeeAdjustments?: Record<string, EmployeeAdjustment>;
 };
 
 export type ContactRequest = {
   id: string;
+  requestNo: string;
+  brand: string;
   branchName: string;
-  customerName: string;
-  phone: string;
-  note: string;
+  guestName: string;
+  guestPhone: string;
+  reason: string;
   status: "new" | "done";
   createdAt: string;
 };
@@ -146,7 +159,7 @@ export const api = {
     return res.json();
   },
 
-  async createContactRequest(payload: { branchName: string; customerName: string; phone: string; note?: string }) {
+  async createContactRequest(payload: { brand: string; branchName: string; guestName: string; guestPhone: string; reason: string }) {
     const res = await fetch(`${API_BASE}/contacts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

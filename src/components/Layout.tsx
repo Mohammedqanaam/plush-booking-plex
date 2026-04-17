@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { BookOpenCheck, Building2, LayoutDashboard, Settings2, TriangleAlert, UsersRound } from "lucide-react";
+import { BookOpenCheck, Building2, LayoutDashboard, PhoneCall, Settings2, UsersRound } from "lucide-react";
 import BottomNav from "./BottomNav";
 import RiyadhClock from "./RiyadhClock";
 import { api } from "@/lib/api";
@@ -11,7 +11,7 @@ const desktopNav = [
   { to: "/", label: "الرئيسية", icon: LayoutDashboard },
   { to: "/knowledge-bank", label: "بنك المعلومات", icon: BookOpenCheck },
   { to: "/employees", label: "الموظفون", icon: UsersRound },
-  { to: "/complaints", label: "الشكاوى", icon: TriangleAlert },
+  { to: "/contacts", label: "طلبات التواصل", icon: PhoneCall },
   { to: "/branches", label: "الفروع", icon: Building2 },
   { to: "/settings", label: "الإعدادات", icon: Settings2 },
 ];
@@ -34,11 +34,7 @@ const Layout = () => {
 
   return (
     <div className="app-shell flex flex-col">
-      {bannerText && (
-        <div className="bg-primary/12 text-center py-2 px-4 text-xs text-primary border-b border-border/40">
-          {bannerText}
-        </div>
-      )}
+      {bannerText && <div className="bg-primary/12 text-center py-2 px-4 text-xs text-primary border-b border-border/40">{bannerText}</div>}
 
       <header className="safe-area-top sticky top-0 z-40 border-b border-border/60 bg-background/82 backdrop-blur-xl">
         <div className="content-container h-[76px] flex items-center justify-between gap-3">
@@ -46,9 +42,6 @@ const Layout = () => {
             <h1 className="text-lg sm:text-xl font-bold leading-none tracking-tight whitespace-nowrap">
               <span className="gold-gradient bg-clip-text text-transparent">{siteTitle}</span>
             </h1>
-            <span className="hidden lg:inline-flex text-xs text-muted-foreground px-3 py-2 rounded-2xl border border-border/60 bg-secondary/30">
-              الرئيسية
-            </span>
           </div>
 
           <nav className="hidden md:flex items-center justify-center gap-2 overflow-auto">
@@ -88,7 +81,7 @@ const Layout = () => {
       <footer className="hidden md:block border-t border-border/55 bg-secondary/20">
         <div className="content-container h-[80px] flex items-center justify-between text-xs text-muted-foreground">
           <p>نظام الكول سنتر</p>
-          <p>الإصدار 2.1.0</p>
+          <p>الإصدار 2.2.0</p>
           <p>آخر تحديث اليوم {lastUpdatedAt}</p>
         </div>
       </footer>

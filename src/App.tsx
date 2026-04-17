@@ -14,7 +14,6 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminBranches from "./pages/AdminBranches";
 import AdminKnowledgeBank from "./pages/AdminKnowledgeBank";
 import AdminComplaints from "./pages/AdminComplaints";
-import Complaints from "./pages/Complaints";
 import Contacts from "./pages/Contacts";
 import Dashboard from "./pages/Dashboard";
 import HotelSearch from "./pages/HotelSearch";
@@ -40,13 +39,12 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/search" element={<HotelSearch />} />
             <Route path="/knowledge-bank" element={<KnowledgeBank />} />
-            <Route path="/upload-center" element={<UploadCenter />} />
+            <Route path="/upload-center" element={<ProtectedRoute><UploadCenter /></ProtectedRoute>} />
             <Route path="/employees" element={<Employees />} />
             <Route path="/policies" element={<Policies />} />
             <Route path="/branches" element={<Branches />} />
             <Route path="/settings" element={<OperationsSettings />} />
             <Route path="/contacts" element={<Contacts />} />
-            <Route path="/complaints" element={<Complaints />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/complaints" element={<ProtectedRoute><AdminComplaints /></ProtectedRoute>} />

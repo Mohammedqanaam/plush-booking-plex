@@ -1,24 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowLeft, Building2, CheckCircle2, Crown, FileUp, LibraryBig, Layers3, Sparkles, UsersRound, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Building2, CheckCircle2, Crown, FileUp, LibraryBig, Layers3, PhoneCall, Sparkles, UsersRound, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { processBookings, summarizeBookings } from "@/lib/bookingProcessor";
 import { normalizeEmployeeName, normalizeHiddenEmployees } from "@/lib/employeeVisibility";
 import PageHeader from "@/components/PageHeader";
+import { getAdminSession, hasPermission } from "@/lib/adminAuth";
 
 type Shortcut = { to: string; label: string; icon: LucideIcon; description: string };
 
-const shortcuts: Shortcut[] = [
+const baseShortcuts: Shortcut[] = [
   { to: "/knowledge-bank", label: "بنك المعلومات", icon: LibraryBig, description: "بحث سياسات وفروع" },
   { to: "/employees", label: "الموظفون", icon: UsersRound, description: "مؤشرات الأداء" },
-  { to: "/complaints", label: "الشكاوى", icon: AlertTriangle, description: "فتح ومتابعة الشكاوى" },
+  { to: "/contacts", label: "طلبات التواصل", icon: PhoneCall, description: "تسجيل طلبات الضيوف" },
   { to: "/branches", label: "الفروع", icon: Building2, description: "الخدمات والتواصل" },
-  { to: "/upload-center", label: "مركز الرفع", icon: FileUp, description: "رفع الملفات" },
 ];
 
 const Dashboard = () => {
   const [bookings, setBookings] = useState<Record<string, string | number | undefined>[]>([]);
   const [hiddenEmployees, setHiddenEmployees] = useState<string[]>([]);
+  const session = getAdminSession();
+  const canUpload = session ? hasPermission(session.role, "upload") : false;
 
   useEffect(() => {
     api.getBookings().then((d) => setBookings(d.bookings || [])).catch(() => setBookings([]));
@@ -40,6 +42,8 @@ const Dashboard = () => {
 
   const summary = useMemo(() => summarizeBookings(bookings), [bookings]);
   const topEmployees = useMemo(() => processBookings(visibleBookings).slice(0, 4), [visibleBookings]);
+
+  const shortcuts = useMemo(() => (canUpload ? [...baseShortcuts, { to: "/upload-center", label: "مركز الرفع", icon: FileUp, description: "رفع ملفات التشغيل" }] : baseShortcuts), [canUpload]);
 
   const kpis = [
     {
