@@ -6,7 +6,7 @@ import { themePresets } from "@/data/operations";
 
 const OperationsSettings = () => {
   const [siteTitle, setSiteTitle] = useState("Res Dashboard");
-  const [themePreset, setThemePreset] = useState(themePresets[3].id);
+  const [themePreset, setThemePreset] = useState("hospitality-premium-gold");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
 

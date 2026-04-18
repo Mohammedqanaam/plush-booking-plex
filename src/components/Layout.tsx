@@ -17,7 +17,6 @@ const desktopNav = [
 ];
 
 const Layout = () => {
-  const [siteTitle, setSiteTitle] = useState("Res");
   const [bannerText, setBannerText] = useState("");
   const location = useLocation();
   const lastUpdatedAt = new Date().toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
@@ -26,7 +25,6 @@ const Layout = () => {
     api
       .getSettings()
       .then((data) => {
-        if (data.siteTitle) setSiteTitle(data.siteTitle);
         if (data.bannerText !== undefined) setBannerText(data.bannerText);
       })
       .catch(() => {});
@@ -38,11 +36,7 @@ const Layout = () => {
 
       <header className="safe-area-top sticky top-0 z-40 border-b border-[#D4AF37]/20 bg-background/90 backdrop-blur-xl">
         <div className="content-container h-[76px] flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <h1 className="text-lg sm:text-xl font-black leading-none tracking-tight whitespace-nowrap">
-              <span className="gold-gradient bg-clip-text text-transparent">{siteTitle}</span>
-            </h1>
-          </div>
+          <div className="flex items-center gap-3 min-w-0" />
 
           <nav className="hidden md:flex items-center justify-center gap-2 overflow-auto">
             {desktopNav.map((item) => (
