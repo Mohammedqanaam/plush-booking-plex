@@ -46,7 +46,7 @@ const Branches = () => {
 
       <section className="page-surface space-y-3">
         <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
-          <ShieldAlert className="w-3.5 h-3.5" /> هذه الصفحة للعرض فقط. التعديل يتم من لوحة الأدمن. <Link className="underline" to="/admin/login">تسجيل دخول الأدمن</Link>
+          <ShieldAlert className="w-3.5 h-3.5" /> هذه الصفحة للعرض فقط، ويتم التعديل عبر لوحة الإدارة. <Link className="underline" to="/admin/login">تسجيل دخول الإدارة</Link>
         </p>
 
         <div className="grid gap-2 md:grid-cols-4">

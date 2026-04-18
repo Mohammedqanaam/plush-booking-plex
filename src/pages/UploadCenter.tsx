@@ -9,7 +9,7 @@ const UploadCenter = () => {
 
       <section className="page-surface space-y-4">
         <div className="rounded-2xl border border-border/70 bg-secondary/30 p-4 space-y-2">
-          <p className="text-sm inline-flex items-center gap-2 font-medium"><LockKeyhole className="w-4 h-4 text-primary" /> الصفحة للعرض فقط.</p>
+          <p className="text-sm inline-flex items-center gap-2 font-medium"><LockKeyhole className="w-4 h-4 text-primary" /> هذه الصفحة مخصصة للعرض فقط.</p>
           <p className="text-xs text-muted-foreground">رفع أو إعادة تعيين البيانات يتم من لوحة الأدمن بعد تسجيل الدخول، ومتاح فقط للمستخدمين المخولين.</p>
         </div>
 

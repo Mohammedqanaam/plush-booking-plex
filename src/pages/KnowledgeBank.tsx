@@ -39,7 +39,7 @@ const KnowledgeBank = () => {
       { id: `${row.id}-facilities`, kind: "مرافق" as ResultCategory, title: `${row.branch} - المرافق`, summary: row.poolInfo, details: `Pool: ${row.poolInfo}\nRestaurant: ${row.restaurantInfo}\nSpa: ${row.spaInfo}\nGym: ${row.gymInfo}`, tags: [row.brand, "facilities"], brand: row.brand, branch: row.branch },
       { id: `${row.id}-rooms`, kind: "غرف" as ResultCategory, title: `${row.branch} - الغرف`, summary: row.roomTypes.join("، "), details: row.roomTypes.join("\n"), tags: [row.brand, "rooms"], brand: row.brand, branch: row.branch },
       { id: `${row.id}-halls`, kind: "قاعات" as ResultCategory, title: `${row.branch} - القاعات`, summary: row.hallPackages.join(" / "), details: row.hallPackages.join("\n"), tags: [row.brand, "halls"], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-protocol`, kind: "إجراءات" as ResultCategory, title: `${row.branch} - الإجراءات`, summary: "بروتوكول رد الكول سنتر", details: "اذكر السياسة + تفاصيل الفرع + رقم التواصل + حالة التصعيد.", tags: [row.brand, "protocol"], brand: row.brand, branch: row.branch },
+      { id: `${row.id}-protocol`, kind: "إجراءات" as ResultCategory, title: `${row.branch} - الإجراءات`, summary: "آلية الرد المعتمدة لفريق الحجوزات", details: "اذكر السياسة، وتفاصيل الفرع، ورقم التواصل، وحالة التصعيد.", tags: [row.brand, "protocol"], brand: row.brand, branch: row.branch },
     ]);
 
     return [...policyRows, ...branchRows].filter((row) => {
@@ -57,7 +57,7 @@ const KnowledgeBank = () => {
       <PageHeader title="بنك المعلومات" subtitle="بحث فوري ومصنف لسياسات التشغيل وبيانات الفروع مع تجربة قراءة مريحة." icon={BookOpenCheck} />
 
       <section className="page-surface space-y-3">
-        <p className="text-xs text-muted-foreground">الصفحة للعرض فقط وتعمل كمرجع تشغيلي سريع لفريق الكول سنتر.</p>
+        <p className="text-xs text-muted-foreground">هذه الصفحة للعرض فقط، وتعمل كمرجع تشغيلي يدعم الوصول السريع للمعلومات.</p>
         <div className="grid md:grid-cols-4 gap-2">
           <div className="relative md:col-span-2">
             <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -80,7 +80,7 @@ const KnowledgeBank = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Tags className="w-3.5 h-3.5" /> Quick intent</span>
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Tags className="w-3.5 h-3.5" /> نوايا بحث سريعة</span>
           {quickIntents.map((intent) => (
             <button key={intent} onClick={() => setQuery(intent)} className="text-xs px-3 py-1.5 rounded-full border border-border/70 bg-secondary/30 hover:border-primary/50">
               {intent}
