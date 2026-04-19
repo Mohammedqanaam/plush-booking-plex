@@ -27,10 +27,11 @@ type EmployeeRow = ReturnType<typeof processBookings>[number] & {
 const Employees = () => {
   const [search, setSearch] = useState("");
   const [hidden, setHidden] = useState<string[]>([]);
-  const [rows, setRows] = useState<ReturnType<typeof processBookings>>([]);
+  const [bookings, setBookings] = useState<Record<string, string | number | undefined>[]>([]);
   const [renames, setRenames] = useState<Record<string, string>>({});
   const [adjustments, setAdjustments] = useState<Record<string, EmployeeAdjustment>>({});
   const [showHiddenOnly, setShowHiddenOnly] = useState(false);
+  const [showMConfirmedOnly, setShowMConfirmedOnly] = useState(false);
 
   const session = getAdminSession();
   const canManage = session ? hasPermission(session.role, "manage_employees") : false;
@@ -40,8 +41,13 @@ const Employees = () => {
       setHidden(normalizeHiddenEmployees(s.hiddenEmployees || []));
       setAdjustments(s.employeeAdjustments || {});
     });
-    api.getBookings().then((d) => setRows(processBookings(d.bookings || []))).catch(() => setRows([]));
+    api.getBookings().then((d) => setBookings(d.bookings || [])).catch(() => setBookings([]));
   }, []);
+
+  const rows = useMemo(
+    () => processBookings(bookings, showMConfirmedOnly ? { confirmedStatuses: ["M"] } : undefined),
+    [bookings, showMConfirmedOnly],
+  );
 
   const shown = useMemo(() => {
     const mapped: EmployeeRow[] = rows
@@ -100,7 +106,7 @@ const Employees = () => {
       <PageHeader title="لوحة الموظفين" subtitle="عرض أداء نظيف للزوار، وتحكم إداري كامل للتعديل اليدوي للمخولين فقط." icon={UsersRound} />
 
       <div className="page-surface space-y-3">
-        <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
+        <div className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto]">
           <div className="relative">
             <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input className="h-11 rounded-xl bg-secondary/70 border px-10 w-full" placeholder="بحث باسم الموظف" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -114,6 +120,13 @@ const Employees = () => {
               {showHiddenOnly ? "إظهار الكل" : "المخفي فقط"}
             </button>
           ) : null}
+          <button
+            className={`h-11 px-4 rounded-xl border inline-flex items-center gap-2 ${showMConfirmedOnly ? "border-primary text-primary bg-primary/10" : "border-border/70"}`}
+            onClick={() => setShowMConfirmedOnly((prev) => !prev)}
+          >
+            <BadgeCheck className="w-4 h-4" />
+            مؤكد بحالة M فقط
+          </button>
           {canManage ? (
             <button
               className="h-11 px-4 rounded-xl gold-gradient text-primary-foreground inline-flex items-center gap-2"

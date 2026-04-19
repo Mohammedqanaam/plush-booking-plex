@@ -8,6 +8,10 @@ export type AgentStats = {
   cancelRate: number
 }
 
+type ProcessBookingsOptions = {
+  confirmedStatuses?: string[]
+}
+
 const normalizeKey = (value: string) =>
   value
     .replace(/^\uFEFF/, "")
@@ -48,8 +52,26 @@ export function classifyBookingStatus(status: string): "confirmed" | "cancelled"
   return "confirmed"
 }
 
-export function processBookings(rows: BookingRow[]): AgentStats[] {
+const getBookingStatusValue = (row: BookingRow) =>
+  getAnyValue(row, [
+    "All stute",
+    "All Stute",
+    "all stute",
+    "Status",
+    "status",
+    "Booking Status",
+    "BookingStatus",
+    "حالة الحجز",
+    "الحالة",
+  ])
+
+export function processBookings(rows: BookingRow[], options?: ProcessBookingsOptions): AgentStats[] {
   const map = new Map<string, AgentStats>()
+  const normalizedConfirmedStatuses = new Set(
+    (options?.confirmedStatuses || [])
+      .map((item) => String(item || "").trim().toUpperCase())
+      .filter(Boolean),
+  )
 
   rows.forEach((row) => {
     const agent = getAnyValue(row, [
@@ -68,19 +90,16 @@ export function processBookings(rows: BookingRow[]): AgentStats[] {
 
     if (!agent) return
 
-    const statusRaw = getAnyValue(row, [
-      "All stute",
-      "All Stute",
-      "all stute",
-      "Status",
-      "status",
-      "Booking Status",
-      "BookingStatus",
-      "حالة الحجز",
-      "الحالة",
-    ])
+    const statusRaw = getBookingStatusValue(row)
+    const normalizedStatus = String(statusRaw || "").trim().toUpperCase()
 
     const status = classifyBookingStatus(statusRaw)
+    const includeAsConfirmed = normalizedConfirmedStatuses.size
+      ? normalizedConfirmedStatuses.has(normalizedStatus)
+      : status === "confirmed"
+
+    if (status !== "cancelled" && !includeAsConfirmed) return
+
     const current = map.get(agent) || {
       agent,
       confirmed: 0,
@@ -109,17 +128,7 @@ export function summarizeBookings(rows: BookingRow[]) {
   let cancelled = 0
 
   rows.forEach((row) => {
-    const statusRaw = getAnyValue(row, [
-      "All stute",
-      "All Stute",
-      "all stute",
-      "Status",
-      "status",
-      "Booking Status",
-      "BookingStatus",
-      "حالة الحجز",
-      "الحالة",
-    ])
+    const statusRaw = getBookingStatusValue(row)
 
     const status = classifyBookingStatus(statusRaw)
     if (status === "cancelled") cancelled += 1
