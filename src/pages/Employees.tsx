@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Eye, EyeOff, Save, Search, SlidersHorizontal, UsersRound } from "lucide-react";
+import { BadgeCheck, Eye, EyeOff, Medal, Save, Search, SlidersHorizontal, TrendingUp, UserRound, UsersRound, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { api, type EmployeeAdjustment } from "@/lib/api";
 import { isEmployeeHidden, normalizeEmployeeName, normalizeHiddenEmployees } from "@/lib/employeeVisibility";
@@ -82,6 +82,13 @@ const Employees = () => {
     return mapped.filter((r) => (showHiddenOnly ? r.isHidden : true));
   }, [rows, search, renames, hidden, showHiddenOnly, canManage, adjustments]);
 
+  const topFiveMap = useMemo(() => {
+    const ranked = [...shown]
+      .sort((a, b) => b.finalConfirmed - a.finalConfirmed || b.finalTotal - a.finalTotal)
+      .slice(0, 5);
+    return new Map(ranked.map((employee, index) => [employee.canonicalId, index + 1]));
+  }, [shown]);
+
   const updateEmployeeAdjustment = (canonicalId: string, patch: Partial<EmployeeAdjustment>) => {
     const by = session?.username || "system";
     setAdjustments((prev) => ({
@@ -128,13 +135,57 @@ const Employees = () => {
           ) : null}
         </div>
 
-        <div className="table-scroll">
+        <div className="md:hidden space-y-2">
+          {shown.map((employee) => {
+            const rank = topFiveMap.get(employee.canonicalId);
+            return (
+              <div key={`mobile-${employee.canonicalId}`} className="rounded-2xl border border-[#D4AF37]/25 bg-[#1C2541] p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/10 text-[#D4AF37]">
+                      <UserRound className="w-4 h-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{employee.displayName}</p>
+                      {canManage && employee.sourceName !== employee.displayName ? (
+                        <p className="text-[10px] text-muted-foreground truncate">المصدر: {employee.sourceName}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                  {rank ? (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-1 text-[10px] font-semibold text-amber-300">
+                      <Medal className="w-3 h-3" />
+                      TOP {rank}
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="rounded-xl border border-emerald-500/40 bg-emerald-900/30 p-2 text-emerald-300">
+                    <p className="inline-flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" /> المؤكد</p>
+                    <p className="text-sm font-bold mt-1">{employee.finalConfirmed}</p>
+                  </div>
+                  <div className="rounded-xl border border-rose-500/40 bg-rose-900/30 p-2 text-rose-300">
+                    <p className="inline-flex items-center gap-1"><XCircle className="w-3.5 h-3.5" /> الملغي</p>
+                    <p className="text-sm font-bold mt-1">{employee.finalCancelled}</p>
+                  </div>
+                  <div className="rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/10 p-2 text-[#D4AF37]">
+                    <p>الإجمالي</p>
+                    <p className="text-sm font-bold mt-1">{employee.finalTotal}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="table-scroll hidden md:block">
           <table className="min-w-[980px] w-full text-sm">
             <thead>
               <tr className="text-muted-foreground border-b border-border/60">
-                <th className="text-right p-3">اسم الموظف</th>
+                <th className="text-right p-3">الموظف</th>
                 {canManage ? <th className="text-right p-3">اسم العرض</th> : null}
-                <th className="text-right p-3">المؤكد النهائي</th>
+                <th className="text-right p-3">المؤشرات</th>
                 {canManage ? <th className="text-right p-3">تعديل المؤكد</th> : null}
                 <th className="text-right p-3">الملغي النهائي</th>
                 {canManage ? <th className="text-right p-3">تعديل الملغي</th> : null}
@@ -150,7 +201,20 @@ const Employees = () => {
               {shown.map((employee) => (
                 <tr key={employee.canonicalId} className="border-b border-border/40 last:border-0 align-top">
                   <td className="p-3 font-medium">
-                    <div>{employee.displayName}</div>
+                    <div className="inline-flex items-center gap-2 max-w-[280px]">
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#D4AF37]/30 bg-[#D4AF37]/10 text-[#D4AF37]">
+                        <UserRound className="w-4 h-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="truncate">{employee.displayName}</div>
+                        {topFiveMap.get(employee.canonicalId) ? (
+                          <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                            <Medal className="w-3 h-3" />
+                            ضمن أفضل {topFiveMap.get(employee.canonicalId)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
                     {canManage && employee.sourceName !== employee.displayName ? <div className="text-xs text-muted-foreground">المصدر: {employee.sourceName}</div> : null}
                   </td>
                   {canManage ? (
@@ -158,11 +222,23 @@ const Employees = () => {
                       <input className="h-9 rounded-lg border px-2 w-full max-w-[220px] bg-secondary/60" value={employee.displayName} onChange={(e) => setRenames((p) => ({ ...p, [employee.sourceName]: e.target.value }))} />
                     </td>
                   ) : null}
-                  <td className="p-3">{employee.finalConfirmed}</td>
+                  <td className="p-3">
+                    <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-900/30 px-2 py-1 text-emerald-300">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span className="text-xs">مؤكد</span>
+                      <span className="font-semibold">{employee.finalConfirmed}</span>
+                    </div>
+                  </td>
                   {canManage ? (
                     <td className="p-3"><input type="number" className="h-9 rounded-lg border px-2 w-24 bg-secondary/60" value={employee.confirmedAdjustment} onChange={(e) => updateEmployeeAdjustment(employee.canonicalId, { confirmedAdjustment: Number(e.target.value) })} /></td>
                   ) : null}
-                  <td className="p-3">{employee.finalCancelled}</td>
+                  <td className="p-3">
+                    <div className="inline-flex items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-900/30 px-2 py-1 text-rose-300">
+                      <XCircle className="w-3.5 h-3.5" />
+                      <span className="text-xs">ملغي</span>
+                      <span className="font-semibold">{employee.finalCancelled}</span>
+                    </div>
+                  </td>
                   {canManage ? (
                     <td className="p-3"><input type="number" className="h-9 rounded-lg border px-2 w-24 bg-secondary/60" value={employee.cancelledAdjustment} onChange={(e) => updateEmployeeAdjustment(employee.canonicalId, { cancelledAdjustment: Number(e.target.value) })} /></td>
                   ) : null}
