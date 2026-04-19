@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,28 +6,28 @@
 
 @layer base {
   :root {
-    --background: 233 28% 10%;
-    --foreground: 220 18% 96%;
-    --card: 235 22% 14%;
-    --card-foreground: 220 16% 95%;
-    --popover: 235 25% 12%;
-    --popover-foreground: 220 16% 95%;
-    --primary: 262 79% 71%;
-    --primary-foreground: 230 40% 12%;
-    --secondary: 232 18% 18%;
-    --secondary-foreground: 220 14% 90%;
-    --muted: 230 16% 20%;
-    --muted-foreground: 224 13% 71%;
+    --background: 224 63% 11%;
+    --foreground: 220 20% 96%;
+    --card: 224 40% 18%;
+    --card-foreground: 220 18% 96%;
+    --popover: 224 42% 16%;
+    --popover-foreground: 220 18% 96%;
+    --primary: 44 64% 52%;
+    --primary-foreground: 224 63% 11%;
+    --secondary: 224 34% 22%;
+    --secondary-foreground: 220 18% 92%;
+    --muted: 224 27% 24%;
+    --muted-foreground: 220 11% 66%;
     --accent: 42 55% 66%;
     --accent-foreground: 230 38% 13%;
     --destructive: 0 72% 56%;
     --destructive-foreground: 0 0% 98%;
-    --border: 230 16% 29%;
-    --input: 230 15% 22%;
-    --ring: 263 78% 68%;
+    --border: 44 58% 52%;
+    --input: 224 40% 18%;
+    --ring: 44 64% 52%;
     --radius: 1rem;
-    --gold: 42 60% 66%;
-    --gold-glow: 31 64% 78%;
+    --gold: 44 64% 52%;
+    --gold-glow: 44 58% 44%;
   }
 
   :root[data-theme="light"] {
@@ -50,15 +50,15 @@
   html {
     direction: rtl;
     scroll-behavior: smooth;
-    background: radial-gradient(circle at top, hsl(257 34% 17%), hsl(var(--background)) 45%);
+    background: radial-gradient(circle at top, #141f42 0%, #0b132b 50%);
   }
 
   body {
-    @apply bg-background text-foreground font-arabic antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
     min-height: 100dvh;
     overflow-x: hidden;
     text-wrap: pretty;
-    background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(232 24% 9%) 100%);
+    background: linear-gradient(180deg, #0f1a38 0%, #0b132b 100%);
   }
 
   button,
@@ -84,9 +84,9 @@
     border-radius: clamp(0px, 1.6vw, 18px);
     overflow: clip;
     background:
-      radial-gradient(1200px 500px at 70% -80px, hsl(261 76% 66% / 0.12), transparent),
+      radial-gradient(1100px 480px at 74% -120px, hsl(var(--gold) / 0.08), transparent),
       hsl(var(--background));
-    box-shadow: 0 0 0 1px hsl(var(--border) / 0.35), 0 24px 60px hsl(230 42% 6% / 0.62);
+    box-shadow: 0 0 0 1px hsl(var(--border) / 0.2), 0 24px 60px hsl(230 42% 6% / 0.62);
   }
 
   @media (max-width: 767px) {
@@ -112,14 +112,15 @@
   }
 
   .glass-card {
-    @apply border border-border/60 rounded-2xl;
-    background: linear-gradient(160deg, hsl(var(--card) / 0.84), hsl(var(--card) / 0.6));
+    @apply border rounded-2xl;
+    border-color: hsl(var(--border) / 0.2);
+    background: linear-gradient(160deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.78));
     backdrop-filter: blur(12px);
     box-shadow: 0 16px 32px hsl(232 45% 5% / 0.25);
   }
 
   .gold-gradient {
-    background: linear-gradient(135deg, hsl(var(--gold)), hsl(var(--gold-glow)));
+    background: linear-gradient(135deg, #d4af37, #b5952f);
   }
 
   .custom-scrollbar {
@@ -160,7 +161,12 @@
   }
 
   .card-hover {
-    @apply interactive hover:-translate-y-0.5 hover:border-primary/45;
+    @apply interactive hover:-translate-y-0.5;
+    border-color: hsl(var(--border) / 0.2);
+  }
+
+  .card-hover:hover {
+    border-color: hsl(var(--border) / 0.4);
   }
 
   .soft-divider {
@@ -168,7 +174,20 @@
   }
 
   .icon-chip {
-    @apply inline-flex items-center justify-center h-9 w-9 rounded-xl border border-border/70 bg-secondary/65 text-primary;
+    @apply inline-flex items-center justify-center h-9 w-9 rounded-xl border bg-secondary/65 text-primary;
+    border-color: hsl(var(--border) / 0.3);
+  }
+
+  .status-success {
+    @apply border border-emerald-500/50 bg-emerald-900/50 text-emerald-400;
+  }
+
+  .status-error {
+    @apply border border-rose-500/50 bg-rose-900/50 text-rose-400;
+  }
+
+  .status-warning {
+    @apply border border-amber-500/50 bg-amber-900/40 text-amber-300;
   }
 
   .kpi-value {
