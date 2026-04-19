@@ -103,7 +103,7 @@ const Employees = () => {
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
-      <PageHeader title="لوحة الموظفين" subtitle="عرض أداء نظيف للزوار، وتحكم إداري كامل للتعديل اليدوي للمخولين فقط." icon={UsersRound} />
+      <PageHeader title="لوحة الموظفين" subtitle="عرض احترافي لمؤشرات أداء الموظفين، مع صلاحيات إدارية دقيقة للمخولين فقط." icon={UsersRound} />
 
       <div className="page-surface space-y-3">
         <div className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto]">
@@ -117,7 +117,7 @@ const Employees = () => {
               onClick={() => setShowHiddenOnly((prev) => !prev)}
             >
               <SlidersHorizontal className="w-4 h-4" />
-              {showHiddenOnly ? "إظهار الكل" : "المخفي فقط"}
+              {showHiddenOnly ? "إظهار الكل" : "المخفون فقط"}
             </button>
           ) : null}
           <button
@@ -147,11 +147,9 @@ const Employees = () => {
               <tr className="text-muted-foreground border-b border-border/60">
                 <th className="text-right p-3">اسم الموظف</th>
                 {canManage ? <th className="text-right p-3">اسم العرض</th> : null}
-                <th className="text-right p-3">المؤكد النهائي</th>
+                <th className="text-right p-3">المؤكد</th>
                 {canManage ? <th className="text-right p-3">تعديل المؤكد</th> : null}
-                <th className="text-right p-3">الملغي النهائي</th>
-                {canManage ? <th className="text-right p-3">تعديل الملغي</th> : null}
-                <th className="text-right p-3">الإجمالي النهائي</th>
+                <th className="text-right p-3">الإجمالي</th>
                 {canManage ? <th className="text-right p-3">سبب التعديل</th> : null}
                 {canManage ? <th className="text-right p-3">ملاحظات</th> : null}
                 {canManage ? <th className="text-right p-3">آخر تحديث</th> : null}
@@ -174,10 +172,6 @@ const Employees = () => {
                   <td className="p-3">{employee.finalConfirmed}</td>
                   {canManage ? (
                     <td className="p-3"><input type="number" className="h-9 rounded-lg border px-2 w-24 bg-secondary/60" value={employee.confirmedAdjustment} onChange={(e) => updateEmployeeAdjustment(employee.canonicalId, { confirmedAdjustment: Number(e.target.value) })} /></td>
-                  ) : null}
-                  <td className="p-3">{employee.finalCancelled}</td>
-                  {canManage ? (
-                    <td className="p-3"><input type="number" className="h-9 rounded-lg border px-2 w-24 bg-secondary/60" value={employee.cancelledAdjustment} onChange={(e) => updateEmployeeAdjustment(employee.canonicalId, { cancelledAdjustment: Number(e.target.value) })} /></td>
                   ) : null}
                   <td className="p-3">{employee.finalTotal}</td>
                   {canManage ? <td className="p-3"><input className="h-9 rounded-lg border px-2 w-44 bg-secondary/60" value={employee.adjustmentReason} onChange={(e) => updateEmployeeAdjustment(employee.canonicalId, { adjustmentReason: e.target.value })} /></td> : null}
@@ -209,7 +203,7 @@ const Employees = () => {
         ) : (
           <p className="text-xs text-muted-foreground inline-flex items-center gap-2">
             <BadgeCheck className="w-4 h-4 text-primary" />
-            الإخفاء يخص واجهة العرض فقط، ولا يؤثر على الإجماليات العامة.
+            الإخفاء يقتصر على واجهة العرض، ولا يؤثر على البيانات التشغيلية الأساسية.
           </p>
         )}
       </div>

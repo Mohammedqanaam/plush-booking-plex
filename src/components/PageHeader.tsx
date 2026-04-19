@@ -33,14 +33,14 @@ const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: P
             <button
               type="button"
               onClick={onBack}
-              className="touch-target h-11 w-11 shrink-0 rounded-2xl border border-border bg-secondary/80 hover:bg-secondary interactive"
+              className="touch-target h-11 w-11 shrink-0 rounded-2xl border border-[#D4AF37]/30 bg-secondary/80 hover:bg-secondary/95 hover:border-[#D4AF37]/55 interactive"
               aria-label="رجوع"
             >
               <ArrowRight className="w-5 h-5 mx-auto" />
             </button>
           ) : null}
           <div className="min-w-0">
-            <h2 className="text-3xl md:text-[2.35rem] font-bold flex items-center gap-2">
+            <h2 className="text-3xl md:text-[2.35rem] font-black flex items-center gap-2">
               {Icon ? (
                 <span className="icon-chip h-8 w-8">
                   <Icon className="w-4 h-4 shrink-0" />

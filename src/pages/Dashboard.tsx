@@ -50,7 +50,7 @@ const Dashboard = () => {
       label: "إجمالي الحجوزات",
       value: summary.total,
       icon: Layers3,
-      helper: "يشمل جميع الحجوزات بكل الحالات (بما فيها الملغية).",
+      helper: "يشمل جميع الحجوزات المسجلة خلال الفترة المعروضة.",
     },
     {
       label: "الحجوزات المؤكدة",
@@ -64,7 +64,7 @@ const Dashboard = () => {
     <div className="space-y-6 md:space-y-7 pb-8">
       <PageHeader
         title="لوحة التشغيل اليومية"
-        subtitle="تجربة تشغيل هادئة وواضحة لفريق الكول سنتر والمشرفين مع اختصارات سريعة ومؤشرات مباشرة."
+        subtitle="لوحة تشغيل يومية واضحة لدعم فريق الحجوزات والمشرفين بمؤشرات دقيقة واختصارات فعّالة."
         showBack={false}
         icon={Sparkles}
       />
@@ -123,7 +123,7 @@ const Dashboard = () => {
             <h3 className="section-title">أفضل الموظفين</h3>
           </div>
           <button type="button" className="text-xs text-primary hover:text-primary/80 interactive">
-            عرض الكل
+            عرض القائمة
           </button>
         </div>
         {topEmployees.length ? (
@@ -137,7 +137,7 @@ const Dashboard = () => {
                   <p className="font-semibold text-base truncate">{employee.agent}</p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">مؤكد {employee.confirmed} · إجمالي {employee.total}</p>
-                <p className="text-xs text-primary mt-2">أداء مؤكد مستقر</p>
+                <p className="text-xs text-primary mt-2">مستوى أداء مستقر</p>
               </div>
             ))}
           </div>

@@ -1,6 +1,6 @@
 import type { ThemeVars } from "@/theme/enterpriseThemeTypes";
 
-export const DEFAULT_PRESET = "signature-cosmic";
+export const DEFAULT_PRESET = "hospitality-premium-gold";
 
 export const themeMap: Record<string, ThemeVars> = {
   "executive-dark-glass": {
@@ -12,11 +12,11 @@ export const themeMap: Record<string, ThemeVars> = {
     cardLight: "0 0% 100%",
     cardForegroundDark: "0 0% 98%",
     cardForegroundLight: "222 47% 8%",
-    primary: "220 80% 60%",
-    accent: "212 40% 96%",
+    primary: "44 64% 52%",
+    accent: "44 58% 44%",
     borderDark: "222 24% 18%",
     borderLight: "220 18% 84%",
-    ring: "220 80% 60%",
+    ring: "44 64% 52%",
   },
   "luxury-lavender": {
     backgroundDark: "255 35% 10%",
@@ -27,11 +27,11 @@ export const themeMap: Record<string, ThemeVars> = {
     cardLight: "0 0% 100%",
     cardForegroundDark: "0 0% 98%",
     cardForegroundLight: "255 35% 10%",
-    primary: "280 75% 72%",
-    accent: "295 80% 90%",
+    primary: "44 64% 52%",
+    accent: "44 58% 44%",
     borderDark: "255 22% 24%",
     borderLight: "280 24% 82%",
-    ring: "280 75% 72%",
+    ring: "44 64% 52%",
   },
   "hospitality-premium-gold": {
     backgroundDark: "25 20% 10%",
@@ -57,11 +57,11 @@ export const themeMap: Record<string, ThemeVars> = {
     cardLight: "0 0% 100%",
     cardForegroundDark: "0 0% 98%",
     cardForegroundLight: "241 40% 12%",
-    primary: "284 90% 65%",
-    accent: "190 90% 60%",
+    primary: "44 64% 52%",
+    accent: "44 58% 44%",
     borderDark: "245 25% 18%",
     borderLight: "270 28% 84%",
-    ring: "284 90% 65%",
+    ring: "44 64% 52%",
   },
   "signature-obsidian": {
     backgroundDark: "240 10% 5%",
@@ -72,10 +72,10 @@ export const themeMap: Record<string, ThemeVars> = {
     cardLight: "0 0% 100%",
     cardForegroundDark: "0 0% 98%",
     cardForegroundLight: "240 10% 10%",
-    primary: "272 80% 64%",
-    accent: "43 85% 60%",
+    primary: "44 64% 52%",
+    accent: "44 58% 44%",
     borderDark: "240 14% 18%",
     borderLight: "240 8% 84%",
-    ring: "272 80% 64%",
+    ring: "44 64% 52%",
   },
 };

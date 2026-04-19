@@ -41,7 +41,7 @@ const Complaints = () => {
   const subCategories = useMemo(() => MAIN_CATEGORIES[form.mainCategory] || [], [form.mainCategory]);
 
   return <div className="p-4 max-w-6xl mx-auto space-y-4">
-    <PageHeader title="إدارة الشكاوى" subtitle="نموذج عملي وسريع لموظف الكول سنتر مع وضوح كامل للحقول والإجراءات." icon={OctagonAlert} />
+    <PageHeader title="إدارة الشكاوى" subtitle="نموذج تشغيلي واضح وسريع لمعالجة شكاوى الضيوف بدقة واحترافية." icon={OctagonAlert} />
 
     <form className="page-surface grid md:grid-cols-2 gap-3" onSubmit={async (e) => {
       e.preventDefault();
