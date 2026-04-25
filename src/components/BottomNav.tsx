@@ -1,12 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { BookOpenCheck, Building2, LayoutDashboard, PhoneCall, UsersRound } from "lucide-react";
+import { LayoutDashboard, PhoneCall, UsersRound } from "lucide-react";
 
 const mainNavItems = [
   { path: "/", label: "الرئيسية", icon: LayoutDashboard },
-  { path: "/knowledge-bank", label: "المعرفة", icon: BookOpenCheck },
   { path: "/employees", label: "الموظفون", icon: UsersRound },
   { path: "/contacts", label: "التواصل", icon: PhoneCall },
-  { path: "/branches", label: "الفروع", icon: Building2 },
 ];
 
 const BottomNav = () => {

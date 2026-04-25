@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { BookOpenCheck, Building2, LayoutDashboard, PhoneCall, Settings2, UsersRound } from "lucide-react";
+import { LayoutDashboard, PhoneCall, UsersRound } from "lucide-react";
 import BottomNav from "./BottomNav";
 import RiyadhClock from "./RiyadhClock";
 import { api } from "@/lib/api";
@@ -9,11 +9,8 @@ import ScrollTopButton from "./ScrollTopButton";
 
 const desktopNav = [
   { to: "/", label: "الرئيسية", icon: LayoutDashboard },
-  { to: "/knowledge-bank", label: "بنك المعلومات", icon: BookOpenCheck },
   { to: "/employees", label: "الموظفون", icon: UsersRound },
   { to: "/contacts", label: "طلبات التواصل", icon: PhoneCall },
-  { to: "/branches", label: "الفروع", icon: Building2 },
-  { to: "/settings", label: "الإعدادات", icon: Settings2 },
 ];
 
 const Layout = () => {
