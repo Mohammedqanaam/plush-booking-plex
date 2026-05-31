@@ -53,7 +53,7 @@ const HotelSearch = () => {
   }, [group, normalized]);
 
   return (
-    <div className="p-4 max-w-6xl mx-auto space-y-4">
+    <div className="page-wrap">
       <PageHeader title="مستكشف المعلومات التشغيلي" subtitle="بحث تشغيلي فوري مع تصنيفات واضحة واقتراحات سريعة." icon={Sparkles} />
 
       <div className="page-surface">
@@ -80,7 +80,7 @@ const HotelSearch = () => {
           ))}
         </div>
 
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
           {groups.map((g) => {
             const active = g === group;
             return (

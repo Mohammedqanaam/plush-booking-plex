@@ -24,6 +24,8 @@ type EmployeeRow = ReturnType<typeof processBookings>[number] & {
   updatedAt: string;
 };
 
+const namesAreSame = (a: string, b: string) => normalizeEmployeeName(a) === normalizeEmployeeName(b);
+
 const Employees = () => {
   const [search, setSearch] = useState("");
   const [hidden, setHidden] = useState<string[]>([]);
@@ -48,6 +50,12 @@ const Employees = () => {
     () => processBookings(bookings, showMConfirmedOnly ? { confirmedStatuses: ["M"] } : undefined),
     [bookings, showMConfirmedOnly],
   );
+
+  const allEmployeeTotals = useMemo(() => {
+    const total = rows.reduce((sum, row) => sum + row.total, 0);
+    const confirmed = rows.reduce((sum, row) => sum + row.confirmed, 0);
+    return { total, confirmed, employees: rows.length };
+  }, [rows]);
 
   const shown = useMemo(() => {
     const mapped: EmployeeRow[] = rows
@@ -102,7 +110,7 @@ const Employees = () => {
   };
 
   return (
-    <div className="p-4 max-w-6xl mx-auto space-y-4">
+    <div className="page-wrap">
       <PageHeader title="لوحة الموظفين" subtitle="عرض احترافي لمؤشرات أداء الموظفين، مع صلاحيات إدارية دقيقة للمخولين فقط." icon={UsersRound} />
 
       <div className="page-surface space-y-3">
@@ -113,7 +121,7 @@ const Employees = () => {
           </div>
           {canManage ? (
             <button
-              className={`h-11 px-4 rounded-xl border inline-flex items-center gap-2 ${showHiddenOnly ? "border-primary text-primary bg-primary/10" : "border-border/70"}`}
+              className={`h-11 px-4 rounded-xl border inline-flex items-center gap-2 ${showHiddenOnly ? "border-primary text-primary bg-primary/10" : "border-primary/18"}`}
               onClick={() => setShowHiddenOnly((prev) => !prev)}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -121,7 +129,7 @@ const Employees = () => {
             </button>
           ) : null}
           <button
-            className={`h-11 px-4 rounded-xl border inline-flex items-center gap-2 ${showMConfirmedOnly ? "border-primary text-primary bg-primary/10" : "border-border/70"}`}
+            className={`h-11 px-4 rounded-xl border inline-flex items-center gap-2 ${showMConfirmedOnly ? "border-primary text-primary bg-primary/10" : "border-primary/18"}`}
             onClick={() => setShowMConfirmedOnly((prev) => !prev)}
           >
             <BadgeCheck className="w-4 h-4" />
@@ -141,10 +149,25 @@ const Employees = () => {
           ) : null}
         </div>
 
+        <div className="grid gap-2 sm:grid-cols-3">
+          <div className="rounded-2xl border border-primary/18 bg-secondary/24 p-3">
+            <p className="text-xs text-muted-foreground">إجمالي الحجوزات العام</p>
+            <p className="mt-1 text-2xl font-black text-primary tabular-nums">{allEmployeeTotals.total}</p>
+          </div>
+          <div className="rounded-2xl border border-primary/18 bg-secondary/24 p-3">
+            <p className="text-xs text-muted-foreground">المؤكد العام</p>
+            <p className="mt-1 text-2xl font-black text-primary tabular-nums">{allEmployeeTotals.confirmed}</p>
+          </div>
+          <div className="rounded-2xl border border-primary/18 bg-secondary/24 p-3">
+            <p className="text-xs text-muted-foreground">عدد الموظفين في البيانات</p>
+            <p className="mt-1 text-2xl font-black text-primary tabular-nums">{allEmployeeTotals.employees}</p>
+          </div>
+        </div>
+
         <div className="table-scroll">
           <table className="min-w-[980px] w-full text-sm">
             <thead>
-              <tr className="text-muted-foreground border-b border-border/60">
+              <tr className="text-muted-foreground border-b border-border/30">
                 <th className="text-right p-3">اسم الموظف</th>
                 {canManage ? <th className="text-right p-3">اسم العرض</th> : null}
                 <th className="text-right p-3">المؤكد</th>
@@ -159,10 +182,10 @@ const Employees = () => {
             </thead>
             <tbody>
               {shown.map((employee) => (
-                <tr key={employee.canonicalId} className="border-b border-border/40 last:border-0 align-top">
+                <tr key={employee.canonicalId} className="border-b border-border/30 last:border-0 align-top">
                   <td className="p-3 font-medium">
                     <div>{employee.displayName}</div>
-                    {canManage && employee.sourceName !== employee.displayName ? <div className="text-xs text-muted-foreground">المصدر: {employee.sourceName}</div> : null}
+                    {canManage && !namesAreSame(employee.sourceName, employee.displayName) ? <div className="text-xs text-muted-foreground">المصدر: {employee.sourceName}</div> : null}
                   </td>
                   {canManage ? (
                     <td className="p-3">
@@ -187,7 +210,7 @@ const Employees = () => {
                   ) : null}
                   {canManage ? (
                     <td className="p-3">
-                      <button className="h-9 px-3 rounded-lg border border-border/70 hover:border-primary/60" onClick={() => setHidden((current) => employee.isHidden ? current.filter((name) => !isEmployeeHidden(name, [employee.sourceName])) : normalizeHiddenEmployees([...current, employee.sourceName]))}>
+                      <button className="h-9 px-3 rounded-lg border border-primary/18 hover:border-primary/60" onClick={() => setHidden((current) => employee.isHidden ? current.filter((name) => !isEmployeeHidden(name, [employee.sourceName])) : normalizeHiddenEmployees([...current, employee.sourceName]))}>
                         {employee.isHidden ? "إظهار" : "إخفاء"}
                       </button>
                     </td>

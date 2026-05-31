@@ -87,12 +87,12 @@ const Dashboard = () => {
           <h3 className="section-title">اختصارات سريعة</h3>
           <span className="text-xs text-muted-foreground">وصول أسرع للأقسام الأكثر استخدامًا</span>
         </div>
-        <div className="grid sm:grid-cols-2 xl:grid-cols-5 gap-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           {shortcuts.map((item) => (
             <Link
               key={item.to}
               to={item.to}
-              className="rounded-3xl border border-border/70 bg-secondary/25 p-5 card-hover text-right min-h-[168px] flex flex-col justify-between"
+              className="rounded-3xl border border-primary/18 bg-secondary/24 p-5 card-hover text-right min-h-[168px] flex flex-col justify-between"
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="icon-chip">
@@ -117,14 +117,14 @@ const Dashboard = () => {
             </span>
             <h3 className="section-title">أفضل الموظفين</h3>
           </div>
-          <button type="button" className="text-xs text-primary hover:text-primary/80 interactive">
+          <Link to="/employees" className="text-xs font-semibold text-primary hover:text-primary/80 interactive">
             عرض القائمة
-          </button>
+          </Link>
         </div>
         {topEmployees.length ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {topEmployees.map((employee, index) => (
-              <div key={employee.agent} className="rounded-2xl border border-border/70 p-4 bg-secondary/25 min-h-[140px]">
+              <div key={employee.agent} className="rounded-2xl border border-primary/18 p-4 bg-secondary/24 min-h-[140px]">
                 <div className="flex items-center gap-2">
                   <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-primary/40 bg-primary/10 px-2 text-xs font-semibold text-primary">
                     #{index + 1}

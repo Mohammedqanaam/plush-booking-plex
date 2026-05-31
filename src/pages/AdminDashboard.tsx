@@ -98,16 +98,16 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="p-4 max-w-6xl mx-auto space-y-5">
+    <div className="page-wrap">
       <PageHeader
         title="لوحة الإدارة"
         subtitle="تحكم شامل بالمستخدمين، الإعدادات، والبيانات التشغيلية."
         icon={Settings}
-        actions={<button className="h-10 px-4 rounded-xl border border-border/70 bg-secondary/40 shrink-0 inline-flex items-center gap-2" onClick={async () => { await api.logout(); clearAdminSession(); navigate("/"); }}><LogOut className="w-4 h-4" /> تسجيل الخروج</button>}
+        actions={<button className="h-10 px-4 rounded-xl border border-primary/18 bg-secondary/40 shrink-0 inline-flex items-center gap-2" onClick={async () => { await api.logout(); clearAdminSession(); navigate("/"); }}><LogOut className="w-4 h-4" /> تسجيل الخروج</button>}
       />
       <p className="text-xs text-muted-foreground">مرحباً {session?.username} ({ROLE_LABELS[(session?.role as UserRole) || "viewer"]})</p>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
         {tabs.map((tab) => (
           <button key={tab.id} onClick={() => (can(tab.perm) ? setTab(tab.id) : setMessage("ليست لديك صلاحية"))} className={`px-3 py-2 rounded-xl text-sm inline-flex items-center gap-2 border interactive ${activeTab === tab.id ? "border-primary/50 bg-primary/15 text-primary" : "border-border/50 bg-secondary/40 hover:bg-secondary text-muted-foreground hover:text-foreground"}`}>
             <tab.icon className="inline w-4 h-4 ms-1" /> {tab.label}

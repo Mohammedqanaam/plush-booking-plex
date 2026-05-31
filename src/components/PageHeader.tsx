@@ -26,21 +26,21 @@ const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: P
   };
 
   return (
-    <header className="page-surface sticky top-[88px] z-20 border-border/70 py-5 md:py-6">
+    <header className="page-surface sticky top-[88px] z-20 border-primary/20 py-4 md:py-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
           {showBack ? (
             <button
               type="button"
               onClick={onBack}
-              className="touch-target h-11 w-11 shrink-0 rounded-2xl border border-[#D4AF37]/30 bg-secondary/80 hover:bg-secondary/95 hover:border-[#D4AF37]/55 interactive"
+              className="touch-target h-11 w-11 shrink-0 rounded-2xl border border-primary/25 bg-secondary/70 hover:bg-secondary/95 hover:border-primary/50 interactive"
               aria-label="رجوع"
             >
               <ArrowRight className="w-5 h-5 mx-auto" />
             </button>
           ) : null}
           <div className="min-w-0">
-            <h2 className="text-3xl md:text-[2.35rem] font-black flex items-center gap-2">
+            <h2 className="text-2xl md:text-[2.25rem] font-black flex items-center gap-2">
               {Icon ? (
                 <span className="icon-chip h-8 w-8">
                   <Icon className="w-4 h-4 shrink-0" />

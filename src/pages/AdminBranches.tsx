@@ -35,7 +35,7 @@ const AdminBranches = () => {
   if (!canManage) return <div className="p-4">ليس لديك صلاحية إدارة بيانات الفروع.</div>;
 
   return (
-    <div className="p-4 max-w-6xl mx-auto space-y-4">
+    <div className="page-wrap">
       <PageHeader title="إدارة الفروع" subtitle="تحديث ومراجعة بيانات الفروع من لوحة الأدمن." icon={Building2} />
       <div className="glass-card p-4 space-y-3">
         <div className="grid gap-2 md:grid-cols-4">
@@ -45,7 +45,7 @@ const AdminBranches = () => {
         </div>
       </div>
 
-      <div className="glass-card p-4 overflow-x-auto custom-scrollbar">
+      <div className="glass-card p-4 table-scroll custom-scrollbar">
         <table className="min-w-[900px] w-full text-sm">
           <thead><tr className="text-right border-b"><th className="p-2">الفرع</th><th className="p-2">المدينة</th><th className="p-2">البراند</th><th className="p-2">الهاتف</th><th className="p-2">الإفطار</th><th className="p-2">الحالة</th></tr></thead>
           <tbody>

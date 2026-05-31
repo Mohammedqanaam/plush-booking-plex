@@ -33,7 +33,7 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="p-4 max-w-4xl mx-auto space-y-6">
+    <div className="page-wrap-narrow">
       <PageHeader title="تسجيل دخول المسؤول" subtitle="يرجى تسجيل الدخول للوصول إلى لوحة الإدارة." icon={Lock} />
 
       <div className="glass-card p-8 text-center space-y-4">

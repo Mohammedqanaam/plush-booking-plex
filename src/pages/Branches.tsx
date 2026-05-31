@@ -41,7 +41,7 @@ const Branches = () => {
   const selected = filtered.find((b) => b.id === selectedId) ?? filtered[0];
 
   return (
-    <div className="p-4 max-w-7xl mx-auto space-y-4">
+    <div className="page-wrap">
       <PageHeader title="إدارة الفروع" subtitle="عرض مركزي واضح لبيانات الفروع، الخدمات، وحالة التوثيق." icon={Building2} />
 
       <section className="page-surface space-y-3">
@@ -67,7 +67,7 @@ const Branches = () => {
             <thead><tr className="text-right border-b border-border/60 text-muted-foreground"><th className="p-2.5">الفرع</th><th className="p-2.5">المدينة</th><th className="p-2.5">البراند</th><th className="p-2.5">الهاتف</th><th className="p-2.5">الإفطار</th><th className="p-2.5">المسبح</th><th className="p-2.5">الحالة</th></tr></thead>
             <tbody>
               {filtered.map((branch) => (
-                <tr key={branch.id} className={`border-b border-border/40 cursor-pointer ${selected?.id === branch.id ? "bg-primary/10" : "hover:bg-secondary/25"}`} onClick={() => setSelectedId(branch.id)}>
+                <tr key={branch.id} className={`border-b border-border/40 cursor-pointer ${selected?.id === branch.id ? "bg-primary/10" : "hover:bg-secondary/24"}`} onClick={() => setSelectedId(branch.id)}>
                   <td className="p-2.5 font-medium">{branch.name}</td><td className="p-2.5">{branch.city}</td><td className="p-2.5">{branch.brand}</td><td className="p-2.5" dir="ltr">{branch.contacts[0]?.value ?? "—"}</td><td className="p-2.5">{branch.services.breakfast}</td><td className="p-2.5">{branch.services.pool}</td><td className="p-2.5"><span className={`px-2 py-1 rounded-full text-xs border ${statusChip[branch.verificationStatus]}`}>{statusLabel[branch.verificationStatus]}</span></td>
                 </tr>
               ))}
