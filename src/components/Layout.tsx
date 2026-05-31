@@ -29,22 +29,32 @@ const Layout = () => {
 
   return (
     <div className="app-shell flex flex-col">
-      {bannerText && <div className="bg-primary/12 text-center py-2 px-4 text-xs text-primary border-b border-border/40">{bannerText}</div>}
+      {bannerText && (
+        <div className="bg-primary/10 text-center py-2 px-4 text-xs font-medium text-primary border-b border-primary/20">
+          {bannerText}
+        </div>
+      )}
 
-      <header className="safe-area-top sticky top-0 z-40 border-b border-[#D4AF37]/20 bg-background/90 backdrop-blur-xl">
+      <header className="safe-area-top sticky top-0 z-40 border-b border-primary/20 bg-background/82 backdrop-blur-2xl">
         <div className="content-container h-[76px] flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0" />
+          <div className="hidden md:flex items-center gap-3 min-w-0">
+            <span className="icon-chip h-11 w-11"><LayoutDashboard className="w-5 h-5" /></span>
+            <div className="min-w-0">
+              <p className="text-sm font-extrabold leading-5">نظام الكول سنتر</p>
+              <p className="text-xs text-muted-foreground truncate">لوحة حجوزات وتشغيل فندقية</p>
+            </div>
+          </div>
 
-          <nav className="hidden md:flex items-center justify-center gap-2 overflow-auto">
+          <nav className="hidden md:flex items-center justify-center gap-2 overflow-auto custom-scrollbar rounded-3xl border border-primary/15 bg-secondary/24 p-1">
             {desktopNav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm border interactive whitespace-nowrap ${
+                  `inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-semibold interactive whitespace-nowrap ${
                     isActive
-                      ? "border-[#D4AF37]/45 bg-[#D4AF37]/10 text-[#D4AF37]"
-                      : "border-[#D4AF37]/20 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-[#D4AF37]/35"
+                      ? "bg-primary/14 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.35)]"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
                   }`
                 }
               >
@@ -54,7 +64,7 @@ const Layout = () => {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 mr-auto md:mr-0">
             <div className="hidden lg:block">
               <RiyadhClock />
             </div>
@@ -63,14 +73,14 @@ const Layout = () => {
         </div>
       </header>
 
-      <main className="flex-1 min-h-0 pb-24 md:pb-10 overflow-y-auto custom-scrollbar" key={location.pathname}>
-        <div className="content-container pt-6 md:pt-7">
+      <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-[calc(6.25rem+env(safe-area-inset-bottom))] md:pb-10" key={location.pathname}>
+        <div className="content-container pt-4 md:pt-7">
           <Outlet />
         </div>
       </main>
 
-      <footer className="hidden md:block border-t border-[#D4AF37]/20 bg-secondary/20">
-        <div className="content-container h-[80px] flex items-center justify-between text-xs text-muted-foreground">
+      <footer className="hidden md:block border-t border-primary/15 bg-secondary/14 backdrop-blur-xl">
+        <div className="content-container h-[76px] flex items-center justify-between text-xs text-muted-foreground">
           <p>نظام الكول سنتر</p>
           <p>الإصدار 2.2.0</p>
           <p>آخر تحديث اليوم {lastUpdatedAt}</p>

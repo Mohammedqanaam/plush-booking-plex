@@ -29,7 +29,7 @@ const AdminEnterpriseControl = () => {
   if (!cfg) return <div className="p-4">Loading...</div>;
 
   return (
-    <div className="p-4 max-w-4xl mx-auto space-y-4">
+    <div className="page-wrap-narrow">
       <PageHeader title="مركز التحكم المؤسسي" subtitle="إدارة القوالب، SLA، وإعدادات الثيم المؤسسي." icon={SlidersHorizontal} />
       <div className="glass-card p-4 space-y-3">
         <textarea className="w-full rounded-lg bg-secondary border border-border p-3" rows={6} value={cfg.whatsappTemplate || ""} onChange={(e)=>setCfg({...cfg, whatsappTemplate:e.target.value})} />

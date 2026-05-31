@@ -9,7 +9,7 @@ const items = [
 ];
 
 const Policies = () => (
-  <div className="p-4 max-w-6xl mx-auto space-y-4">
+  <div className="page-wrap">
     <PageHeader title="التعاميم والسياسات" subtitle="مرجع موحد للتعليمات التشغيلية بطريقة واضحة وسريعة القراءة." icon={FileText} />
 
     <section className="page-surface space-y-3">
@@ -20,7 +20,7 @@ const Policies = () => (
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {items.map((item) => (
-          <article key={item.title} className="rounded-2xl border border-border/70 bg-secondary/25 p-4 card-hover space-y-2">
+          <article key={item.title} className="rounded-2xl border border-primary/18 bg-secondary/24 p-4 card-hover space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs px-2 py-1 rounded-full border border-primary/30 text-primary bg-primary/10">{item.category}</span>
               <FileBadge2 className="w-4 h-4 text-muted-foreground" />

@@ -16,7 +16,7 @@ const ErrorDashboard = () => {
   }, []);
 
   return (
-    <div className="p-4 max-w-5xl mx-auto space-y-4">
+    <div className="page-wrap-narrow">
       <h2 className="text-2xl font-bold">Error Monitoring Dashboard</h2>
       {errors.map((err) => (
         <div key={err.id} className="glass-card p-3">

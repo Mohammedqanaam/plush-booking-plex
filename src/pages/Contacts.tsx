@@ -43,7 +43,7 @@ const Contacts = () => {
   const inputClass = "w-full h-11 px-4 rounded-xl bg-secondary/70 border border-border text-foreground placeholder:text-muted-foreground text-sm";
 
   return (
-    <div className="p-4 max-w-5xl mx-auto space-y-5">
+    <div className="page-wrap-narrow">
       <PageHeader title="طلبات التواصل" subtitle="واجهة سريعة ومريحة لتسجيل طلب تواصل الضيف برقم طلب تلقائي." icon={PhoneCall} />
 
       {submitted ? (
@@ -123,7 +123,7 @@ const Contacts = () => {
         <h3 className="text-sm font-semibold inline-flex items-center gap-1"><Clock3 className="w-4 h-4 text-primary" /> آخر الطلبات المرسلة من هذه الجلسة</h3>
         {recentRequests.length ? (
           recentRequests.map((req) => (
-            <div key={req.id} className="rounded-xl border border-border/70 bg-secondary/25 p-3 flex items-center justify-between gap-2">
+            <div key={req.id} className="rounded-xl border border-primary/18 bg-secondary/24 p-3 flex items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-medium inline-flex items-center gap-2"><Hash className="w-3.5 h-3.5 text-primary" />{req.requestNo}</p>
                 <p className="text-sm font-medium">{req.guestName}</p>

@@ -17,7 +17,7 @@ const AdminKnowledgeBank = () => {
   if (!canManage) return <div className="p-4">ليس لديك صلاحية إدارة بنك المعلومات.</div>;
 
   return (
-    <div className="p-4 max-w-6xl mx-auto space-y-4">
+    <div className="page-wrap">
       <PageHeader title="إدارة بنك المعلومات" subtitle="عرض منظم لسجلات الفروع والمراجع العامة." icon={BookOpenText} />
 
       <div className="page-surface">

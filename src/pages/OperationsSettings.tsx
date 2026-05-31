@@ -17,7 +17,7 @@ const OperationsSettings = () => {
     }).catch(() => {});
   }, []);
 
-  return <div className="p-4 max-w-5xl mx-auto space-y-4">
+  return <div className="page-wrap-narrow">
     <PageHeader title="الإعدادات والتحكم" subtitle="تخصيص اسم المنصة والثيم بطريقة عملية ومتناسقة مع الهوية البصرية." icon={Palette} />
     <div className="page-surface space-y-4">
       <div className="space-y-1">

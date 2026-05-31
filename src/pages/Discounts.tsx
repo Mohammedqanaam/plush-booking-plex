@@ -71,7 +71,7 @@ const Discounts = () => {
   const current = discounts.filter((d) => d.brand === activeBrand);
 
   return (
-    <div className="p-4 max-w-5xl mx-auto space-y-4">
+    <div className="page-wrap-narrow">
       <h2 className="text-2xl font-bold">قسم الخصومات</h2>
 
       <div className="glass-card p-4">

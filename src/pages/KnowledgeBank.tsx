@@ -53,11 +53,14 @@ const KnowledgeBank = () => {
   }, [query, brand, branch, category]);
 
   return (
-    <div className="p-4 max-w-7xl mx-auto space-y-4">
+    <div className="page-wrap">
       <PageHeader title="بنك المعلومات" subtitle="بحث فوري ومصنف لسياسات التشغيل وبيانات الفروع مع تجربة قراءة مريحة." icon={BookOpenCheck} />
 
       <section className="page-surface space-y-3">
-        <p className="text-xs text-muted-foreground">هذه الصفحة للعرض فقط، وتعمل كمرجع تشغيلي يدعم الوصول السريع للمعلومات.</p>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <p>هذه الصفحة للعرض فقط، وتعمل كمرجع تشغيلي يدعم الوصول السريع للمعلومات.</p>
+          <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary">{results.length} نتيجة</span>
+        </div>
         <div className="grid md:grid-cols-4 gap-2">
           <div className="relative md:col-span-2">
             <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -71,18 +74,18 @@ const KnowledgeBank = () => {
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Filter className="w-3.5 h-3.5" /> تصنيفات سريعة</span>
+          <button onClick={() => setCategory("الكل")} className={`text-xs px-3 py-1.5 rounded-full border interactive ${category === "الكل" ? "border-primary text-primary bg-primary/10" : "hover:border-primary/60"}`}>الكل</button>
           {categories.map((item) => (
             <button key={item} onClick={() => setCategory(item)} className={`text-xs px-3 py-1.5 rounded-full border interactive ${category === item ? "border-primary text-primary bg-primary/10" : "hover:border-primary/60"}`}>
               {item}
             </button>
           ))}
-          <button onClick={() => setCategory("الكل")} className="text-xs px-3 py-1.5 rounded-full border hover:border-primary/60">الكل</button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Tags className="w-3.5 h-3.5" /> نوايا بحث سريعة</span>
           {quickIntents.map((intent) => (
-            <button key={intent} onClick={() => setQuery(intent)} className="text-xs px-3 py-1.5 rounded-full border border-border/70 bg-secondary/30 hover:border-primary/50">
+            <button key={intent} onClick={() => setQuery(intent)} className="text-xs px-3 py-1.5 rounded-full border border-primary/18 bg-secondary/24 hover:border-primary/50 interactive">
               {intent}
             </button>
           ))}
@@ -91,7 +94,7 @@ const KnowledgeBank = () => {
 
       <div className="grid md:grid-cols-2 gap-3">
         {results.length ? results.map((item) => (
-          <button key={item.id} className="page-surface text-right card-hover" onClick={() => setSelected(item)}>
+          <button key={item.id} className="page-surface min-h-[152px] text-right card-hover" onClick={() => setSelected(item)}>
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-xs px-2 py-1 rounded-full border border-primary/30 text-primary bg-primary/10">{item.kind}</span>
               <Paperclip className="w-4 h-4 text-muted-foreground" />
@@ -103,18 +106,18 @@ const KnowledgeBank = () => {
       </div>
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl glass-card border-primary/20">
           {selected ? (
             <>
               <DialogHeader>
                 <DialogTitle>{selected.title}</DialogTitle>
               </DialogHeader>
               <p className="text-sm text-muted-foreground">{selected.brand ?? "Global"} · {selected.branch ?? "General"}</p>
-              <div className="rounded-xl border border-border/60 bg-secondary/20 p-3 whitespace-pre-line text-sm leading-7 max-h-[50vh] overflow-auto custom-scrollbar">
+              <div className="rounded-xl border border-primary/20 bg-secondary/24 p-3 whitespace-pre-line text-sm leading-7 max-h-[50vh] overflow-auto custom-scrollbar">
                 {selected.details}
               </div>
               <div className="flex flex-wrap gap-2">
-                {selected.tags.map((tag) => <span key={tag} className="text-xs px-2 py-1 rounded bg-secondary border border-border/70">{tag}</span>)}
+                {selected.tags.map((tag) => <span key={tag} className="text-xs px-2 py-1 rounded-full bg-secondary/70 border border-primary/18">{tag}</span>)}
               </div>
             </>
           ) : null}
