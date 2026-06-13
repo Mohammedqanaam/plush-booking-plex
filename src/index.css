@@ -9,24 +9,24 @@
     color-scheme: dark;
     --background: 224 52% 6%;
     --foreground: 210 40% 98%;
-    --card: 222 40% 18%;
+    --card: 225 42% 12%;
     --card-foreground: 210 40% 98%;
     --popover: 222 41% 13%;
     --popover-foreground: 210 40% 98%;
     --primary: 44 64% 52%;
     --primary-foreground: 224 52% 7%;
-    --secondary: 222 35% 17%;
+    --secondary: 224 36% 15%;
     --secondary-foreground: 210 35% 94%;
-    --muted: 222 25% 21%;
+    --muted: 224 24% 18%;
     --muted-foreground: 220 13% 70%;
     --accent: 198 93% 74%;
     --accent-foreground: 224 52% 7%;
     --destructive: 0 71% 58%;
     --destructive-foreground: 0 0% 98%;
-    --border: 44 64% 52%;
+    --border: 43 48% 43%;
     --input: 222 34% 19%;
     --ring: 44 64% 52%;
-    --radius: 1.15rem;
+    --radius: 1rem;
     --gold: 44 64% 52%;
     --gold-dim: 43 45% 38%;
     --gold-glow: 44 59% 47%;
@@ -37,7 +37,7 @@
     --surface-glass: rgba(28, 37, 65, 0.78);
     --surface-glass-strong: rgba(28, 37, 65, 0.9);
     --line-gold: rgba(212, 175, 55, 0.2);
-    --shadow-soft: 0 18px 52px rgba(0, 0, 0, 0.28);
+    --shadow-soft: 0 14px 42px rgba(0, 0, 0, 0.34);
   }
 
   :root[data-theme="light"] {
@@ -72,9 +72,9 @@
     overflow-x: hidden;
     text-wrap: pretty;
     background:
-      radial-gradient(900px 420px at 78% -12%, rgba(212, 175, 55, 0.13), transparent 58%),
+      radial-gradient(820px 360px at 78% -12%, rgba(212, 175, 55, 0.10), transparent 58%),
       radial-gradient(760px 360px at 5% 18%, rgba(125, 211, 252, 0.09), transparent 56%),
-      linear-gradient(180deg, #0b132b 0%, #070b16 48%, #050816 100%);
+      linear-gradient(180deg, #080f22 0%, #070b16 46%, #040711 100%);
   }
 
   #root {
@@ -168,11 +168,11 @@
   }
 
   .page-wrap {
-    @apply mx-auto w-full max-w-[1360px] space-y-4 md:space-y-5;
+    @apply mx-auto w-full max-w-[1360px] space-y-3 md:space-y-4;
   }
 
   .page-wrap-narrow {
-    @apply mx-auto w-full max-w-5xl space-y-4 md:space-y-5;
+    @apply mx-auto w-full max-w-5xl space-y-3 md:space-y-4;
   }
 
   .safe-area-top {
@@ -184,12 +184,12 @@
   }
 
   .glass-card {
-    @apply border rounded-[1.35rem];
+    @apply border rounded-[1.15rem];
     border-color: hsl(var(--border) / 0.2);
     background:
       linear-gradient(145deg, rgba(255, 255, 255, 0.055), transparent 35%),
       linear-gradient(160deg, var(--surface-glass-strong), var(--surface-glass));
-    backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(150%);
     box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
@@ -227,11 +227,11 @@
   }
 
   .page-surface {
-    @apply glass-card p-4 md:p-6;
+    @apply glass-card p-3.5 md:p-5;
   }
 
   .section-title {
-    @apply text-lg md:text-xl font-extrabold tracking-tight;
+    @apply text-base md:text-lg font-extrabold tracking-tight;
   }
 
   .table-scroll {
@@ -281,6 +281,31 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 20px hsl(230 45% 4% / 0.24);
   }
 
+
+  .ios-panel {
+    border: 1px solid hsl(var(--border) / 0.18);
+    background: linear-gradient(180deg, hsl(var(--card) / 0.86), hsl(var(--secondary) / 0.66));
+    box-shadow: 0 10px 30px hsl(230 55% 4% / 0.26), inset 0 1px 0 rgb(255 255 255 / 0.045);
+  }
+
+  .compact-card {
+    @apply rounded-2xl border border-primary/15 bg-secondary/25 p-3 md:p-4;
+  }
+
+  .compact-field {
+    @apply h-10 rounded-xl border border-primary/15 bg-secondary/65 px-3 text-sm;
+  }
+
+  @media (max-width: 767px) {
+    .content-container {
+      padding-inline: 0.85rem;
+    }
+
+    .page-surface {
+      @apply rounded-[1rem] p-3.5;
+    }
+  }
+
   .status-success {
     @apply border border-emerald-400/40 bg-emerald-400/10 text-emerald-200;
   }
@@ -294,7 +319,7 @@
   }
 
   .kpi-value {
-    @apply text-4xl md:text-[2.8rem] font-black tracking-tight leading-none tabular-nums;
+    @apply text-3xl md:text-[2.35rem] font-black tracking-tight leading-none tabular-nums;
   }
 }
 
@@ -302,7 +327,7 @@
   .glass-card,
   .safe-area-bottom,
   .safe-area-top {
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
   }
 
   .app-shell {

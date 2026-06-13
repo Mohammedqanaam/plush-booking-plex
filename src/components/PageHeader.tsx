@@ -26,7 +26,7 @@ const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: P
   };
 
   return (
-    <header className="page-surface sticky top-[88px] z-20 border-primary/20 py-4 md:py-5">
+    <header className="page-surface sticky top-[76px] z-20 border-primary/20 py-3 md:py-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
           {showBack ? (
@@ -40,15 +40,15 @@ const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: P
             </button>
           ) : null}
           <div className="min-w-0">
-            <h2 className="text-2xl md:text-[2.25rem] font-black flex items-center gap-2">
+            <h2 className="text-xl md:text-[1.85rem] font-black flex items-center gap-2">
               {Icon ? (
-                <span className="icon-chip h-8 w-8">
+                <span className="icon-chip h-7 w-7">
                   <Icon className="w-4 h-4 shrink-0" />
                 </span>
               ) : null}
               <span className="truncate">{title}</span>
             </h2>
-            {subtitle ? <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-3xl">{subtitle}</p> : null}
+            {subtitle ? <p className="text-xs md:text-sm text-muted-foreground mt-1 max-w-2xl leading-6">{subtitle}</p> : null}
           </div>
         </div>
         {actions ? <div className="shrink-0">{actions}</div> : null}
