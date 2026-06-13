@@ -45,28 +45,28 @@ const Dashboard = () => {
       label: "إجمالي الحجوزات",
       value: summary.total,
       icon: Layers3,
-      helper: "يشمل جميع الحجوزات المسجلة خلال الفترة المعروضة.",
+      helper: "كل الحجوزات المسجلة.",
     },
     {
       label: "الحجوزات المؤكدة",
       value: summary.confirmed,
       icon: CheckCircle2,
-      helper: "يعرض الحجوزات المؤكدة فقط.",
+      helper: "الحجوزات المؤكدة فقط.",
     },
   ];
 
   return (
-    <div className="space-y-6 md:space-y-7 pb-8">
+    <div className="space-y-3 md:space-y-4 pb-6">
       <PageHeader
         title="لوحة التشغيل اليومية"
-        subtitle="لوحة تشغيل يومية واضحة لدعم فريق الحجوزات والمشرفين بمؤشرات دقيقة واختصارات فعّالة."
+        subtitle="مؤشرات تشغيل مختصرة واختصارات للفريق."
         showBack={false}
         icon={Sparkles}
       />
 
       <section className="grid md:grid-cols-2 gap-4">
         {kpis.map((kpi, index) => (
-          <div key={kpi.label} className="page-surface card-hover min-h-[180px] flex flex-col justify-between">
+          <div key={kpi.label} className="page-surface card-hover min-h-[138px] flex flex-col justify-between">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">{kpi.label}</p>
               <span className="icon-chip">
@@ -74,8 +74,8 @@ const Dashboard = () => {
               </span>
             </div>
             <p className="kpi-value text-primary mt-4">{kpi.value}</p>
-            <p className="text-xs text-muted-foreground leading-6 mt-2">{kpi.helper}</p>
-            <div className="mt-4 h-1.5 rounded-full bg-secondary/80 overflow-hidden">
+            <p className="text-xs text-muted-foreground leading-5 mt-1.5">{kpi.helper}</p>
+            <div className="mt-3 h-1 rounded-full bg-secondary/80 overflow-hidden">
               <span className="block h-full gold-gradient" style={{ width: `${56 + index * 28}%` }} />
             </div>
           </div>
@@ -85,14 +85,14 @@ const Dashboard = () => {
       <section className="page-surface space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h3 className="section-title">اختصارات سريعة</h3>
-          <span className="text-xs text-muted-foreground">وصول أسرع للأقسام الأكثر استخدامًا</span>
+          <span className="text-xs text-muted-foreground">وصول سريع</span>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           {shortcuts.map((item) => (
             <Link
               key={item.to}
               to={item.to}
-              className="rounded-3xl border border-primary/18 bg-secondary/24 p-5 card-hover text-right min-h-[168px] flex flex-col justify-between"
+              className="rounded-3xl border border-primary/18 bg-secondary/24 p-4 card-hover text-right min-h-[126px] flex flex-col justify-between"
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="icon-chip">
@@ -101,8 +101,8 @@ const Dashboard = () => {
                 <ArrowLeft className="w-4 h-4 text-muted-foreground" />
               </div>
               <div>
-                <p className="mt-3 text-lg font-semibold">{item.label}</p>
-                <p className="text-sm text-muted-foreground mt-1.5">{item.description}</p>
+                <p className="mt-2 text-base font-semibold">{item.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
               </div>
             </Link>
           ))}
@@ -124,7 +124,7 @@ const Dashboard = () => {
         {topEmployees.length ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {topEmployees.map((employee, index) => (
-              <div key={employee.agent} className="rounded-2xl border border-primary/18 p-4 bg-secondary/24 min-h-[140px]">
+              <div key={employee.agent} className="rounded-2xl border border-primary/18 p-4 bg-secondary/24 min-h-[112px]">
                 <div className="flex items-center gap-2">
                   <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-primary/40 bg-primary/10 px-2 text-xs font-semibold text-primary">
                     #{index + 1}
@@ -132,7 +132,7 @@ const Dashboard = () => {
                   <p className="font-semibold text-base truncate">{employee.agent}</p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">مؤكد {employee.confirmed} · إجمالي {employee.total}</p>
-                <p className="text-xs text-primary mt-2">مستوى أداء مستقر</p>
+                <p className="text-xs text-primary mt-2">أداء مستقر</p>
               </div>
             ))}
           </div>

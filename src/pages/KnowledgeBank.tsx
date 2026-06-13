@@ -54,11 +54,11 @@ const KnowledgeBank = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="بنك المعلومات" subtitle="بحث فوري ومصنف لسياسات التشغيل وبيانات الفروع مع تجربة قراءة مريحة." icon={BookOpenCheck} />
+      <PageHeader title="بنك المعلومات" subtitle="بحث مصنف وسريع في البيانات الحالية." icon={BookOpenCheck} />
 
       <section className="page-surface space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <p>هذه الصفحة للعرض فقط، وتعمل كمرجع تشغيلي يدعم الوصول السريع للمعلومات.</p>
+          <p>الصفحة للعرض فقط — مرجع سريع للمعلومات المعتمدة.</p>
           <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary">{results.length} نتيجة</span>
         </div>
         <div className="grid md:grid-cols-4 gap-2">
@@ -94,12 +94,12 @@ const KnowledgeBank = () => {
 
       <div className="grid md:grid-cols-2 gap-3">
         {results.length ? results.map((item) => (
-          <button key={item.id} className="page-surface min-h-[152px] text-right card-hover" onClick={() => setSelected(item)}>
+          <button key={item.id} className="page-surface min-h-[126px] text-right card-hover" onClick={() => setSelected(item)}>
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-xs px-2 py-1 rounded-full border border-primary/30 text-primary bg-primary/10">{item.kind}</span>
               <Paperclip className="w-4 h-4 text-muted-foreground" />
             </div>
-            <h3 className="font-semibold leading-7">{item.title}</h3>
+            <h3 className="font-semibold leading-6 text-sm md:text-base">{item.title}</h3>
             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{item.summary}</p>
           </button>
         )) : <div className="md:col-span-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">لا توجد نتائج مطابقة. جرّب كلمات بحث أخرى أو غيّر الفلاتر.</div>}

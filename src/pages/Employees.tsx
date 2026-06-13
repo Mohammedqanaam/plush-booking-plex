@@ -111,7 +111,7 @@ const Employees = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="لوحة الموظفين" subtitle="عرض احترافي لمؤشرات أداء الموظفين، مع صلاحيات إدارية دقيقة للمخولين فقط." icon={UsersRound} />
+      <PageHeader title="لوحة الموظفين" subtitle="مؤشرات أداء الموظفين بواجهة مختصرة." icon={UsersRound} />
 
       <div className="page-surface space-y-3">
         <div className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto]">
@@ -150,58 +150,58 @@ const Employees = () => {
         </div>
 
         <div className="grid gap-2 sm:grid-cols-3">
-          <div className="rounded-2xl border border-primary/18 bg-secondary/24 p-3">
+          <div className="compact-card">
             <p className="text-xs text-muted-foreground">إجمالي الحجوزات العام</p>
-            <p className="mt-1 text-2xl font-black text-primary tabular-nums">{allEmployeeTotals.total}</p>
+            <p className="mt-1 text-xl font-black text-primary tabular-nums">{allEmployeeTotals.total}</p>
           </div>
-          <div className="rounded-2xl border border-primary/18 bg-secondary/24 p-3">
+          <div className="compact-card">
             <p className="text-xs text-muted-foreground">المؤكد العام</p>
-            <p className="mt-1 text-2xl font-black text-primary tabular-nums">{allEmployeeTotals.confirmed}</p>
+            <p className="mt-1 text-xl font-black text-primary tabular-nums">{allEmployeeTotals.confirmed}</p>
           </div>
-          <div className="rounded-2xl border border-primary/18 bg-secondary/24 p-3">
+          <div className="compact-card">
             <p className="text-xs text-muted-foreground">عدد الموظفين في البيانات</p>
-            <p className="mt-1 text-2xl font-black text-primary tabular-nums">{allEmployeeTotals.employees}</p>
+            <p className="mt-1 text-xl font-black text-primary tabular-nums">{allEmployeeTotals.employees}</p>
           </div>
         </div>
 
         <div className="table-scroll">
-          <table className="min-w-[980px] w-full text-sm">
+          <table className="min-w-[920px] w-full text-sm">
             <thead>
               <tr className="text-muted-foreground border-b border-border/30">
-                <th className="text-right p-3">اسم الموظف</th>
-                {canManage ? <th className="text-right p-3">اسم العرض</th> : null}
-                <th className="text-right p-3">المؤكد</th>
-                {canManage ? <th className="text-right p-3">تعديل المؤكد</th> : null}
-                <th className="text-right p-3">الإجمالي</th>
-                {canManage ? <th className="text-right p-3">سبب التعديل</th> : null}
-                {canManage ? <th className="text-right p-3">ملاحظات</th> : null}
-                {canManage ? <th className="text-right p-3">آخر تحديث</th> : null}
-                {canManage ? <th className="text-right p-3">الحالة</th> : null}
-                {canManage ? <th className="text-right p-3">إجراء</th> : null}
+                <th className="text-right p-2.5">اسم الموظف</th>
+                {canManage ? <th className="text-right p-2.5">اسم العرض</th> : null}
+                <th className="text-right p-2.5">المؤكد</th>
+                {canManage ? <th className="text-right p-2.5">تعديل المؤكد</th> : null}
+                <th className="text-right p-2.5">الإجمالي</th>
+                {canManage ? <th className="text-right p-2.5">سبب التعديل</th> : null}
+                {canManage ? <th className="text-right p-2.5">ملاحظات</th> : null}
+                {canManage ? <th className="text-right p-2.5">آخر تحديث</th> : null}
+                {canManage ? <th className="text-right p-2.5">الحالة</th> : null}
+                {canManage ? <th className="text-right p-2.5">إجراء</th> : null}
               </tr>
             </thead>
             <tbody>
               {shown.map((employee) => (
                 <tr key={employee.canonicalId} className="border-b border-border/30 last:border-0 align-top">
-                  <td className="p-3 font-medium">
+                  <td className="p-2.5 font-medium">
                     <div>{employee.displayName}</div>
                     {canManage && !namesAreSame(employee.sourceName, employee.displayName) ? <div className="text-xs text-muted-foreground">المصدر: {employee.sourceName}</div> : null}
                   </td>
                   {canManage ? (
-                    <td className="p-3">
+                    <td className="p-2.5">
                       <input className="h-9 rounded-lg border px-2 w-full max-w-[220px] bg-secondary/60" value={employee.displayName} onChange={(e) => setRenames((p) => ({ ...p, [employee.sourceName]: e.target.value }))} />
                     </td>
                   ) : null}
-                  <td className="p-3">{employee.finalConfirmed}</td>
+                  <td className="p-2.5">{employee.finalConfirmed}</td>
                   {canManage ? (
-                    <td className="p-3"><input type="number" className="h-9 rounded-lg border px-2 w-24 bg-secondary/60" value={employee.confirmedAdjustment} onChange={(e) => updateEmployeeAdjustment(employee.canonicalId, { confirmedAdjustment: Number(e.target.value) })} /></td>
+                    <td className="p-2.5"><input type="number" className="h-9 rounded-lg border px-2 w-24 bg-secondary/60" value={employee.confirmedAdjustment} onChange={(e) => updateEmployeeAdjustment(employee.canonicalId, { confirmedAdjustment: Number(e.target.value) })} /></td>
                   ) : null}
-                  <td className="p-3">{employee.finalTotal}</td>
-                  {canManage ? <td className="p-3"><input className="h-9 rounded-lg border px-2 w-44 bg-secondary/60" value={employee.adjustmentReason} onChange={(e) => updateEmployeeAdjustment(employee.canonicalId, { adjustmentReason: e.target.value })} /></td> : null}
-                  {canManage ? <td className="p-3"><input className="h-9 rounded-lg border px-2 w-44 bg-secondary/60" value={employee.notes} onChange={(e) => updateEmployeeAdjustment(employee.canonicalId, { notes: e.target.value })} /></td> : null}
-                  {canManage ? <td className="p-3 text-xs text-muted-foreground">{employee.updatedBy || "-"}<br />{employee.updatedAt ? new Date(employee.updatedAt).toLocaleString("ar-SA") : "-"}</td> : null}
+                  <td className="p-2.5">{employee.finalTotal}</td>
+                  {canManage ? <td className="p-2.5"><input className="h-9 rounded-lg border px-2 w-44 bg-secondary/60" value={employee.adjustmentReason} onChange={(e) => updateEmployeeAdjustment(employee.canonicalId, { adjustmentReason: e.target.value })} /></td> : null}
+                  {canManage ? <td className="p-2.5"><input className="h-9 rounded-lg border px-2 w-44 bg-secondary/60" value={employee.notes} onChange={(e) => updateEmployeeAdjustment(employee.canonicalId, { notes: e.target.value })} /></td> : null}
+                  {canManage ? <td className="p-2.5 text-xs text-muted-foreground">{employee.updatedBy || "-"}<br />{employee.updatedAt ? new Date(employee.updatedAt).toLocaleString("ar-SA") : "-"}</td> : null}
                   {canManage ? (
-                    <td className="p-3">
+                    <td className="p-2.5">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border ${employee.isHidden ? "border-amber-400/40 bg-amber-400/10 text-amber-300" : "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"}`}>
                         {employee.isHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         {employee.isHidden ? "مخفي" : "ظاهر"}
@@ -209,7 +209,7 @@ const Employees = () => {
                     </td>
                   ) : null}
                   {canManage ? (
-                    <td className="p-3">
+                    <td className="p-2.5">
                       <button className="h-9 px-3 rounded-lg border border-primary/18 hover:border-primary/60" onClick={() => setHidden((current) => employee.isHidden ? current.filter((name) => !isEmployeeHidden(name, [employee.sourceName])) : normalizeHiddenEmployees([...current, employee.sourceName]))}>
                         {employee.isHidden ? "إظهار" : "إخفاء"}
                       </button>
@@ -223,12 +223,12 @@ const Employees = () => {
 
         {!shown.length ? (
           <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">لا توجد نتائج مطابقة للبحث الحالي.</div>
-        ) : (
+        ) : canManage ? (
           <p className="text-xs text-muted-foreground inline-flex items-center gap-2">
             <BadgeCheck className="w-4 h-4 text-primary" />
-            الإخفاء يقتصر على واجهة العرض، ولا يؤثر على البيانات التشغيلية الأساسية.
+            إعدادات العرض لا تؤثر على الإجماليات.
           </p>
-        )}
+        ) : null}
       </div>
     </div>
   );

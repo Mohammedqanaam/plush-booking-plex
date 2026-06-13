@@ -40,20 +40,20 @@ const Contacts = () => {
     }
   };
 
-  const inputClass = "w-full h-11 px-4 rounded-xl bg-secondary/70 border border-border text-foreground placeholder:text-muted-foreground text-sm";
+  const inputClass = "w-full h-10 px-3 rounded-xl bg-secondary/70 border border-primary/15 text-foreground placeholder:text-muted-foreground text-sm";
 
   return (
     <div className="page-wrap-narrow">
-      <PageHeader title="طلبات التواصل" subtitle="واجهة سريعة ومريحة لتسجيل طلب تواصل الضيف برقم طلب تلقائي." icon={PhoneCall} />
+      <PageHeader title="طلبات التواصل" subtitle="تسجيل طلب تواصل الضيف بسرعة." icon={PhoneCall} />
 
       {submitted ? (
         <div className="page-surface text-center space-y-3 animate-fade-in">
           <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-300" />
           <p className="font-semibold text-lg">تم إرسال الطلب بنجاح.</p>
-          <p className="text-sm text-muted-foreground">تمت إضافة الطلب ويظهر مباشرة في لوحة الأدمن.</p>
+          <p className="text-sm text-muted-foreground">تمت إضافة الطلب للمتابعة.</p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="page-surface space-y-4">
+        <form onSubmit={handleSubmit} className="page-surface space-y-3">
           <div className="grid md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">البراند</label>
@@ -106,13 +106,13 @@ const Contacts = () => {
 
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium">سبب التواصل</label>
-              <textarea required placeholder="اذكر سبب التواصل بشكل مختصر" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} rows={3} className="w-full px-4 py-3 rounded-xl bg-secondary/70 border border-border text-foreground placeholder:text-muted-foreground text-sm resize-none" />
+              <textarea required placeholder="اذكر سبب التواصل بشكل مختصر" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} rows={2} className="w-full px-4 py-3 rounded-xl bg-secondary/70 border border-border text-foreground placeholder:text-muted-foreground text-sm resize-none" />
             </div>
           </div>
 
           {error && <p className="text-xs text-destructive">{error}</p>}
 
-          <button type="submit" disabled={submitting} className="w-full h-11 rounded-xl gold-gradient text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+          <button type="submit" disabled={submitting} className="w-full h-10 rounded-xl gold-gradient text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
             <Send className="w-4 h-4" />
             {submitting ? "جاري الإرسال..." : "إرسال الطلب"}
           </button>
