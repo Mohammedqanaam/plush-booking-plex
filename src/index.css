@@ -292,6 +292,20 @@
     @apply rounded-2xl border border-primary/15 bg-secondary/25 p-3 md:p-4;
   }
 
+  .employee-public-card {
+    @apply rounded-[1.15rem] border border-primary/15 bg-secondary/25 p-4 md:p-5;
+    background:
+      linear-gradient(145deg, rgba(212, 175, 55, 0.055), transparent 42%),
+      linear-gradient(180deg, rgba(17, 24, 39, 0.88), rgba(28, 37, 65, 0.58));
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .public-home .page-surface {
+    background:
+      radial-gradient(520px 220px at 18% 0%, rgba(212, 175, 55, 0.09), transparent 58%),
+      linear-gradient(160deg, rgba(28, 37, 65, 0.86), rgba(17, 24, 39, 0.86));
+  }
+
   .compact-field {
     @apply h-10 rounded-xl border border-primary/15 bg-secondary/65 px-3 text-sm;
   }
