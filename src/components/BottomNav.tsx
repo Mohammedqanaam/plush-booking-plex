@@ -12,22 +12,22 @@ const BottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-primary/25 bg-background/82 backdrop-blur-2xl safe-area-bottom">
-      <div className="mx-auto flex h-[68px] max-w-xl items-center justify-around gap-1 px-3 pb-1">
+    <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 rounded-[1.35rem] border border-border/20 bg-background/88 backdrop-blur-2xl safe-area-bottom shadow-[0_18px_44px_rgba(0,0,0,0.35)]">
+      <div className="mx-auto flex h-[64px] max-w-xl items-center justify-around gap-1 px-2 pb-1">
         {mainNavItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`relative touch-target min-w-[68px] flex flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-2 interactive ${
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              className={`relative touch-target min-w-[72px] flex flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-1.5 interactive ${
+                isActive ? "text-primary" : "text-muted-foreground hover:text-slate-200"
               }`}
             >
-              <span className={`inline-flex h-8 w-8 items-center justify-center rounded-2xl border ${isActive ? "border-primary/45 bg-primary/16 shadow-[0_8px_24px_hsl(var(--primary)/0.12)]" : "border-primary/18 bg-secondary/45"}`}>
+              <span className={`inline-flex h-8 w-8 items-center justify-center rounded-2xl border ${isActive ? "border-primary/34 bg-primary/12 shadow-[0_8px_20px_hsl(var(--primary)/0.10)]" : "border-border/20 bg-secondary/35"}`}>
                 <item.icon className="w-[18px] h-[18px]" />
               </span>
-              <span className="text-[10.5px] font-bold leading-none">{item.label}</span>
+              <span className="text-[11px] font-bold leading-none">{item.label}</span>
               {isActive && <span className="absolute bottom-0 h-0.5 w-8 rounded-full gold-gradient" />}
             </button>
           );

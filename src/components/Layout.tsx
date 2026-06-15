@@ -35,26 +35,26 @@ const Layout = () => {
         </div>
       )}
 
-      <header className="safe-area-top sticky top-0 z-40 border-b border-primary/20 bg-background/78 backdrop-blur-2xl">
-        <div className="content-container h-[68px] flex items-center justify-between gap-3">
+      <header className="safe-area-top sticky top-0 z-40 border-b border-border/15 bg-background/82 backdrop-blur-2xl">
+        <div className="content-container h-[60px] flex items-center justify-between gap-3">
           <div className="hidden md:flex items-center gap-3 min-w-0">
-            <span className="icon-chip h-11 w-11"><LayoutDashboard className="w-5 h-5" /></span>
+            <span className="icon-chip h-9 w-9"><LayoutDashboard className="w-5 h-5" /></span>
             <div className="min-w-0">
-              <p className="text-sm font-extrabold leading-5">نظام الكول سنتر</p>
-              <p className="text-xs text-muted-foreground truncate">تشغيل وحجوزات</p>
+              <p className="text-sm font-extrabold leading-5">إدارة الحجز المركزي</p>
+              <p className="text-xs text-muted-foreground truncate">متابعة تشغيلية</p>
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center justify-center gap-2 overflow-auto custom-scrollbar rounded-3xl border border-primary/15 bg-secondary/24 p-1">
+          <nav className="hidden md:flex items-center justify-center gap-2 overflow-auto custom-scrollbar rounded-2xl border border-border/15 bg-secondary/20 p-1">
             {desktopNav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-semibold interactive whitespace-nowrap ${
+                  `inline-flex h-10 items-center gap-2 rounded-2xl px-4 text-sm font-semibold interactive whitespace-nowrap ${
                     isActive
-                      ? "bg-primary/14 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.35)]"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                      ? "bg-primary/12 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.22)]"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/45"
                   }`
                 }
               >
@@ -73,16 +73,16 @@ const Layout = () => {
         </div>
       </header>
 
-      <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-10" key={location.pathname}>
-        <div className="content-container pt-3 md:pt-5">
+      <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-[calc(6.25rem+env(safe-area-inset-bottom))] md:pb-8" key={location.pathname}>
+        <div className="content-container pt-3 md:pt-4">
           <Outlet />
         </div>
       </main>
 
-      <footer className="hidden md:block border-t border-primary/15 bg-secondary/14 backdrop-blur-xl">
-        <div className="content-container h-[68px] flex items-center justify-between text-xs text-muted-foreground">
-          <p>نظام الكول سنتر</p>
-          <p>الإصدار 2.2.0</p>
+      <footer className="hidden md:block border-t border-border/15 bg-secondary/12 backdrop-blur-xl">
+        <div className="content-container h-[60px] flex items-center justify-between text-xs text-muted-foreground">
+          <p>إدارة الحجز المركزي</p>
+          <p>واجهة عامة</p>
           <p>آخر تحديث اليوم {lastUpdatedAt}</p>
         </div>
       </footer>
