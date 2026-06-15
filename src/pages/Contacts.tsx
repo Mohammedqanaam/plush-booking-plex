@@ -44,13 +44,13 @@ const Contacts = () => {
 
   return (
     <div className="page-wrap-narrow">
-      <PageHeader title="طلبات التواصل" subtitle="تسجيل طلب تواصل الضيف بسرعة." icon={PhoneCall} />
+      <PageHeader title="طلبات التواصل" subtitle="إنشاء طلب تواصل للضيف" icon={PhoneCall} />
 
       {submitted ? (
         <div className="page-surface text-center space-y-3 animate-fade-in">
           <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-300" />
-          <p className="font-semibold text-lg">تم إرسال الطلب بنجاح.</p>
-          <p className="text-sm text-muted-foreground">تمت إضافة الطلب للمتابعة.</p>
+          <p className="font-semibold text-lg">تم إنشاء طلب التواصل بنجاح.</p>
+          {recentRequests[0]?.requestNo ? <p className="text-sm font-bold text-primary">رقم الطلب: {recentRequests[0].requestNo}</p> : null}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="page-surface space-y-3">
@@ -114,13 +114,13 @@ const Contacts = () => {
 
           <button type="submit" disabled={submitting} className="w-full h-10 rounded-xl gold-gradient text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
             <Send className="w-4 h-4" />
-            {submitting ? "جاري الإرسال..." : "إرسال الطلب"}
+            {submitting ? "جاري الإنشاء..." : "إنشاء طلب تواصل"}
           </button>
         </form>
       )}
 
       <div className="page-surface space-y-2">
-        <h3 className="text-sm font-semibold inline-flex items-center gap-1"><Clock3 className="w-4 h-4 text-primary" /> آخر الطلبات المرسلة من هذه الجلسة</h3>
+        <h3 className="text-sm font-semibold inline-flex items-center gap-1"><Clock3 className="w-4 h-4 text-primary" /> آخر الطلبات</h3>
         {recentRequests.length ? (
           recentRequests.map((req) => (
             <div key={req.id} className="rounded-xl border border-primary/18 bg-secondary/24 p-3 flex items-center justify-between gap-2">
@@ -133,7 +133,7 @@ const Contacts = () => {
             </div>
           ))
         ) : (
-          <p className="text-xs text-muted-foreground">لا توجد طلبات مرسلة من هذه الجلسة بعد.</p>
+          <p className="text-xs text-muted-foreground">لا توجد طلبات حالية.</p>
         )}
       </div>
     </div>

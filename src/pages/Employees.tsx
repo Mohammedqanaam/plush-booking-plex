@@ -111,7 +111,7 @@ const Employees = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="قائمة الموظفين" subtitle="عرض واضح للموظفين المتاحين للزوار، مع إبقاء أدوات الإدارة داخل صلاحياتها فقط." icon={UsersRound} />
+      <PageHeader title="قائمة الموظفين" subtitle="مؤشرات الأداء المعتمدة" icon={UsersRound} />
 
       <div className="page-surface space-y-3">
         <div className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto]">
@@ -151,15 +151,15 @@ const Employees = () => {
 
         <div className="grid gap-2 sm:grid-cols-3">
           <div className="compact-card">
-            <p className="text-xs text-muted-foreground">إجمالي الحجوزات العام</p>
+            <p className="text-xs text-muted-foreground">إجمالي الحجوزات</p>
             <p className="mt-1 text-xl font-black text-primary tabular-nums">{allEmployeeTotals.total}</p>
           </div>
           <div className="compact-card">
-            <p className="text-xs text-muted-foreground">المؤكد العام</p>
+            <p className="text-xs text-muted-foreground">المؤكد</p>
             <p className="mt-1 text-xl font-black text-primary tabular-nums">{allEmployeeTotals.confirmed}</p>
           </div>
           <div className="compact-card">
-            <p className="text-xs text-muted-foreground">عدد الموظفين في البيانات</p>
+            <p className="text-xs text-muted-foreground">عدد الموظفين</p>
             <p className="mt-1 text-xl font-black text-primary tabular-nums">{allEmployeeTotals.employees}</p>
           </div>
         </div>
@@ -181,7 +181,7 @@ const Employees = () => {
                     <p className="mt-1 text-2xl font-black tabular-nums text-primary">{employee.finalConfirmed}</p>
                   </div>
                   <div className="rounded-2xl border border-primary/15 bg-secondary/30 p-3">
-                    <p className="text-xs text-muted-foreground">الإجمالي</p>
+                    <p className="text-xs text-muted-foreground">إجمالي الحجوزات</p>
                     <p className="mt-1 text-2xl font-black tabular-nums text-foreground">{employee.finalTotal}</p>
                   </div>
                 </div>
@@ -200,7 +200,7 @@ const Employees = () => {
                 {canManage ? <th className="text-right p-2.5">اسم العرض</th> : null}
                 <th className="text-right p-2.5">المؤكد</th>
                 {canManage ? <th className="text-right p-2.5">تعديل المؤكد</th> : null}
-                <th className="text-right p-2.5">الإجمالي</th>
+                <th className="text-right p-2.5">إجمالي الحجوزات</th>
                 {canManage ? <th className="text-right p-2.5">سبب التعديل</th> : null}
                 {canManage ? <th className="text-right p-2.5">ملاحظات</th> : null}
                 {canManage ? <th className="text-right p-2.5">آخر تحديث</th> : null}
@@ -256,7 +256,7 @@ const Employees = () => {
         ) : canManage ? (
           <p className="text-xs text-muted-foreground inline-flex items-center gap-2">
             <BadgeCheck className="w-4 h-4 text-primary" />
-            إعدادات العرض لا تؤثر على الإجماليات.
+            إعدادات العرض متاحة للأدمن فقط.
           </p>
         ) : null}
       </div>
