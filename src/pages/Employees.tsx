@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Eye, EyeOff, Save, Search, SlidersHorizontal, UsersRound } from "lucide-react";
+import { BadgeCheck, Eye, EyeOff, Save, Search, SlidersHorizontal, TrendingUp, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { api, type EmployeeAdjustment } from "@/lib/api";
 import { isEmployeeHidden, normalizeEmployeeName, normalizeHiddenEmployees } from "@/lib/employeeVisibility";
@@ -111,7 +111,7 @@ const Employees = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="لوحة الموظفين" subtitle="مؤشرات أداء الموظفين بواجهة مختصرة." icon={UsersRound} />
+      <PageHeader title="قائمة الموظفين" subtitle="عرض واضح للموظفين المتاحين للزوار، مع إبقاء أدوات الإدارة داخل صلاحياتها فقط." icon={UsersRound} />
 
       <div className="page-surface space-y-3">
         <div className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto]">
@@ -164,6 +164,34 @@ const Employees = () => {
           </div>
         </div>
 
+        {!canManage ? (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {shown.map((employee, index) => (
+              <article key={employee.canonicalId} className="employee-public-card">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary/80">#{index + 1}</p>
+                    <h3 className="mt-1 truncate text-lg font-black text-foreground">{employee.displayName}</h3>
+                  </div>
+                  <span className="icon-chip h-10 w-10 shrink-0"><TrendingUp className="h-4 w-4" /></span>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="rounded-2xl border border-primary/15 bg-secondary/30 p-3">
+                    <p className="text-xs text-muted-foreground">المؤكد</p>
+                    <p className="mt-1 text-2xl font-black tabular-nums text-primary">{employee.finalConfirmed}</p>
+                  </div>
+                  <div className="rounded-2xl border border-primary/15 bg-secondary/30 p-3">
+                    <p className="text-xs text-muted-foreground">الإجمالي</p>
+                    <p className="mt-1 text-2xl font-black tabular-nums text-foreground">{employee.finalTotal}</p>
+                  </div>
+                </div>
+                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary/80">
+                  <span className="block h-full rounded-full gold-gradient" style={{ width: `${Math.min(100, Math.max(12, employee.finalTotal ? (employee.finalConfirmed / employee.finalTotal) * 100 : 12))}%` }} />
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
         <div className="table-scroll">
           <table className="min-w-[920px] w-full text-sm">
             <thead>
@@ -220,6 +248,8 @@ const Employees = () => {
             </tbody>
           </table>
         </div>
+
+        )}
 
         {!shown.length ? (
           <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">لا توجد نتائج مطابقة للبحث الحالي.</div>

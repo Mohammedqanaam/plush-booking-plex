@@ -4,7 +4,7 @@ import { LayoutDashboard, PhoneCall, UsersRound } from "lucide-react";
 const mainNavItems = [
   { path: "/", label: "الرئيسية", icon: LayoutDashboard },
   { path: "/employees", label: "الموظفون", icon: UsersRound },
-  { path: "/contacts", label: "التواصل", icon: PhoneCall },
+  { path: "/contact-requests", label: "التواصل", icon: PhoneCall },
 ];
 
 const BottomNav = () => {

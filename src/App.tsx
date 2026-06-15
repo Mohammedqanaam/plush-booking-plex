@@ -16,13 +16,7 @@ import AdminKnowledgeBank from "./pages/AdminKnowledgeBank";
 import AdminComplaints from "./pages/AdminComplaints";
 import Contacts from "./pages/Contacts";
 import Dashboard from "./pages/Dashboard";
-import HotelSearch from "./pages/HotelSearch";
-import KnowledgeBank from "./pages/KnowledgeBank";
-import UploadCenter from "./pages/UploadCenter";
 import Employees from "./pages/Employees";
-import Policies from "./pages/Policies";
-import Branches from "./pages/Branches";
-import OperationsSettings from "./pages/OperationsSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,13 +31,8 @@ const App = () => (
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/search" element={<HotelSearch />} />
-            <Route path="/knowledge-bank" element={<KnowledgeBank />} />
-            <Route path="/upload-center" element={<ProtectedRoute><UploadCenter /></ProtectedRoute>} />
             <Route path="/employees" element={<Employees />} />
-            <Route path="/policies" element={<Policies />} />
-            <Route path="/branches" element={<Branches />} />
-            <Route path="/settings" element={<OperationsSettings />} />
+            <Route path="/contact-requests" element={<Contacts />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />

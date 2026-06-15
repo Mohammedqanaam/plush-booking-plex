@@ -10,7 +10,7 @@ import ScrollTopButton from "./ScrollTopButton";
 const desktopNav = [
   { to: "/", label: "الرئيسية", icon: LayoutDashboard },
   { to: "/employees", label: "الموظفون", icon: UsersRound },
-  { to: "/contacts", label: "طلبات التواصل", icon: PhoneCall },
+  { to: "/contact-requests", label: "طلبات التواصل", icon: PhoneCall },
 ];
 
 const Layout = () => {
