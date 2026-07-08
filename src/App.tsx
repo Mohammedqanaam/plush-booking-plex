@@ -17,6 +17,7 @@ import AdminComplaints from "./pages/AdminComplaints";
 import Contacts from "./pages/Contacts";
 import Dashboard from "./pages/Dashboard";
 import Employees from "./pages/Employees";
+import BoudlPrototype from "./pages/BoudlPrototype";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/boudl-preview/*" element={<BoudlPrototype />} />
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/employees" element={<Employees />} />
