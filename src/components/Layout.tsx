@@ -41,7 +41,7 @@ const Layout = () => {
             <span className="icon-chip h-9 w-9"><LayoutDashboard className="w-5 h-5" /></span>
             <div className="min-w-0">
               <p className="text-sm font-extrabold leading-5">إدارة الحجز المركزي</p>
-              <p className="text-xs text-muted-foreground truncate">متابعة تشغيلية</p>
+              <p className="text-xs text-muted-foreground truncate">تشغيل الحجوزات</p>
             </div>
           </div>
 
@@ -82,7 +82,7 @@ const Layout = () => {
       <footer className="hidden md:block border-t border-border/15 bg-secondary/12 backdrop-blur-xl">
         <div className="content-container h-[60px] flex items-center justify-between text-xs text-muted-foreground">
           <p>إدارة الحجز المركزي</p>
-          <p>واجهة عامة</p>
+          <p>مؤشرات الأداء وطلبات التواصل</p>
           <p>آخر تحديث اليوم {lastUpdatedAt}</p>
         </div>
       </footer>
