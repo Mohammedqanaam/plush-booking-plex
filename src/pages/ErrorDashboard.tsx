@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { enterpriseApi } from "@/lib/enterpriseApi";
+import { ShieldAlert } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 
 type AppError = {
   id: string;
@@ -17,7 +19,8 @@ const ErrorDashboard = () => {
 
   return (
     <div className="page-wrap-narrow">
-      <h2 className="text-2xl font-bold">Error Monitoring Dashboard</h2>
+      <PageHeader title="مراقبة أخطاء النظام" subtitle="عرض السجلات الفنية المسجلة للمراجعة والمتابعة." icon={ShieldAlert} />
+      {!errors.length ? <div className="page-surface text-sm text-muted-foreground">لا توجد أخطاء مسجلة حاليًا.</div> : null}
       {errors.map((err) => (
         <div key={err.id} className="glass-card p-3">
           <p className="text-sm font-semibold">{err.source}</p>

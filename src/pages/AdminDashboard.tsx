@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FileText, LogOut, MessageSquareMore, Settings, Upload, User, UserPlus, Users } from "lucide-react";
+import { BarChart3, Download, FileText, LogOut, MessageSquareMore, Settings, Upload, User, UserPlus, Users } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, type ContactRequest } from "@/lib/api";
 import { isEmployeeHidden, normalizeHiddenEmployees, parseHiddenEmployeesInput } from "@/lib/employeeVisibility";
 import { clearAdminSession, getAdminSession, hasPermission, type UserRole } from "@/lib/adminAuth";
 import { processBookings } from "@/lib/bookingProcessor";
 import PageHeader from "@/components/PageHeader";
+import AdminAnalytics from "@/components/admin/AdminAnalytics";
 
 type User = { username: string; role: UserRole };
 type EmployeeStat = { agent: string; confirmed: number; cancelled: number; total: number; cancelRate: number };
-type AdminTab = "upload" | "users" | "employees" | "settings" | "requests" | "profile";
+type AdminTab = "analytics" | "upload" | "users" | "employees" | "settings" | "requests" | "profile";
 
-const ROLE_LABELS: Record<UserRole, string> = { superadmin: "مدير عام", admin: "مسؤول", editor: "محرر", viewer: "مشاهد" };
+const ROLE_LABELS: Record<UserRole, string> = { superadmin: "مدير النظام", admin: "مشرف", editor: "محرر", viewer: "مشاهد" };
 
 const AdminDashboard = () => {
   const session = getAdminSession();
@@ -19,7 +20,7 @@ const AdminDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTab, setActiveTab] = useState<AdminTab>("upload");
+  const [activeTab, setActiveTab] = useState<AdminTab>("analytics");
   const [users, setUsers] = useState<User[]>([]);
   const [requests, setRequests] = useState<ContactRequest[]>([]);
   const [employeeStats, setEmployeeStats] = useState<EmployeeStat[]>([]);
@@ -44,6 +45,7 @@ const AdminDashboard = () => {
 
   const tabs = useMemo(
     () => [
+      { id: "analytics" as const, label: "إحصائيات الموقع", icon: BarChart3, perm: "view" },
       { id: "upload" as const, label: "رفع CSV", icon: Upload, perm: "upload" },
       { id: "users" as const, label: "المستخدمون", icon: Users, perm: "manage_users" },
       { id: "employees" as const, label: "الموظفون", icon: Users, perm: "edit_settings" },
@@ -55,9 +57,9 @@ const AdminDashboard = () => {
   );
 
   useEffect(() => {
-    const tab = (searchParams.get("tab") || "upload") as AdminTab;
-    if (["upload", "users", "employees", "settings", "requests", "profile"].includes(tab)) setActiveTab(tab);
-    else setSearchParams({ tab: "upload" }, { replace: true });
+    const tab = (searchParams.get("tab") || "analytics") as AdminTab;
+    if (["analytics", "upload", "users", "employees", "settings", "requests", "profile"].includes(tab)) setActiveTab(tab);
+    else setSearchParams({ tab: "analytics" }, { replace: true });
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
@@ -100,8 +102,8 @@ const AdminDashboard = () => {
   return (
     <div className="page-wrap">
       <PageHeader
-        title="لوحة الإدارة"
-        subtitle="إدارة مختصرة للمستخدمين والبيانات والإعدادات."
+        title="لوحة المشرف"
+        subtitle="إدارة المستخدمين والبيانات والإعدادات التشغيلية."
         icon={Settings}
         actions={<button className="h-10 px-4 rounded-xl border border-primary/18 bg-secondary/40 shrink-0 inline-flex items-center gap-2" onClick={async () => { await api.logout(); clearAdminSession(); navigate("/"); }}><LogOut className="w-4 h-4" /> تسجيل الخروج</button>}
       />
@@ -114,6 +116,8 @@ const AdminDashboard = () => {
           </button>
         ))}
       </div>
+
+      {activeTab === "analytics" && <AdminAnalytics />}
 
       {activeTab === "upload" && (
         <div className="page-surface space-y-2.5">
@@ -133,11 +137,11 @@ const AdminDashboard = () => {
 
       {activeTab === "users" && (
         <div className="grid md:grid-cols-2 gap-4">
-          <form className="page-surface space-y-2" onSubmit={async (e) => { e.preventDefault(); try { await api.createUser(username, password, role); setMessage("تمت الإضافة"); setUsername(""); setPassword(""); } catch { setMessage("تعذر إضافة المستخدم"); } }}>
+          <form className="page-surface space-y-2" onSubmit={async (e) => { e.preventDefault(); try { await api.createUser(username, password, role); setMessage("تمت الإضافة"); setUsername(""); setPassword(""); } catch (err) { setMessage(err instanceof Error ? err.message : "تعذر إضافة المستخدم"); } }}>
             <h3 className="font-semibold"><UserPlus className="inline w-4 h-4" /> إضافة مستخدم</h3>
             <input className="w-full h-10 rounded-xl bg-secondary/65 border border-primary/15 px-3" dir="ltr" placeholder="اسم المستخدم" value={username} onChange={(e) => setUsername(e.target.value)} />
-            <input className="w-full h-10 rounded-xl bg-secondary/65 border border-primary/15 px-3" dir="ltr" type="password" placeholder="كلمة المرور" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <select className="w-full h-10 rounded-xl bg-secondary/65 border border-primary/15 px-3" value={role} onChange={(e) => setRole(e.target.value as UserRole)}><option value="viewer">مشاهد</option><option value="editor">محرر</option><option value="admin">مسؤول</option><option value="superadmin">مدير عام</option></select>
+            <input className="w-full h-10 rounded-xl bg-secondary/65 border border-primary/15 px-3" dir="ltr" type="password" minLength={12} placeholder="كلمة المرور (12 حرفًا على الأقل)" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <select className="w-full h-10 rounded-xl bg-secondary/65 border border-primary/15 px-3" value={role} onChange={(e) => setRole(e.target.value as UserRole)}><option value="viewer">مشاهد</option><option value="editor">محرر</option><option value="admin">مشرف</option><option value="superadmin">مدير النظام</option></select>
             <button className="h-10 px-4 rounded-xl gold-gradient text-primary-foreground">حفظ</button>
           </form>
           <div className="page-surface space-y-2">{users.map((u) => <div className="flex justify-between border-b border-border/50 pb-2" key={u.username}><span>{u.username} ({ROLE_LABELS[u.role]})</span><button className="text-destructive" onClick={async () => { await api.deleteUser(u.username); setUsers((prev) => prev.filter((x) => x.username !== u.username)); }}>حذف</button></div>)}</div>
@@ -219,7 +223,7 @@ const AdminDashboard = () => {
           <form className="page-surface space-y-2" onSubmit={async (e) => {
             e.preventDefault();
             if (newPassword !== confirmPassword) { setMessage("كلمتا المرور غير متطابقتين"); return; }
-            if (newPassword.length < 8) { setMessage("كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل"); return; }
+            if (newPassword.length < 12) { setMessage("كلمة المرور الجديدة يجب أن تكون 12 حرفًا على الأقل"); return; }
             try {
               await api.changePassword(currentPassword, newPassword);
               setMessage("تم تغيير كلمة المرور بنجاح");
@@ -232,7 +236,7 @@ const AdminDashboard = () => {
           }}>
             <h3 className="font-semibold">تغيير كلمة المرور</h3>
             <input className="w-full h-10 rounded-xl bg-secondary/65 border border-primary/15 px-3" dir="ltr" type="password" placeholder="كلمة المرور الحالية" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-            <input className="w-full h-10 rounded-xl bg-secondary/65 border border-primary/15 px-3" dir="ltr" type="password" placeholder="كلمة المرور الجديدة" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            <input className="w-full h-10 rounded-xl bg-secondary/65 border border-primary/15 px-3" dir="ltr" type="password" minLength={12} placeholder="كلمة المرور الجديدة (12 حرفًا على الأقل)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
             <input className="w-full h-10 rounded-xl bg-secondary/65 border border-primary/15 px-3" dir="ltr" type="password" placeholder="تأكيد كلمة المرور الجديدة" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
             <button type="submit" className="h-10 px-4 rounded-xl gold-gradient text-primary-foreground">حفظ</button>
           </form>

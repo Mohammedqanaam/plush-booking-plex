@@ -64,6 +64,33 @@ export type ComplaintRecord = {
   createdAt: string;
 };
 
+export type AnalyticsSummary = {
+  rangeDays: number;
+  generatedAt: string;
+  totalViews: number;
+  uniqueVisitors: number;
+  sessions: number;
+  onlineCount: number;
+  todayViews: number;
+  todayVisitors: number;
+  devices: Record<string, number>;
+  browsers: Record<string, number>;
+  operatingSystems: Record<string, number>;
+  pages: Record<string, number>;
+  referrers: Record<string, number>;
+  trend: Array<{ date: string; views: number; visitors: number }>;
+  online: Array<{
+    visitorId: string;
+    device: string;
+    browser: string;
+    os: string;
+    country: string;
+    city: string;
+    path: string;
+    lastSeen: string;
+  }>;
+};
+
 const API_BASE = "/.netlify/functions";
 
 const getToken = (): string | null => (typeof window === "undefined" ? null : sessionStorage.getItem("admin_token"));
@@ -137,6 +164,12 @@ export const api = {
     return res.json();
   },
 
+  async getAnalytics(days: 7 | 30 | 90 = 30) {
+    const res = await fetch(`${API_BASE}/analytics?days=${days}`, { headers: authHeaders() });
+    if (!res.ok) throw new Error("تعذر تحميل إحصائيات الموقع");
+    return res.json() as Promise<AnalyticsSummary>;
+  },
+
   async uploadBookings(csvText: string) {
     const res = await fetch(`${API_BASE}/bookings`, {
       method: "POST",
@@ -154,7 +187,7 @@ export const api = {
   },
 
   async getBookings() {
-    const res = await fetch(`${API_BASE}/bookings`);
+    const res = await fetch(`${API_BASE}/bookings`, { headers: authHeaders() });
     if (!res.ok) throw new Error("تعذر تحميل البيانات");
     return res.json();
   },
@@ -186,7 +219,7 @@ export const api = {
   },
 
   async getSettings(): Promise<AppSettings> {
-    const res = await fetch(`${API_BASE}/settings`).catch(() => null);
+    const res = await fetch(`${API_BASE}/settings`, { headers: authHeaders() }).catch(() => null);
     if (!res || !res.ok) return { siteTitle: "Res", bannerText: "" };
     return res.json();
   },
@@ -270,7 +303,7 @@ export const api = {
   ): Promise<{ reply: string; sessionId?: string }> {
     const res = await fetch(`${API_BASE}/ai-chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ message, sessionId, history }),
     });
     if (!res.ok) throw new Error("تعذر الوصول إلى المساعد الذكي");

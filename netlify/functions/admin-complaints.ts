@@ -1,30 +1,8 @@
 import type { Context } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
-
-type Session = { username: string; role: string };
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-async function validateSession(req: Request): Promise<Session | null> {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.replace("Bearer ", "").trim();
-  if (!token) return null;
-
-  const sessionStore = getStore({ name: "sessions", consistency: "strong" });
-  try {
-    return (await sessionStore.get(`sess_${token}`, { type: "json" })) as Session | null;
-  } catch {
-    return null;
-  }
-}
+import { json, validateSession } from "./_shared/security";
 
 export default async (req: Request, context: Context) => {
-  const store = context.blobs.getStore("complaints_store");
+  const store = context.blobs.getStore("complaints");
 
   if (req.method !== "GET") {
     return json({ error: "Method Not Allowed" }, 405);
@@ -36,7 +14,7 @@ export default async (req: Request, context: Context) => {
     return json({ error: "Permission Denied" }, 403);
   }
 
-  const data = ((await store.get("all", { type: "json" })) as unknown[]) || [];
+  const data = ((await store.get("items", { type: "json" })) as unknown[]) || [];
 
   return json(data);
 };

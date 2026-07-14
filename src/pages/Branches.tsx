@@ -42,7 +42,7 @@ const Branches = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="إدارة الفروع" subtitle="عرض مركزي واضح لبيانات الفروع، الخدمات، وحالة التوثيق." icon={Building2} />
+      <PageHeader title="دليل الفروع" subtitle="بيانات الفروع والخدمات وأرقام التواصل وحالة توثيق المعلومات." icon={Building2} />
 
       <section className="page-surface space-y-3">
         <p className="text-xs text-muted-foreground inline-flex items-center gap-1">

@@ -27,19 +27,19 @@ const KnowledgeBank = () => {
       title: row.title,
       summary: row.summary,
       details: `${row.responseProtocol}\n\nالخطوات الداخلية:\n- ${row.internalSteps.join("\n- ")}\n\nملاحظات: ${row.relatedNotes ?? "لا يوجد"}\nالمرفق: ${row.attachmentUrl ?? "غير متوفر"}`,
-      tags: [row.category, "global-reference"],
+      tags: [row.category, "مرجع عام"],
       brand: undefined,
       branch: undefined,
     }));
 
     const branchRows = branchRecords.flatMap((row) => [
       { id: `${row.id}-overview`, kind: "فروع" as ResultCategory, title: `${row.branch} - نبذة`, summary: row.overview, details: `${row.city} - ${row.region}\n${row.notes}`, tags: [row.brand, row.city], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-contacts`, kind: "جهات اتصال" as ResultCategory, title: `${row.branch} - التواصل`, summary: `استقبال: ${row.receptionPhone}`, details: `hotel: ${row.hotelPhone}\nsales: ${row.salesPhone}\nhall: ${row.hallPhone}\nwhatsapp: ${row.whatsappNumber}`, tags: [row.brand, "contacts"], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-meals`, kind: "وجبات" as ResultCategory, title: `${row.branch} - الوجبات`, summary: row.breakfastInfo, details: `Breakfast: ${row.breakfastInfo}\nLunch: ${row.lunchInfo}\nDinner: ${row.dinnerInfo}`, tags: [row.brand, "meals"], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-facilities`, kind: "مرافق" as ResultCategory, title: `${row.branch} - المرافق`, summary: row.poolInfo, details: `Pool: ${row.poolInfo}\nRestaurant: ${row.restaurantInfo}\nSpa: ${row.spaInfo}\nGym: ${row.gymInfo}`, tags: [row.brand, "facilities"], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-rooms`, kind: "غرف" as ResultCategory, title: `${row.branch} - الغرف`, summary: row.roomTypes.join("، "), details: row.roomTypes.join("\n"), tags: [row.brand, "rooms"], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-halls`, kind: "قاعات" as ResultCategory, title: `${row.branch} - القاعات`, summary: row.hallPackages.join(" / "), details: row.hallPackages.join("\n"), tags: [row.brand, "halls"], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-protocol`, kind: "إجراءات" as ResultCategory, title: `${row.branch} - الإجراءات`, summary: "آلية الرد المعتمدة لفريق الحجوزات", details: "اذكر السياسة، وتفاصيل الفرع، ورقم التواصل، وحالة التصعيد.", tags: [row.brand, "protocol"], brand: row.brand, branch: row.branch },
+      { id: `${row.id}-contacts`, kind: "جهات اتصال" as ResultCategory, title: `${row.branch} - التواصل`, summary: `الاستقبال: ${row.receptionPhone}`, details: `الفندق: ${row.hotelPhone}\nالمبيعات: ${row.salesPhone}\nالقاعات: ${row.hallPhone}\nواتساب: ${row.whatsappNumber}`, tags: [row.brand, "التواصل"], brand: row.brand, branch: row.branch },
+      { id: `${row.id}-meals`, kind: "وجبات" as ResultCategory, title: `${row.branch} - الوجبات`, summary: row.breakfastInfo, details: `الإفطار: ${row.breakfastInfo}\nالغداء: ${row.lunchInfo}\nالعشاء: ${row.dinnerInfo}`, tags: [row.brand, "الوجبات"], brand: row.brand, branch: row.branch },
+      { id: `${row.id}-facilities`, kind: "مرافق" as ResultCategory, title: `${row.branch} - المرافق`, summary: row.poolInfo, details: `المسبح: ${row.poolInfo}\nالمطعم: ${row.restaurantInfo}\nالسبا: ${row.spaInfo}\nالنادي: ${row.gymInfo}`, tags: [row.brand, "المرافق"], brand: row.brand, branch: row.branch },
+      { id: `${row.id}-rooms`, kind: "غرف" as ResultCategory, title: `${row.branch} - الغرف`, summary: row.roomTypes.join("، "), details: row.roomTypes.join("\n"), tags: [row.brand, "الغرف"], brand: row.brand, branch: row.branch },
+      { id: `${row.id}-halls`, kind: "قاعات" as ResultCategory, title: `${row.branch} - القاعات`, summary: row.hallPackages.join(" / "), details: row.hallPackages.join("\n"), tags: [row.brand, "القاعات"], brand: row.brand, branch: row.branch },
+      { id: `${row.id}-protocol`, kind: "إجراءات" as ResultCategory, title: `${row.branch} - الإجراءات`, summary: "آلية الرد المعتمدة لفريق الحجوزات", details: "اذكر السياسة وتفاصيل الفرع ورقم التواصل وحالة التصعيد.", tags: [row.brand, "إجراء"], brand: row.brand, branch: row.branch },
     ]);
 
     return [...policyRows, ...branchRows].filter((row) => {
@@ -112,7 +112,7 @@ const KnowledgeBank = () => {
               <DialogHeader>
                 <DialogTitle>{selected.title}</DialogTitle>
               </DialogHeader>
-              <p className="text-sm text-muted-foreground">{selected.brand ?? "Global"} · {selected.branch ?? "General"}</p>
+              <p className="text-sm text-muted-foreground">{selected.brand ?? "مرجع عام"} · {selected.branch ?? "سياسة عامة"}</p>
               <div className="rounded-xl border border-primary/20 bg-secondary/24 p-3 whitespace-pre-line text-sm leading-7 max-h-[50vh] overflow-auto custom-scrollbar">
                 {selected.details}
               </div>

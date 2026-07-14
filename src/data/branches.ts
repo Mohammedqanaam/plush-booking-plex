@@ -1,4 +1,6 @@
 import { masterHotels, type MasterHotel } from "@/data/hotelMasterData";
+import { hotelBranches } from "@/data/hotels";
+import { normalizeSheetHotelName, sheetOperationalHotels } from "@/data/sheetOperationalData";
 
 export type BranchVerificationStatus = "verified" | "partially_verified" | "conflicting" | "missing_info";
 
@@ -78,6 +80,49 @@ const normalizeServiceValue = (value: string): string => {
   return clean;
 };
 
+const hotelBranchByName = new Map(hotelBranches.map((hotel) => [normalizeSheetHotelName(hotel.name), hotel]));
+const masterHotelByName = new Map(masterHotels.map((hotel) => [normalizeSheetHotelName(hotel.name), hotel]));
+
+const inferBrand = (name: string) => {
+  if (name.startsWith("بريرا")) return "بريرا";
+  if (name.startsWith("عابر")) return "عابر";
+  if (name.startsWith("نارس")) return "نارسيس";
+  if (name.startsWith("زمن")) return "زمن";
+  return "بودل";
+};
+
+const sheetHotels: MasterHotel[] = sheetOperationalHotels.map((row, index) => {
+  const key = normalizeSheetHotelName(row.name);
+  const master = masterHotelByName.get(key);
+  const hotel = hotelBranchByName.get(key);
+  return {
+    id: master?.id ?? hotel?.id ?? `sheet-hotel-${index + 1}`,
+    name: row.name,
+    brand: master?.brand ?? hotel?.group ?? inferBrand(row.name),
+    city: master?.city ?? hotel?.city ?? "غير محدد",
+    breakfast: row.breakfast,
+    pool: row.pool,
+    coffeeShop: row.coffeeShop,
+    restaurant: row.restaurant,
+    viewBalcony: row.viewBalcony,
+    parking: row.parking,
+    meetingHall: row.meetingHall,
+    weddingPackage: row.weddingPackage,
+    gym: row.gym,
+    laundry: row.laundry,
+    outdoorSeating: row.outdoorSeating,
+    spa: row.spa,
+    jacuzzi: row.jacuzzi,
+    kidsSection: row.kidsSection,
+    hotelPhone: master?.hotelPhone ?? hotel?.phone,
+    salesPhone: master?.salesPhone,
+    roomTypes: master?.roomTypes,
+  };
+});
+
+const sheetHotelNames = new Set(sheetHotels.map((hotel) => normalizeSheetHotelName(hotel.name)));
+const branchSourceHotels = [...sheetHotels, ...masterHotels.filter((hotel) => !sheetHotelNames.has(normalizeSheetHotelName(hotel.name)))];
+
 const computeStatus = (hotel: MasterHotel): BranchVerificationStatus => {
   const values = [
     hotel.breakfast,
@@ -106,7 +151,7 @@ const computeStatus = (hotel: MasterHotel): BranchVerificationStatus => {
   return "verified";
 };
 
-export const branches: Branch[] = masterHotels.map((hotel, index) => {
+export const branches: Branch[] = branchSourceHotels.map((hotel, index) => {
   const contacts: BranchContact[] = [];
   const hotelPhones = hotel.hotelPhone ? normalizeContactNumbers(hotel.hotelPhone) : [];
   const salesPhones = hotel.salesPhone ? normalizeContactNumbers(hotel.salesPhone) : [];
@@ -137,7 +182,7 @@ export const branches: Branch[] = masterHotels.map((hotel, index) => {
       jacuzzi: normalizeServiceValue(hotel.jacuzzi),
       kidsArea: normalizeServiceValue(hotel.kidsSection),
     },
-    sourceRowRef: `masterHotels[${index}]`,
+    sourceRowRef: index < sheetHotels.length ? `Google Sheets / hotels data / row ${index + 2}` : `masterHotels[${index - sheetHotels.length}]`,
     verificationStatus: computeStatus(hotel),
   };
 });

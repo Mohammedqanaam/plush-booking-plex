@@ -1,5 +1,11 @@
 import { hotelBranches } from "@/data/hotels";
 import { masterHotels } from "@/data/hotelMasterData";
+import {
+  getSheetHallContact,
+  getSheetMealInfo,
+  getSheetOperationalHotel,
+  HOTEL_INFORMATION_SHEET_URL,
+} from "@/data/sheetOperationalData";
 
 export type BrandKey = "Braira" | "Boudl" | "Aber" | "Narcissus" | "Z'MN";
 
@@ -49,7 +55,7 @@ export type BranchRecord = {
 export type GlobalReference = {
   id: string;
   title: string;
-  category: "Cancellation Policy" | "No Show Policy" | "Central Reservation Protocol" | "Circulars" | "Response Scripts";
+  category: string;
   summary: string;
   responseProtocol: string;
   internalSteps: string[];
@@ -97,6 +103,18 @@ const masterByName = new Map(masterHotels.map((h) => [normalizeName(h.name), h])
 
 const asText = (value: unknown) => (typeof value === "string" ? value : "");
 
+const cleanOperationalText = (value: unknown, fallback = "غير محدد") => {
+  const text = asText(value).trim();
+  if (!text || ["-", "--", "*"].includes(text)) return fallback;
+  return text
+    .replace(/افطار/g, "إفطار")
+    .replace(/لايوجد/g, "لا يوجد")
+    .replace(/غيرمحدد/g, "غير محدد")
+    .replace(/24H/gi, "24 ساعة")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 const parseHours = (value: unknown) => {
   const text = asText(value);
   const match = text.match(/\d[^/]*[-–][^/\n]+|24\s*ساعة|24H/i);
@@ -106,7 +124,12 @@ const parseHours = (value: unknown) => {
 const toBranchRecord = (item: (typeof hotelBranches)[number], idx: number): BranchRecord => {
   const canonicalName = normalizeName(item.name);
   const master = masterByName.get(canonicalName);
+  const operational = getSheetOperationalHotel(canonicalName);
+  const meals = getSheetMealInfo(canonicalName);
+  const hallContact = getSheetHallContact(canonicalName);
   const brand = brandMap[item.group] ?? "Boudl";
+  const breakfast = cleanOperationalText(operational?.breakfast ?? item.breakfast, "غير متوفر");
+  const mealBreakfast = cleanOperationalText(meals?.breakfast, "");
 
   return {
     id: item.id,
@@ -118,35 +141,42 @@ const toBranchRecord = (item: (typeof hotelBranches)[number], idx: number): Bran
     receptionPhone: item.phone || "غير متوفر",
     hotelPhone: master?.hotelPhone ?? item.phone ?? "غير متوفر",
     salesPhone: master?.salesPhone ?? "غير متوفر",
-    hallPhone: master?.salesPhone ?? "غير متوفر",
+    hallPhone: cleanOperationalText(hallContact?.phone ?? master?.salesPhone, "غير متوفر"),
     whatsappNumber: master?.salesPhone ?? "غير متوفر",
     managerName: "غير محدد",
     managerPhone: "غير متوفر",
     managerEmail: "غير متوفر",
-    breakfastInfo: asText(item.breakfast) || "غير متوفر",
-    lunchInfo: "منيو حسب الطلب",
-    dinnerInfo: "منيو حسب الطلب",
-    poolInfo: asText(item.pool) || "غير متوفر",
-    poolHours: parseHours(item.pool),
-    coffeeShopInfo: asText(item.coffeeShop) || "غير متوفر",
-    restaurantInfo: asText(item.restaurant) || "غير متوفر",
-    restaurantHours: parseHours(item.restaurant),
-    balconyInfo: asText(item.balcony) || "غير متوفر",
-    parkingInfo: master?.parking ?? "غير متوفر",
-    kidsSectionInfo: asText(item.kidsSection) || "غير متوفر",
-    jacuzziInfo: asText(item.jacuzzi) || "غير متوفر",
-    bathtubInfo: asText(item.jacuzzi).includes("بانيو") ? asText(item.jacuzzi) : "حسب نوع الغرفة",
-    spaInfo: asText(item.spa) || "غير متوفر",
-    spaHours: parseHours(item.spa),
-    laundryInfo: asText(item.laundry) || "غير متوفر",
-    outdoorSeatingInfo: asText(item.outdoorSeating) || "غير متوفر",
-    gymInfo: master?.gym ?? "غير متوفر",
-    gymHours: parseHours(master?.gym ?? ""),
+    breakfastInfo: mealBreakfast ? `${breakfast} | الأسعار: ${mealBreakfast}` : breakfast,
+    lunchInfo: cleanOperationalText(meals?.lunch, "يرجى التحقق من الفرع"),
+    dinnerInfo: cleanOperationalText(meals?.dinner, "يرجى التحقق من الفرع"),
+    poolInfo: cleanOperationalText(operational?.pool ?? item.pool, "غير متوفر"),
+    poolHours: parseHours(operational?.pool ?? item.pool),
+    coffeeShopInfo: cleanOperationalText(operational?.coffeeShop ?? item.coffeeShop, "غير متوفر"),
+    restaurantInfo: cleanOperationalText(operational?.restaurant ?? item.restaurant, "غير متوفر"),
+    restaurantHours: parseHours(operational?.restaurant ?? item.restaurant),
+    balconyInfo: cleanOperationalText(operational?.viewBalcony ?? item.balcony, "غير متوفر"),
+    parkingInfo: cleanOperationalText(operational?.parking ?? master?.parking, "غير متوفر"),
+    kidsSectionInfo: cleanOperationalText(operational?.kidsSection ?? item.kidsSection, "غير متوفر"),
+    jacuzziInfo: cleanOperationalText(operational?.jacuzzi ?? item.jacuzzi, "غير متوفر"),
+    bathtubInfo: cleanOperationalText(operational?.jacuzzi ?? item.jacuzzi).includes("بانيو") ? cleanOperationalText(operational?.jacuzzi ?? item.jacuzzi) : "حسب نوع الغرفة",
+    spaInfo: cleanOperationalText(operational?.spa ?? item.spa, "غير متوفر"),
+    spaHours: parseHours(operational?.spa ?? item.spa),
+    laundryInfo: cleanOperationalText(operational?.laundry ?? item.laundry, "غير متوفر"),
+    outdoorSeatingInfo: cleanOperationalText(operational?.outdoorSeating ?? item.outdoorSeating, "غير متوفر"),
+    gymInfo: cleanOperationalText(operational?.gym ?? master?.gym, "غير متوفر"),
+    gymHours: parseHours(operational?.gym ?? master?.gym ?? ""),
     roomTypes: master?.roomTypes ? master.roomTypes.split("،").map((t) => t.trim()).filter(Boolean) : ["غير متوفر"],
-    hallPackages: [master?.meetingHall ?? "غير متوفر", master?.weddingPackage ?? "غير متوفر"],
-    notes: "تم ترحيل البيانات من مصادر التشغيل الحالية مع توحيد أسماء الفروع.",
+    hallPackages: [
+      cleanOperationalText(operational?.meetingHall ?? master?.meetingHall, "غير متوفر"),
+      cleanOperationalText(operational?.weddingPackage ?? master?.weddingPackage, "غير متوفر"),
+    ],
+    notes: operational
+      ? "بيانات الخدمات من شيت معلومات الفروع. الأسعار والمواعيد المتغيرة تُراجع قبل تأكيدها للضيف."
+      : "تم ترحيل البيانات من مصادر التشغيل الحالية مع توحيد أسماء الفروع.",
     attachments: [],
-    sourceFiles: ["src/data/hotels.ts", "src/data/hotelMasterData.ts", "src/data/knowledge_bank_seed.json"],
+    sourceFiles: operational
+      ? [HOTEL_INFORMATION_SHEET_URL, "تبويب: hotels data"]
+      : ["src/data/hotels.ts", "src/data/hotelMasterData.ts", "src/data/knowledge_bank_seed.json"],
     visibility: "public",
     priority: 1000 - idx,
   };
@@ -198,36 +228,51 @@ export const globalReferences: GlobalReference[] = [
   {
     id: "cancellation-policy",
     title: "سياسة الإلغاء",
-    category: "Cancellation Policy",
-    summary: "يتم تطبيق سياسة الإلغاء حسب نوع السعر وقناة الحجز، وغالبًا الإلغاء المجاني قبل 24 ساعة.",
-    responseProtocol: "ابدأ بالتحقق من نوع الحجز (مسترد/غير مسترد) ثم اشرح للضيف آخر وقت للإلغاء دون رسوم.",
+    category: "سياسة الإلغاء",
+    summary: "الإلغاء المجاني حتى 48 ساعة في المواسم وفترات الذروة، وحتى 24 ساعة خارج المواسم، ما لم تنص شروط السعر على غير ذلك.",
+    responseProtocol: "تحقق من قناة الحجز ونوع السعر والموسم، ثم وضّح للضيف المهلة والرسوم قبل تنفيذ الإلغاء.",
     internalSteps: ["التحقق من رقم الحجز", "تأكيد نافذة الإلغاء", "تحديث الحالة في النظام", "إرسال تأكيد للضيف"],
-    relatedNotes: "في حال عدم الحضور تطبق سياسة No Show إن وجدت.",
-    attachmentUrl: "/docs/policies/cancellation-policy.pdf",
+    relatedNotes: "حجوزات منصات السفر الإلكترونية تُعالج من خلال المنصة الأصلية.",
   },
   {
     id: "no-show-policy",
     title: "سياسة عدم الحضور",
-    category: "No Show Policy",
-    summary: "عدم حضور الضيف بدون إلغاء مسبق قد ينتج عنه رسوم ليلة واحدة أو كامل الحجز حسب السياسة.",
-    responseProtocol: "وضح للضيف الفرق بين الإلغاء وعدم الحضور، وراجع شروط الحجز قبل تأكيد أي رسوم.",
-    internalSteps: ["التحقق من وقت الوصول", "مراجعة شروط السعر", "تسجيل الحالة No Show", "تصعيد الحالات الاستثنائية"],
+    category: "عدم الحضور",
+    summary: "الحجز المسجل بحالة NS يُصنف عدم حضور ويُحتسب ضمن الحجوزات الملغاة.",
+    responseProtocol: "وضّح الفرق بين الإلغاء المسبق وعدم الحضور، وراجع شروط السعر قبل تأكيد أي رسوم.",
+    internalSteps: ["التحقق من تاريخ الوصول", "مراجعة شروط السعر", "تسجيل حالة NS", "تصعيد الحالات الاستثنائية"],
   },
   {
     id: "central-reservation-protocol",
     title: "بروتوكول الحجز المركزي",
-    category: "Central Reservation Protocol",
-    summary: "إجراءات موحدة لموظفي الكول سنتر للتعامل مع الاستفسارات والحجوزات والتعديلات.",
-    responseProtocol: "التزم بسيناريو الترحيب، ثم اجمع البيانات الأساسية، ثم اعرض الخيارات بدقة.",
-    internalSteps: ["التحية والتحقق", "جمع البيانات", "تأكيد السعر والسياسات", "تثبيت الحجز"],
+    category: "إجراءات الحجز المركزي",
+    summary: "إجراءات موحدة لموظفي الحجز المركزي للتعامل مع الاستفسارات والحجوزات والتعديلات.",
+    responseProtocol: "ابدأ بالترحيب، ثم اجمع اسم الفرع وتاريخ الوصول وعدد الليالي والضيوف، واعرض الخيارات المتاحة بدقة.",
+    internalSteps: ["الترحيب وتحديد الطلب", "جمع بيانات الإقامة", "تأكيد السعر والبيانات والسياسات", "تثبيت الحجز وتوضيح آلية السداد"],
   },
   {
     id: "response-scripts",
     title: "الردود الجاهزة",
-    category: "Response Scripts",
-    summary: "نماذج ردود جاهزة للسياسات الشائعة، والخدمات، والتصعيد.",
-    responseProtocol: "اختر النص الأقرب لحالة الضيف ثم خصّصه باسم الفرع والسياسة.",
+    category: "الردود التشغيلية",
+    summary: "نماذج مختصرة للسياسات والخدمات والتصعيد، مع ضرورة تخصيصها لكل حالة.",
+    responseProtocol: "اختر الرد الأقرب، ثم راجعه وخصّصه باسم الضيف والفرع والسياسة قبل الإرسال.",
     internalSteps: ["تحديد نية العميل", "اختيار السكربت", "التخصيص", "التوثيق"],
+  },
+  {
+    id: "reservation-status-mapping",
+    title: "تصنيف حالات الحجوزات",
+    category: "تقارير الحجوزات",
+    summary: "الحالات M وO وN وI مؤكدة، والحالتان C وNS ملغاة.",
+    responseProtocol: "لا تعتمد أي حالة أخرى تلقائيًا في التقرير قبل مراجعتها والتحقق من معناها.",
+    internalSteps: ["قراءة رمز الحالة", "تطبيق التصنيف المعتمد", "استبعاد الرموز غير المعروفة", "مراجعة الإجماليات"],
+  },
+  {
+    id: "payment-link-policy",
+    title: "سياسة رابط الدفع",
+    category: "السداد",
+    summary: "يُرسل رابط الدفع آليًا برسالة نصية بعد تأكيد الحجز لضمان عدم إلغائه.",
+    responseProtocol: "أبلغ الضيف بأن رسالة تأكيد الحجز ورابط الدفع ستصل آليًا، واطلب منه مراجعة البيانات والسياسات قبل السداد.",
+    internalSteps: ["تأكيد بيانات الحجز", "التأكد من رقم الجوال", "توضيح مهلة السداد", "متابعة حالة الحجز عند الحاجة"],
   },
 ];
 

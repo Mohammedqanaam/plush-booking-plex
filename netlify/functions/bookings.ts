@@ -1,26 +1,5 @@
 import { getStore } from "@netlify/blobs";
-
-type Session = { username: string; role: string };
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-async function validateSession(req: Request): Promise<Session | null> {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.replace("Bearer ", "").trim();
-  if (!token) return null;
-
-  const sessionStore = getStore({ name: "sessions", consistency: "strong" });
-  try {
-    return (await sessionStore.get(`sess_${token}`, { type: "json" })) as Session | null;
-  } catch {
-    return null;
-  }
-}
+import { json, validateSession } from "./_shared/security";
 
 const normalizeKey = (value: string) =>
   value
@@ -166,6 +145,9 @@ export default async (req: Request) => {
   const method = req.method;
   const store = getStore("bookings");
 
+  const session = await validateSession(req);
+  if (!session) return json({ error: "Unauthorized" }, 401);
+
   if (method === "GET") {
     try {
       const bookings = ((await store.get("data", { type: "json" })) as Record<string, string>[]) || [];
@@ -186,9 +168,6 @@ export default async (req: Request) => {
 
 
   if (method === "DELETE") {
-    const session = await validateSession(req);
-    if (!session) return json({ error: "Unauthorized" }, 401);
-
     if (!["superadmin", "admin"].includes(session.role)) {
       return json({ error: "Permission Denied" }, 403);
     }
@@ -200,9 +179,6 @@ export default async (req: Request) => {
   }
 
   if (method === "POST") {
-    const session = await validateSession(req);
-    if (!session) return json({ error: "Unauthorized" }, 401);
-
     if (!["superadmin", "admin", "editor"].includes(session.role)) {
       return json({ error: "Permission Denied" }, 403);
     }
@@ -217,10 +193,16 @@ export default async (req: Request) => {
     if (!csvText.trim()) {
       return json({ error: "Empty CSV" }, 400);
     }
+    if (new TextEncoder().encode(csvText).byteLength > 5 * 1024 * 1024) {
+      return json({ error: "CSV exceeds the 5 MB limit" }, 413);
+    }
 
     const bookings = parseCSV(csvText);
     if (bookings.length === 0) {
       return json({ error: "No valid data found in CSV" }, 400);
+    }
+    if (bookings.length > 50_000) {
+      return json({ error: "CSV exceeds the 50,000 row limit" }, 413);
     }
 
     const stats = calculateStats(bookings);

@@ -1,8 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, PhoneCall, UsersRound } from "lucide-react";
+import { Building2, LayoutDashboard, PhoneCall, Search, UsersRound } from "lucide-react";
 
 const mainNavItems = [
   { path: "/", label: "الرئيسية", icon: LayoutDashboard },
+  { path: "/operations", label: "البحث", icon: Search },
+  { path: "/branches", label: "الفروع", icon: Building2 },
   { path: "/employees", label: "الموظفون", icon: UsersRound },
   { path: "/contact-requests", label: "التواصل", icon: PhoneCall },
 ];
@@ -20,7 +22,7 @@ const BottomNav = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`relative touch-target min-w-[72px] flex flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-1.5 interactive ${
+              className={`relative touch-target min-w-0 flex-1 flex flex-col items-center justify-center gap-1.5 rounded-2xl px-1 py-1.5 interactive ${
                 isActive ? "text-primary" : "text-muted-foreground hover:text-slate-200"
               }`}
             >
