@@ -1,4 +1,4 @@
-import { ArrowLeft, BarChart3, BookOpenCheck, Building2, FileText, OctagonAlert, PhoneCall, Search, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpenCheck, Building2, OctagonAlert, PhoneCall, Search, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 
@@ -9,7 +9,7 @@ const publicEntries: PublicEntry[] = [
     to: "/operations",
     label: "البحث",
     icon: Search,
-    description: "ابحث في السياسات وبيانات الفروع.",
+    description: "ابحث في معلومات الحجز والفروع.",
   },
   {
     to: "/branches",
@@ -34,12 +34,6 @@ const publicEntries: PublicEntry[] = [
     label: "المعلومات",
     icon: BookOpenCheck,
     description: "الغرف والمرافق والوجبات والقاعات.",
-  },
-  {
-    to: "/policies",
-    label: "السياسات",
-    icon: FileText,
-    description: "السداد والإلغاء والوصول والخصوصية.",
   },
   {
     to: "/complaints",

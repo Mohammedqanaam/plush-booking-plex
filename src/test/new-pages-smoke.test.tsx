@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import KnowledgeBank from "@/pages/KnowledgeBank";
 import UploadCenter from "@/pages/UploadCenter";
 import BookingReports from "@/pages/BookingReports";
-import Policies from "@/pages/Policies";
 import Branches from "@/pages/Branches";
 import OperationsSettings from "@/pages/OperationsSettings";
 import EnterpriseThemeLoader from "@/components/EnterpriseThemeLoader";
@@ -20,10 +19,6 @@ describe("new page modules added in PR #86", () => {
 
   it("BookingReports loads without syntax errors", () => {
     expect(typeof BookingReports).toBe("function");
-  });
-
-  it("Policies loads without syntax errors", () => {
-    expect(typeof Policies).toBe("function");
   });
 
   it("Branches loads without syntax errors", () => {

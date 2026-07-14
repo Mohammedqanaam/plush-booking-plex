@@ -7,7 +7,6 @@ const pageNames: Record<string, string> = {
   "/operations": "البحث",
   "/branches": "دليل الفروع",
   "/knowledge-bank": "بنك المعلومات",
-  "/policies": "السياسات",
   "/complaints": "الشكاوى",
   "/contact-requests": "طلبات التواصل",
   "/employees": "نتائج الموظفين",

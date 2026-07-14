@@ -30,4 +30,12 @@ describe("public pages are read-only", () => {
     expect(app).toContain('<Route path="/booking-reports" element={<BookingReports />} />');
     expect(app).not.toContain('const Employees = lazy');
   });
+
+  it("removes the policies page and redirects its old route home", () => {
+    const app = fs.readFileSync(path.join(process.cwd(), "src/App.tsx"), "utf8");
+    const dashboard = fs.readFileSync(path.join(process.cwd(), "src/pages/Dashboard.tsx"), "utf8");
+    expect(app).toContain('<Route path="/policies" element={<Navigate to="/" replace />} />');
+    expect(app).not.toContain('const Policies = lazy');
+    expect(dashboard).not.toContain('to: "/policies"');
+  });
 });
