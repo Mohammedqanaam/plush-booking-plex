@@ -1,37 +1,109 @@
-import { FileBadge2, FileText, FolderKanban } from "lucide-react";
+import { BadgeCheck, Banknote, CalendarClock, ChevronDown, FileText, LockKeyhole, Route, ShieldCheck } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 
-const items = [
-  { title: "سياسة الإلغاء", type: "نص", category: "إلغاء", updated: "آخر تحديث: فبراير 2026" },
-  { title: "سياسة الدفع", type: "PDF", category: "دفع", updated: "آخر تحديث: يناير 2026" },
-  { title: "سياسة الدخول والخروج", type: "صورة", category: "تشغيل", updated: "آخر تحديث: مارس 2026" },
-  { title: "تعميم العروض الموسمية", type: "PDF", category: "عروض", updated: "آخر تحديث: مارس 2026" },
+const statusRows = [
+  { code: "M", label: "مؤكد", category: "confirmed" },
+  { code: "O", label: "مؤكد", category: "confirmed" },
+  { code: "N", label: "مؤكد", category: "confirmed" },
+  { code: "I", label: "مؤكد", category: "confirmed" },
+  { code: "C", label: "ملغي", category: "cancelled" },
+  { code: "NS", label: "عدم حضور — ملغي", category: "cancelled" },
+] as const;
+
+const policies = [
+  {
+    title: "السداد وتثبيت الحجز",
+    icon: Banknote,
+    summary: "يُرسل رابط الدفع آليًا برسالة نصية بعد تأكيد الحجز.",
+    points: [
+      "يُطلب من الضيف إتمام السداد خلال المهلة المحددة لضمان عدم إلغاء الحجز.",
+      "لا يرسل الموظف رابطًا يدويًا ما دام النظام أرسله آليًا.",
+      "يُستثنى الضيف الموجود في الاستقبال أثناء المكالمة وفق الإجراء المعتمد.",
+    ],
+  },
+  {
+    title: "الإلغاء وعدم الحضور",
+    icon: CalendarClock,
+    summary: "تُطبّق المدة المعتمدة بحسب الموسم ونوع الحجز.",
+    points: [
+      "المواسم وفترات الذروة: الإلغاء المجاني حتى 48 ساعة قبل الوصول.",
+      "خارج المواسم: الإلغاء المجاني حتى 24 ساعة قبل الوصول.",
+      "حالة NS تعني عدم حضور وتُحتسب ضمن الحجوزات الملغاة في التقارير.",
+    ],
+  },
+  {
+    title: "الوصول والمغادرة",
+    icon: Route,
+    summary: "الوصول المبكر غير مضمون ويرتبط بتوفر الغرف يوم الوصول.",
+    points: [
+      "أبكر وقت مقترح للوصول المبكر هو 08:00 صباحًا بحسب التوفر.",
+      "يتم التحقق والتأكيد في يوم الوصول بعد 06:00 صباحًا.",
+      "لا يُعد توفر الغرفة وقت الاستفسار ضمانًا نهائيًا للوصول المبكر.",
+    ],
+  },
+  {
+    title: "نطاق الاختصاص",
+    icon: ShieldCheck,
+    summary: "يعالج المركز الحجوزات المنشأة من قنوات الحجز المركزي التابعة له.",
+    points: [
+      "حجوزات التطبيق تُعالج عبر الدعم الفني داخل التطبيق عند الحاجة.",
+      "حجوزات منصات OTA مثل Booking وAgoda تُعدّل أو تُلغى من منصة الحجز الأصلية.",
+      "تُرفع شكوى عند تعذر المعالجة من الجهة المختصة بعد توثيق محاولة الضيف.",
+    ],
+  },
+  {
+    title: "خصوصية بيانات الضيف",
+    icon: LockKeyhole,
+    summary: "لا تُفصح بيانات الحجز قبل التحقق من هوية المتصل وارتباطه بالحجز.",
+    points: [
+      "يُتحقق من اسم الضيف ورقم الجوال وتاريخ الوصول ونوع الغرفة.",
+      "لا تُشارك أرقام الجوال أو تفاصيل الإقامة مع طرف غير مخول.",
+      "تُستخدم البيانات لخدمة الحجز والمتابعة ووفق الصلاحيات الممنوحة.",
+    ],
+  },
 ];
 
 const Policies = () => (
   <div className="page-wrap">
-    <PageHeader title="التعاميم والسياسات" subtitle="مرجع موحد للتعليمات التشغيلية بطريقة واضحة وسريعة القراءة." icon={FileText} />
+    <PageHeader title="السياسات" subtitle="أهم سياسات الحجز المركزي." icon={FileText} />
 
-    <section className="page-surface space-y-3">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="icon-chip"><FolderKanban className="w-4 h-4" /></span>
-        سياسات معروضة وفق تصنيفات التشغيل اليومية.
+    <section className="page-surface space-y-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-bold">حالات الحجوزات</p>
+          <p className="mt-1 text-xs text-muted-foreground">راجع أي رمز غير مدرج قبل اعتماد التقرير.</p>
+        </div>
+        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-bold text-primary"><BadgeCheck className="h-4 w-4" /> التصنيف المعتمد</span>
       </div>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {items.map((item) => (
-          <article key={item.title} className="rounded-2xl border border-primary/18 bg-secondary/24 p-4 card-hover space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs px-2 py-1 rounded-full border border-primary/30 text-primary bg-primary/10">{item.category}</span>
-              <FileBadge2 className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold leading-7">{item.title}</h3>
-            <p className="text-xs text-muted-foreground">النوع: {item.type}</p>
-            <p className="text-xs text-muted-foreground">{item.updated}</p>
-          </article>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {statusRows.map((status) => (
+          <div key={status.code} className={`rounded-2xl border p-3 text-center ${status.category === "confirmed" ? "border-emerald-400/30 bg-emerald-400/10" : "border-rose-400/30 bg-rose-400/10"}`}>
+            <p dir="ltr" className={`text-xl font-black ${status.category === "confirmed" ? "text-emerald-300" : "text-rose-300"}`}>{status.code}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{status.label}</p>
+          </div>
         ))}
       </div>
     </section>
+
+    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {policies.map((policy) => (
+        <details key={policy.title} className="group page-surface card-hover">
+          <summary className="flex cursor-pointer list-none items-start gap-3 [&::-webkit-details-marker]:hidden">
+            <span className="icon-chip h-11 w-11 shrink-0"><policy.icon className="h-5 w-5" /></span>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-black">{policy.title}</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">{policy.summary}</p>
+            </div>
+            <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-primary transition-transform group-open:rotate-180" />
+          </summary>
+          <ul className="mt-4 space-y-2 border-t border-border/20 pt-4 text-sm leading-6 text-muted-foreground">
+            {policy.points.map((point) => <li key={point} className="flex items-start gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />{point}</li>)}
+          </ul>
+        </details>
+      ))}
+    </section>
+
+    <p className="rounded-xl border border-amber-400/25 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100">عند التعارض، يُعتمد التعميم الأحدث بعد التحقق من مصدره.</p>
   </div>
 );
 

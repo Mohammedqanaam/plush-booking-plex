@@ -1,12 +1,12 @@
 import { getStore } from "@netlify/blobs";
-
-type Session = { username: string; role: string };
+import { json, validateSession } from "./_shared/security";
 type SiteSettings = {
   siteTitle: string;
   bannerText: string;
   reportMonth: string;
   reportYear: string;
   hiddenEmployees: string[];
+  employeeDisplayNames: Record<string, string>;
   complaintEmail: string;
   complaintEmailWebhook: string;
   complaintWhatsappNumber: string;
@@ -26,31 +26,27 @@ const DEFAULT_SETTINGS: SiteSettings = {
   reportMonth: "",
   reportYear: "",
   hiddenEmployees: [],
+  employeeDisplayNames: {},
   complaintEmail: "",
   complaintEmailWebhook: "",
   complaintWhatsappNumber: "",
   employeeAdjustments: {},
 };
 
-const json = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
-
-async function validateSession(req: Request): Promise<Session | null> {
-  const token = req.headers.get("Authorization")?.replace("Bearer ", "").trim();
-  if (!token) return null;
-  try {
-    return (await getStore({ name: "sessions", consistency: "strong" }).get(`sess_${token}`, { type: "json" })) as Session | null;
-  } catch {
-    return null;
-  }
-}
-
 export default async (req: Request) => {
   const store = getStore("settings");
 
   if (req.method === "GET") {
     const current = ((await store.get("site", { type: "json" })) as Partial<SiteSettings> | null) || {};
-    return json({ ...DEFAULT_SETTINGS, ...current });
+    const settings = { ...DEFAULT_SETTINGS, ...current };
+    const session = await validateSession(req);
+    if (session) return json(settings);
+    return json({
+      siteTitle: settings.siteTitle,
+      bannerText: settings.bannerText,
+      reportMonth: settings.reportMonth,
+      reportYear: settings.reportYear,
+    });
   }
 
   if (req.method === "PUT") {
@@ -59,7 +55,8 @@ export default async (req: Request) => {
     if (!["superadmin", "admin", "editor"].includes(session.role)) return json({ error: "Permission Denied" }, 403);
 
     const body = (await req.json().catch(() => ({}))) as Partial<SiteSettings>;
-    const current = ((await store.get("site", { type: "json" })) as SiteSettings | null) || DEFAULT_SETTINGS;
+    const stored = ((await store.get("site", { type: "json" })) as Partial<SiteSettings> | null) || {};
+    const current: SiteSettings = { ...DEFAULT_SETTINGS, ...stored };
 
     const updated: SiteSettings = {
       siteTitle: body.siteTitle !== undefined ? String(body.siteTitle) : current.siteTitle,
@@ -67,6 +64,7 @@ export default async (req: Request) => {
       reportMonth: body.reportMonth !== undefined ? String(body.reportMonth) : current.reportMonth,
       reportYear: body.reportYear !== undefined ? String(body.reportYear) : current.reportYear,
       hiddenEmployees: Array.isArray(body.hiddenEmployees) ? body.hiddenEmployees.map(String) : current.hiddenEmployees,
+      employeeDisplayNames: typeof body.employeeDisplayNames === "object" && body.employeeDisplayNames ? body.employeeDisplayNames : current.employeeDisplayNames,
       complaintEmail: body.complaintEmail !== undefined ? String(body.complaintEmail) : current.complaintEmail,
       complaintEmailWebhook: body.complaintEmailWebhook !== undefined ? String(body.complaintEmailWebhook) : current.complaintEmailWebhook,
       complaintWhatsappNumber: body.complaintWhatsappNumber !== undefined ? String(body.complaintWhatsappNumber) : current.complaintWhatsappNumber,

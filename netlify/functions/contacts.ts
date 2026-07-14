@@ -1,6 +1,5 @@
 import { getStore } from "@netlify/blobs";
-
-type Session = { username: string; role: string };
+import { json, validateSession } from "./_shared/security";
 type ContactRequest = {
   id: string;
   requestNo: string;
@@ -12,26 +11,6 @@ type ContactRequest = {
   status: "new" | "done";
   createdAt: string;
 };
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-async function validateSession(req: Request): Promise<Session | null> {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.replace("Bearer ", "").trim();
-  if (!token) return null;
-
-  const sessionStore = getStore({ name: "sessions", consistency: "strong" });
-  try {
-    return (await sessionStore.get(`sess_${token}`, { type: "json" })) as Session | null;
-  } catch {
-    return null;
-  }
-}
 
 async function getRequests(store: ReturnType<typeof getStore>): Promise<ContactRequest[]> {
   try {
@@ -62,11 +41,11 @@ export default async (req: Request) => {
       return json({ error: "Invalid request" }, 400);
     }
 
-    const brand = String(body.brand || "").trim();
-    const branchName = String(body.branchName || "").trim();
-    const guestName = String(body.guestName || "").trim();
-    const guestPhone = String(body.guestPhone || "").trim();
-    const reason = String(body.reason || "").trim();
+    const brand = String(body.brand || "").trim().slice(0, 30);
+    const branchName = String(body.branchName || "").trim().slice(0, 150);
+    const guestName = String(body.guestName || "").trim().slice(0, 120);
+    const guestPhone = String(body.guestPhone || "").trim().slice(0, 30);
+    const reason = String(body.reason || "").trim().slice(0, 1000);
 
     if (!brand || !branchName || !guestName || !guestPhone || !reason) {
       return json({ error: "brand, branchName, guestName, guestPhone and reason are required" }, 400);

@@ -5,7 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import { themePresets } from "@/data/operations";
 
 const OperationsSettings = () => {
-  const [siteTitle, setSiteTitle] = useState("Res Dashboard");
+  const [siteTitle, setSiteTitle] = useState("RES Dashboard");
   const [themePreset, setThemePreset] = useState("hospitality-premium-gold");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
@@ -40,7 +40,7 @@ const OperationsSettings = () => {
             await api.updateSettings({ siteTitle, themePreset });
             setMsg("تم حفظ الإعدادات والثيم بنجاح");
           } catch {
-            setError("تعذر حفظ الإعدادات. يرجى المحاولة مجدداً.");
+            setError("تعذر حفظ الإعدادات. يرجى المحاولة مجددًا.");
           }
         }}>حفظ الإعدادات</button>
       </div>

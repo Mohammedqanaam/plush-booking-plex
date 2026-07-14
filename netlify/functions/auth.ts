@@ -1,10 +1,21 @@
 import { getStore } from "@netlify/blobs";
 import { randomBytes } from "node:crypto";
+import {
+  createSession,
+  getBearerToken,
+  hashPassword,
+  json,
+  normalizeRole,
+  validateSession,
+  verifyPassword,
+  type UserRole,
+} from "./_shared/security";
 
-const DEFAULT_ADMIN = {
-  username: "admin",
-  password: "123",
-  role: "superadmin",
+type StoredUser = {
+  username: string;
+  role: UserRole;
+  password?: string;
+  passwordHash?: string;
 };
 
 async function ensureDefaultUser() {
@@ -15,18 +26,14 @@ async function ensureDefaultUser() {
   } catch {
     // store empty or not yet initialised – proceed to seed default user
   }
-  await store.setJSON("all", [DEFAULT_ADMIN]);
-}
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+  const username = Netlify.env.get("ADMIN_USERNAME")?.trim();
+  const password = Netlify.env.get("ADMIN_PASSWORD")?.trim();
+  if (!username || !password || password.length < 12) return false;
+  await store.setJSON("all", [{ username, passwordHash: hashPassword(password), role: "superadmin" }]);
+  return true;
 }
 
 export default async (req: Request) => {
-  const secret = process.env.ADMIN_SECRET;
   const method = req.method;
 
   if (method === "POST") {
@@ -42,10 +49,10 @@ export default async (req: Request) => {
       return json({ error: "Missing credentials" }, 400);
     }
 
-    await ensureDefaultUser();
+    const seeded = await ensureDefaultUser();
 
     const userStore = getStore({ name: "users", consistency: "strong" });
-    let users: { username: string; password: string; role: string }[];
+    let users: StoredUser[];
     try {
       users = (await userStore.get("all", { type: "json" })) as typeof users;
       if (!Array.isArray(users)) users = [];
@@ -53,46 +60,53 @@ export default async (req: Request) => {
       return json({ error: "Server error" }, 500);
     }
 
-    const user = users.find(
-      (u) => u.username === username.trim() && u.password === password.trim()
-    );
-    if (!user) {
+    if (!users.length && !seeded) {
+      return json({ error: "Administrator setup required" }, 503);
+    }
+
+    const user = users.find((u) => u.username === username.trim());
+    const passwordIsValid = user
+      ? user.passwordHash
+        ? verifyPassword(password, user.passwordHash)
+        : typeof user.password === "string" && user.password === password
+      : false;
+    if (!user || !passwordIsValid) {
       return json({ error: "Invalid credentials" }, 401);
     }
 
+    // Upgrade legacy plain-text records immediately after a successful login.
+    if (!user.passwordHash) {
+      const index = users.findIndex((candidate) => candidate.username === user.username);
+      users[index] = {
+        username: user.username,
+        role: normalizeRole(user.role),
+        passwordHash: hashPassword(password),
+      };
+      await userStore.setJSON("all", users);
+    }
+
     const token = randomBytes(32).toString("hex");
+    const role = normalizeRole(user.role);
+    const session = createSession(user.username, role);
     const sessionStore = getStore({ name: "sessions", consistency: "strong" });
-    await sessionStore.setJSON(`sess_${token}`, {
-      username: user.username,
-      role: user.role || "admin",
-      createdAt: Date.now(),
-    });
+    await sessionStore.setJSON(`sess_${token}`, session);
 
     return json({
       token,
       username: user.username,
-      role: user.role || "admin",
+      role,
+      expiresAt: session.expiresAt,
     });
   }
 
   if (method === "GET") {
-    const authHeader = req.headers.get("Authorization");
-    const token = authHeader?.replace("Bearer ", "").trim();
-    if (!token) return json({ error: "No token" }, 401);
-
-    const sessionStore = getStore({ name: "sessions", consistency: "strong" });
-    try {
-      const session = await sessionStore.get(`sess_${token}`, { type: "json" });
-      if (!session) return json({ error: "Invalid session" }, 401);
-      return json(session);
-    } catch {
-      return json({ error: "Invalid session" }, 401);
-    }
+    const session = await validateSession(req);
+    if (!session) return json({ error: "Invalid session" }, 401);
+    return json(session);
   }
 
   if (method === "DELETE") {
-    const authHeader = req.headers.get("Authorization");
-    const token = authHeader?.replace("Bearer ", "").trim();
+    const token = getBearerToken(req);
     if (token) {
       const sessionStore = getStore({ name: "sessions", consistency: "strong" });
       try {

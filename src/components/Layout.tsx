@@ -1,20 +1,24 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { LayoutDashboard, PhoneCall, UsersRound } from "lucide-react";
+import { BarChart3, Building2, LayoutDashboard, PhoneCall, Search, UsersRound } from "lucide-react";
 import BottomNav from "./BottomNav";
 import RiyadhClock from "./RiyadhClock";
 import { api } from "@/lib/api";
 import ViewerPreferences from "./ViewerPreferences";
-import ScrollTopButton from "./ScrollTopButton";
+import AnalyticsTracker from "./AnalyticsTracker";
 
 const desktopNav = [
   { to: "/", label: "الرئيسية", icon: LayoutDashboard },
+  { to: "/operations", label: "البحث", icon: Search },
+  { to: "/branches", label: "الفروع", icon: Building2 },
   { to: "/employees", label: "الموظفون", icon: UsersRound },
+  { to: "/booking-reports", label: "التقارير", icon: BarChart3 },
   { to: "/contact-requests", label: "طلبات التواصل", icon: PhoneCall },
 ];
 
 const Layout = () => {
   const [bannerText, setBannerText] = useState("");
+  const [siteTitle, setSiteTitle] = useState("RES Dashboard");
   const location = useLocation();
   const lastUpdatedAt = new Date().toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
 
@@ -23,12 +27,14 @@ const Layout = () => {
       .getSettings()
       .then((data) => {
         if (data.bannerText !== undefined) setBannerText(data.bannerText);
+        if (data.siteTitle?.trim()) setSiteTitle(data.siteTitle.trim());
       })
       .catch(() => {});
   }, []);
 
   return (
     <div className="app-shell flex flex-col">
+      <AnalyticsTracker />
       {bannerText && (
         <div className="bg-primary/10 text-center py-2 px-4 text-xs font-medium text-primary border-b border-primary/20">
           {bannerText}
@@ -40,8 +46,8 @@ const Layout = () => {
           <div className="hidden md:flex items-center gap-3 min-w-0">
             <span className="icon-chip h-9 w-9"><LayoutDashboard className="w-5 h-5" /></span>
             <div className="min-w-0">
-              <p className="text-sm font-extrabold leading-5">إدارة الحجز المركزي</p>
-              <p className="text-xs text-muted-foreground truncate">تشغيل الحجوزات</p>
+              <p className="text-sm font-extrabold leading-5">{siteTitle}</p>
+              <p className="text-xs text-muted-foreground truncate">إدارة الحجز المركزي</p>
             </div>
           </div>
 
@@ -73,7 +79,7 @@ const Layout = () => {
         </div>
       </header>
 
-      <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-[calc(6.25rem+env(safe-area-inset-bottom))] md:pb-8" key={location.pathname}>
+      <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-3 md:pb-8" key={location.pathname}>
         <div className="content-container pt-3 md:pt-4">
           <Outlet />
         </div>
@@ -81,13 +87,12 @@ const Layout = () => {
 
       <footer className="hidden md:block border-t border-border/15 bg-secondary/12 backdrop-blur-xl">
         <div className="content-container h-[60px] flex items-center justify-between text-xs text-muted-foreground">
-          <p>إدارة الحجز المركزي</p>
-          <p>مؤشرات الأداء وطلبات التواصل</p>
+          <p>{siteTitle}</p>
+          <p>الحجز المركزي</p>
           <p>آخر تحديث اليوم {lastUpdatedAt}</p>
         </div>
       </footer>
 
-      <ScrollTopButton />
       <BottomNav />
     </div>
   );

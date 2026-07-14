@@ -14,7 +14,7 @@ async function logApiError(source: string, message: string, context?: string) {
   try {
     await fetch(`${API_BASE}/error-logs`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ source, message, context }),
     });
   } catch {
@@ -24,7 +24,7 @@ async function logApiError(source: string, message: string, context?: string) {
 
 export const enterpriseApi = {
   async getComplaints() {
-    const res = await fetch(`${API_BASE}/complaints`);
+    const res = await fetch(`${API_BASE}/complaints`, { headers: authHeaders() });
     if (!res.ok) {
       await logApiError("complaints:get", "failed", String(res.status));
       throw new Error("Failed to fetch complaints");

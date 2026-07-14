@@ -1,8 +1,7 @@
 import { getStore } from "@netlify/blobs";
 import { hotelBranches } from "../../src/data/hotels";
 import { BRAND_PREFIX, COMPLAINT_CATEGORIES, DEFAULT_WHATSAPP_TEMPLATE, applyTemplate } from "../../src/lib/enterpriseProtocol";
-
-type Session = { username: string; role: string };
+import { json, validateSession } from "./_shared/security";
 type ComplaintStatus = "open" | "under_review" | "closed";
 type Complaint = {
   complaintNo: string;
@@ -21,15 +20,20 @@ type Complaint = {
   createdAt: string;
 };
 
-const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
+const clean = (value: unknown, maxLength: number) => String(value || "").trim().slice(0, maxLength);
+const escapeHtml = (value: string) =>
+  value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] || character);
 
-async function validateSession(req: Request): Promise<Session | null> {
-  const token = req.headers.get("Authorization")?.replace("Bearer ", "").trim();
-  if (!token) return null;
+function isAllowedWebhookUrl(value: string): boolean {
   try {
-    return (await getStore({ name: "sessions", consistency: "strong" }).get(`sess_${token}`, { type: "json" })) as Session | null;
+    const url = new URL(value);
+    if (url.protocol !== "https:") return false;
+    const host = url.hostname.toLowerCase();
+    if (host === "localhost" || host.endsWith(".local") || host === "0.0.0.0" || host === "127.0.0.1" || host === "::1") return false;
+    if (/^10\.|^192\.168\.|^169\.254\.|^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+    return true;
   } catch {
-    return null;
+    return false;
   }
 }
 
@@ -44,9 +48,10 @@ async function nextComplaintNo(brand: keyof typeof BRAND_PREFIX) {
 
 async function sendComplaintEmailCopy(complaint: Complaint, html: string) {
   const settings = ((await getStore("settings").get("site", { type: "json" })) as { complaintEmail?: string; complaintEmailWebhook?: string; complaintWhatsappNumber?: string } | null) || {};
-  const webhook = settings.complaintEmailWebhook || process.env.COMPLAINT_EMAIL_WEBHOOK;
-  const recipient = settings.complaintEmail || process.env.COMPLAINT_EMAIL_TO || "";
+  const webhook = settings.complaintEmailWebhook || Netlify.env.get("COMPLAINT_EMAIL_WEBHOOK");
+  const recipient = settings.complaintEmail || Netlify.env.get("COMPLAINT_EMAIL_TO") || "";
   if (!webhook || !recipient) return { sent: false, reason: "webhook_or_recipient_missing" };
+  if (!isAllowedWebhookUrl(webhook)) return { sent: false, reason: "invalid_webhook_url" };
 
   try {
     const res = await fetch(webhook, {
@@ -65,6 +70,8 @@ export default async (req: Request) => {
   const items = ((await store.get("items", { type: "json" })) as Complaint[] | null) || [];
 
   if (req.method === "GET") {
+    const session = await validateSession(req);
+    if (!session) return json({ error: "Unauthorized" }, 401);
     const branches = Array.from(new Set(hotelBranches.map((b) => `${b.name} - ${b.city}`))).sort((a, b) => a.localeCompare(b, "ar"));
     return json({ complaints: items, categories: COMPLAINT_CATEGORIES, branches });
   }
@@ -72,25 +79,30 @@ export default async (req: Request) => {
   if (req.method === "POST") {
     const settings = ((await getStore("settings").get("site", { type: "json" })) as { complaintWhatsappNumber?: string } | null) || {};
     const body = (await req.json().catch(() => ({}))) as Partial<Complaint>;
-    const brand = (body.brand || "Boudl") as keyof typeof BRAND_PREFIX;
+    const requestedBrand = clean(body.brand, 30) as keyof typeof BRAND_PREFIX;
+    const brand = requestedBrand in BRAND_PREFIX ? requestedBrand : "Boudl";
     const complaintNo = await nextComplaintNo(brand);
 
     const complaint: Complaint = {
       complaintNo,
       brand,
-      branch: String(body.branch || "").trim(),
-      mainCategory: String(body.mainCategory || "").trim(),
-      subCategory: String(body.subCategory || "").trim(),
-      priority: String(body.priority || "normal").trim(),
-      guestName: String(body.guestName || "").trim(),
-      bookingMobile: String(body.bookingMobile || "").trim(),
-      contactMobile: String(body.contactMobile || "").trim(),
-      suiteNumber: String(body.suiteNumber || "").trim(),
-      checkInDate: String(body.checkInDate || "").trim(),
-      notes: String(body.notes || "").trim(),
+      branch: clean(body.branch, 150),
+      mainCategory: clean(body.mainCategory, 100),
+      subCategory: clean(body.subCategory, 100),
+      priority: clean(body.priority || "normal", 30),
+      guestName: clean(body.guestName, 120),
+      bookingMobile: clean(body.bookingMobile, 30),
+      contactMobile: clean(body.contactMobile, 30),
+      suiteNumber: clean(body.suiteNumber, 30),
+      checkInDate: clean(body.checkInDate, 20),
+      notes: clean(body.notes, 2000),
       status: "open",
       createdAt: new Date().toISOString(),
     };
+
+    if (!complaint.branch || !complaint.mainCategory || !complaint.guestName || !complaint.contactMobile) {
+      return json({ error: "Missing required complaint fields" }, 400);
+    }
 
     items.unshift(complaint);
     await store.setJSON("items", items.slice(0, 5000));
@@ -118,7 +130,7 @@ export default async (req: Request) => {
       ? `https://wa.me/${targetNumber}?text=${encodeURIComponent(whatsappMessage)}`
       : `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
 
-    const emailHtml = `<h3>شكوى ${complaint.complaintNo}</h3><p>${whatsappMessage.replace(/\n/g, "<br>")}</p>`;
+    const emailHtml = `<h3>شكوى ${escapeHtml(complaint.complaintNo)}</h3><p>${escapeHtml(whatsappMessage).replace(/\n/g, "<br>")}</p>`;
     const emailResult = await sendComplaintEmailCopy(complaint, emailHtml);
 
     return json({ complaint, whatsappMessage, whatsappUrl, emailResult }, 201);

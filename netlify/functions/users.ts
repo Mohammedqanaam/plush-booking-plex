@@ -1,30 +1,7 @@
 import { getStore } from "@netlify/blobs";
+import { hashPassword, json, VALID_ROLES, validateSession, verifyPassword, type UserRole } from "./_shared/security";
 
-const VALID_ROLES = ["superadmin", "admin", "editor", "viewer"];
-
-type User = { username: string; password: string; role: string };
-type Session = { username: string; role: string };
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-async function validateSession(req: Request): Promise<Session | null> {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.replace("Bearer ", "").trim();
-  if (!token) return null;
-
-  const sessionStore = getStore({ name: "sessions", consistency: "strong" });
-  try {
-    const session = await sessionStore.get(`sess_${token}`, { type: "json" });
-    return session as Session | null;
-  } catch {
-    return null;
-  }
-}
+type User = { username: string; role: UserRole; password?: string; passwordHash?: string };
 
 function hasPermission(role: string, action: string): boolean {
   const perms: Record<string, string[]> = {
@@ -75,7 +52,7 @@ export default async (req: Request) => {
     if (!username?.trim() || !password?.trim()) {
       return json({ error: "Username and password required" }, 400);
     }
-    if (!role || !VALID_ROLES.includes(role)) {
+    if (!role || !VALID_ROLES.includes(role as UserRole)) {
       return json({ error: "Invalid role" }, 400);
     }
 
@@ -90,7 +67,11 @@ export default async (req: Request) => {
       return json({ error: "Username already exists" }, 409);
     }
 
-    users.push({ username: username.trim(), password: password.trim(), role });
+    if (password.trim().length < 12) {
+      return json({ error: "Password must be at least 12 characters" }, 400);
+    }
+
+    users.push({ username: username.trim(), passwordHash: hashPassword(password.trim()), role: role as UserRole });
     await userStore.setJSON("all", users);
     return json({ ok: true });
   }
@@ -107,8 +88,8 @@ export default async (req: Request) => {
     if (!currentPassword?.trim() || !newPassword?.trim()) {
       return json({ error: "Current password and new password are required" }, 400);
     }
-    if (newPassword.trim().length < 8) {
-      return json({ error: "New password must be at least 8 characters" }, 400);
+    if (newPassword.trim().length < 12) {
+      return json({ error: "New password must be at least 12 characters" }, 400);
     }
 
     let users: User[] = [];
@@ -122,11 +103,19 @@ export default async (req: Request) => {
     if (userIndex === -1) {
       return json({ error: "User not found" }, 404);
     }
-    if (users[userIndex].password !== currentPassword.trim()) {
+    const stored = users[userIndex];
+    const passwordMatches = stored.passwordHash
+      ? verifyPassword(currentPassword.trim(), stored.passwordHash)
+      : stored.password === currentPassword.trim();
+    if (!passwordMatches) {
       return json({ error: "Current password is incorrect" }, 403);
     }
 
-    users[userIndex] = { ...users[userIndex], password: newPassword.trim() };
+    users[userIndex] = {
+      username: stored.username,
+      role: stored.role,
+      passwordHash: hashPassword(newPassword.trim()),
+    };
     await userStore.setJSON("all", users);
     return json({ ok: true });
   }

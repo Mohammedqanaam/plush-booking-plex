@@ -1,12 +1,5 @@
-const N8N_MCP_URL =
-  process.env.N8N_MCP_URL ||
-  "https://mohammedaldosari.app.n8n.cloud/mcp/8ade5888-67c5-4c65-a048-5fdc0699f9aa";
+import { json, validateSession } from "./_shared/security";
 
-const json = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
 
 function extractReply(data: unknown): string {
   if (!data || typeof data !== "object") return String(data ?? "");
@@ -41,6 +34,12 @@ export default async (req: Request) => {
 
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
+  const session = await validateSession(req);
+  if (!session) return json({ error: "Unauthorized" }, 401);
+
+  const n8nMcpUrl = Netlify.env.get("N8N_MCP_URL")?.trim();
+  if (!n8nMcpUrl) return json({ error: "AI service is not configured" }, 503);
+
   let body: { message?: string; sessionId?: string; history?: Array<{ role: string; content: string }> };
   try {
     body = await req.json();
@@ -71,7 +70,7 @@ export default async (req: Request) => {
   };
 
   try {
-    const res = await fetch(N8N_MCP_URL, {
+    const res = await fetch(n8nMcpUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

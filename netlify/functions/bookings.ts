@@ -1,26 +1,6 @@
 import { getStore } from "@netlify/blobs";
-
-type Session = { username: string; role: string };
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-async function validateSession(req: Request): Promise<Session | null> {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.replace("Bearer ", "").trim();
-  if (!token) return null;
-
-  const sessionStore = getStore({ name: "sessions", consistency: "strong" });
-  try {
-    return (await sessionStore.get(`sess_${token}`, { type: "json" })) as Session | null;
-  } catch {
-    return null;
-  }
-}
+import { json, validateSession } from "./_shared/security";
+import { buildPublicBookingReport } from "./_shared/bookingReport";
 
 const normalizeKey = (value: string) =>
   value
@@ -169,40 +149,44 @@ export default async (req: Request) => {
   if (method === "GET") {
     try {
       const bookings = ((await store.get("data", { type: "json" })) as Record<string, string>[]) || [];
-      const stats = (await store.get("stats", { type: "json" })) || {
+      const stats = ((await store.get("stats", { type: "json" })) as Record<string, unknown> | null) || {
         total: 0,
         confirmed: 0,
         cancelled: 0,
         cancelRate: 0,
       };
+
+      const requestUrl = new URL(req.url);
+      if (requestUrl.searchParams.get("view") === "summary") {
+        const settingsStore = getStore("settings");
+        const settings = ((await settingsStore.get("site", { type: "json" })) as Record<string, unknown> | null) || {};
+        return json(buildPublicBookingReport(bookings, settings, typeof stats.updatedAt === "string" ? stats.updatedAt : null));
+      }
+
+      const session = await validateSession(req);
+      if (!session) return json({ error: "Unauthorized" }, 401);
       return json({ bookings, stats });
     } catch {
-      return json({
-        bookings: [],
-        stats: { total: 0, confirmed: 0, cancelled: 0, cancelRate: 0 },
-      });
+      return json({ error: "Unable to load booking data" }, 500);
     }
   }
 
+  const session = await validateSession(req);
+  if (!session) return json({ error: "Unauthorized" }, 401);
+
 
   if (method === "DELETE") {
-    const session = await validateSession(req);
-    if (!session) return json({ error: "Unauthorized" }, 401);
-
     if (!["superadmin", "admin"].includes(session.role)) {
       return json({ error: "Permission Denied" }, 403);
     }
 
     await store.setJSON("data", []);
-    await store.setJSON("stats", { total: 0, confirmed: 0, cancelled: 0, cancelRate: 0 });
+    await store.setJSON("stats", { total: 0, confirmed: 0, cancelled: 0, cancelRate: 0, updatedAt: new Date().toISOString() });
 
     return json({ ok: true });
   }
 
   if (method === "POST") {
-    const session = await validateSession(req);
-    if (!session) return json({ error: "Unauthorized" }, 401);
-
     if (!["superadmin", "admin", "editor"].includes(session.role)) {
       return json({ error: "Permission Denied" }, 403);
     }
@@ -217,13 +201,19 @@ export default async (req: Request) => {
     if (!csvText.trim()) {
       return json({ error: "Empty CSV" }, 400);
     }
+    if (new TextEncoder().encode(csvText).byteLength > 5 * 1024 * 1024) {
+      return json({ error: "CSV exceeds the 5 MB limit" }, 413);
+    }
 
     const bookings = parseCSV(csvText);
     if (bookings.length === 0) {
       return json({ error: "No valid data found in CSV" }, 400);
     }
+    if (bookings.length > 50_000) {
+      return json({ error: "CSV exceeds the 50,000 row limit" }, 413);
+    }
 
-    const stats = calculateStats(bookings);
+    const stats = { ...calculateStats(bookings), updatedAt: new Date().toISOString() };
     await store.setJSON("data", bookings);
     await store.setJSON("stats", stats);
 

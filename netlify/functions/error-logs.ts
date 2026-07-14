@@ -1,6 +1,5 @@
 import { getStore } from "@netlify/blobs";
-
-type Session = { username: string; role: string };
+import { json, validateSession } from "./_shared/security";
 
 type ErrorLog = {
   id: string;
@@ -10,35 +9,19 @@ type ErrorLog = {
   createdAt: string;
 };
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-async function validateSession(req: Request): Promise<Session | null> {
-  const token = req.headers.get("Authorization")?.replace("Bearer ", "").trim();
-  if (!token) return null;
-  const store = getStore({ name: "sessions", consistency: "strong" });
-  try {
-    return (await store.get(`sess_${token}`, { type: "json" })) as Session | null;
-  } catch {
-    return null;
-  }
-}
-
 export default async (req: Request) => {
   const store = getStore("errors_store");
   const logs = ((await store.get("items", { type: "json" })) as ErrorLog[] | null) || [];
 
   if (req.method === "POST") {
+    const session = await validateSession(req);
+    if (!session) return json({ error: "Unauthorized" }, 401);
     const body = (await req.json().catch(() => ({}))) as Partial<ErrorLog>;
     const log: ErrorLog = {
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      source: String(body.source || "unknown"),
-      message: String(body.message || "unknown_error"),
-      context: body.context ? String(body.context) : undefined,
+      source: String(body.source || "unknown").slice(0, 120),
+      message: String(body.message || "unknown_error").slice(0, 500),
+      context: body.context ? String(body.context).slice(0, 1000) : undefined,
       createdAt: new Date().toISOString(),
     };
     logs.unshift(log);

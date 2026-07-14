@@ -1,10 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, PhoneCall, UsersRound } from "lucide-react";
+import { BarChart3, Building2, LayoutDashboard, Search, UsersRound } from "lucide-react";
 
 const mainNavItems = [
   { path: "/", label: "الرئيسية", icon: LayoutDashboard },
+  { path: "/operations", label: "البحث", icon: Search },
+  { path: "/branches", label: "الفروع", icon: Building2 },
   { path: "/employees", label: "الموظفون", icon: UsersRound },
-  { path: "/contact-requests", label: "التواصل", icon: PhoneCall },
+  { path: "/booking-reports", label: "التقارير", icon: BarChart3 },
 ];
 
 const BottomNav = () => {
@@ -12,7 +14,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 rounded-[1.35rem] border border-border/20 bg-background/88 backdrop-blur-2xl safe-area-bottom shadow-[0_18px_44px_rgba(0,0,0,0.35)]">
+    <nav className="relative z-50 mx-3 mb-3 shrink-0 rounded-[1.35rem] border border-border/20 bg-background/92 backdrop-blur-2xl safe-area-bottom shadow-[0_-12px_32px_rgba(0,0,0,0.12)] md:hidden">
       <div className="mx-auto flex h-[64px] max-w-xl items-center justify-around gap-1 px-2 pb-1">
         {mainNavItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -20,7 +22,7 @@ const BottomNav = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`relative touch-target min-w-[72px] flex flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-1.5 interactive ${
+              className={`relative touch-target min-w-0 flex-1 flex flex-col items-center justify-center gap-1.5 rounded-2xl px-1 py-1.5 interactive ${
                 isActive ? "text-primary" : "text-muted-foreground hover:text-slate-200"
               }`}
             >
