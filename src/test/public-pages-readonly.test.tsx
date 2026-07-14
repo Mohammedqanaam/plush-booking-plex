@@ -24,10 +24,10 @@ describe("public pages are read-only", () => {
     expect(screen.getByText(/رفع البيانات أو إعادة تعيينها متاح للمستخدمين المخولين/)).toBeDefined();
   });
 
-  it("exposes employee and booking reports without the admin guard", () => {
+  it("keeps one public booking report and redirects the old employee route", () => {
     const app = fs.readFileSync(path.join(process.cwd(), "src/App.tsx"), "utf8");
-    expect(app).toContain('<Route path="/employees" element={<Employees />} />');
+    expect(app).toContain('<Route path="/employees" element={<Navigate to="/booking-reports?section=employees" replace />} />');
     expect(app).toContain('<Route path="/booking-reports" element={<BookingReports />} />');
-    expect(app).not.toContain('<Route path="/employees" element={<ProtectedRoute>');
+    expect(app).not.toContain('const Employees = lazy');
   });
 });

@@ -26,25 +26,23 @@ const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: P
   };
 
   return (
-    <header className="page-surface relative z-10 border-primary/20 py-3 md:py-4">
+    <header className="page-heading relative z-10">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
           {showBack ? (
             <button
               type="button"
               onClick={onBack}
-              className="touch-target h-11 w-11 shrink-0 rounded-2xl border border-primary/25 bg-secondary/70 hover:bg-secondary/95 hover:border-primary/50 interactive"
+              className="touch-target h-10 w-10 shrink-0 rounded-full bg-secondary text-foreground interactive"
               aria-label="رجوع"
             >
-              <ArrowRight className="w-5 h-5 mx-auto" />
+              <ArrowRight className="mx-auto h-5 w-5" strokeWidth={1.8} />
             </button>
           ) : null}
           <div className="min-w-0">
-            <h2 className="text-xl md:text-[1.85rem] font-black flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-[1.55rem] font-bold tracking-tight md:text-[1.8rem]">
               {Icon ? (
-                <span className="icon-chip h-7 w-7">
-                  <Icon className="w-4 h-4 shrink-0" />
-                </span>
+                <Icon className="h-5 w-5 shrink-0 text-primary" strokeWidth={1.8} />
               ) : null}
               <span className="truncate">{title}</span>
             </h2>

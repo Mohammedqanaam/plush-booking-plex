@@ -10,7 +10,7 @@ const pageNames: Record<string, string> = {
   "/policies": "السياسات",
   "/complaints": "الشكاوى",
   "/contact-requests": "طلبات التواصل",
-  "/employees": "الموظفون",
+  "/employees": "نتائج الموظفين",
   "/booking-reports": "تقارير الحجوزات",
   "/admin": "لوحة المشرف",
   "/admin/login": "دخول المشرف",

@@ -1,4 +1,4 @@
-import { ArrowLeft, BarChart3, BookOpenCheck, Building2, FileText, OctagonAlert, PhoneCall, Search, UsersRound, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpenCheck, Building2, FileText, OctagonAlert, PhoneCall, Search, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 
@@ -18,16 +18,10 @@ const publicEntries: PublicEntry[] = [
     description: "أرقام التواصل والخدمات المتاحة.",
   },
   {
-    to: "/employees",
-    label: "أداء الموظفين",
-    icon: UsersRound,
-    description: "نتائج كل موظف للعرض فقط.",
-  },
-  {
     to: "/booking-reports",
     label: "تقارير الحجوزات",
     icon: BarChart3,
-    description: "ملخص المؤكد والملغي ونسب الحالات.",
+    description: "الملخص ونتائج الموظفين في تقرير واحد.",
   },
   {
     to: "/contact-requests",
@@ -63,27 +57,19 @@ const Dashboard = () => (
       showBack={false}
     />
 
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <section className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
       {publicEntries.map((item) => (
         <Link
           key={item.to}
           to={item.to}
-          className="group page-surface card-hover min-h-[132px] overflow-hidden text-right"
+          className="service-card group"
         >
-          <div className="flex h-full flex-col justify-between gap-3">
-            <div className="flex items-start justify-between gap-4">
-              <span className="icon-chip h-11 w-11">
-                <item.icon className="h-5 w-5" />
-              </span>
-              <span className="inline-flex items-center gap-1 text-xs font-bold text-primary">
-                فتح <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
-              </span>
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-xl font-black tracking-tight text-foreground">{item.label}</h2>
-              <p className="max-w-xl text-sm leading-6 text-muted-foreground">{item.description}</p>
-            </div>
+          <span className="service-icon"><item.icon className="h-5 w-5" strokeWidth={1.8} /></span>
+          <div className="min-w-0 flex-1">
+            <h2>{item.label}</h2>
+            <p>{item.description}</p>
           </div>
+          <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-0.5" strokeWidth={1.8} />
         </Link>
       ))}
     </section>

@@ -2,7 +2,7 @@ import type { ThemeVars } from "@/theme/enterpriseThemeTypes";
 
 export const applyTheme = (preset: ThemeVars) => {
   const root = document.documentElement;
-  const mode = root.dataset.theme === "light" ? "light" : "dark";
+  const mode = root.dataset.theme === "dark" ? "dark" : "light";
 
   root.style.setProperty("--background", mode === "light" ? preset.backgroundLight : preset.backgroundDark);
   root.style.setProperty("--foreground", mode === "light" ? preset.foregroundLight : preset.foregroundDark);
@@ -15,7 +15,7 @@ export const applyTheme = (preset: ThemeVars) => {
   root.style.setProperty("--gold", preset.primary);
   root.style.setProperty("--gold-glow", preset.primary);
   root.style.setProperty("--input", mode === "light" ? preset.borderLight : preset.cardDark);
-  root.style.setProperty("--secondary", mode === "light" ? "220 30% 92%" : "222 35% 17%");
-  root.style.setProperty("--muted", mode === "light" ? "220 24% 90%" : "222 25% 21%");
-  root.style.setProperty("--muted-foreground", mode === "light" ? "220 13% 36%" : "220 13% 70%");
+  root.style.setProperty("--secondary", mode === "light" ? "240 14% 95%" : "222 35% 17%");
+  root.style.setProperty("--muted", mode === "light" ? "240 10% 93%" : "222 25% 21%");
+  root.style.setProperty("--muted-foreground", mode === "light" ? "240 3% 44%" : "220 13% 70%");
 };
