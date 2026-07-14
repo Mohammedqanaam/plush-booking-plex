@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpenCheck, Building2, FileText, OctagonAlert, PhoneCall, Search, UsersRound, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpenCheck, Building2, FileText, OctagonAlert, PhoneCall, Search, UsersRound, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 
@@ -19,9 +19,15 @@ const publicEntries: PublicEntry[] = [
   },
   {
     to: "/employees",
-    label: "الموظفون",
+    label: "أداء الموظفين",
     icon: UsersRound,
-    description: "الحجوزات المؤكدة والملغاة.",
+    description: "نتائج كل موظف للعرض فقط.",
+  },
+  {
+    to: "/booking-reports",
+    label: "تقارير الحجوزات",
+    icon: BarChart3,
+    description: "ملخص المؤكد والملغي ونسب الحالات.",
   },
   {
     to: "/contact-requests",

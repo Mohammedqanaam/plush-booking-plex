@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import KnowledgeBank from "@/pages/KnowledgeBank";
 import UploadCenter from "@/pages/UploadCenter";
 import Employees from "@/pages/Employees";
+import BookingReports from "@/pages/BookingReports";
 import Policies from "@/pages/Policies";
 import Branches from "@/pages/Branches";
 import OperationsSettings from "@/pages/OperationsSettings";
@@ -20,6 +21,10 @@ describe("new page modules added in PR #86", () => {
 
   it("Employees loads without syntax errors", () => {
     expect(typeof Employees).toBe("function");
+  });
+
+  it("BookingReports loads without syntax errors", () => {
+    expect(typeof BookingReports).toBe("function");
   });
 
   it("Policies loads without syntax errors", () => {

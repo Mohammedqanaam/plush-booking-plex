@@ -1,5 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import { json, validateSession } from "./_shared/security";
+import { buildPublicBookingReport } from "./_shared/bookingReport";
 
 const normalizeKey = (value: string) =>
   value
@@ -145,26 +146,33 @@ export default async (req: Request) => {
   const method = req.method;
   const store = getStore("bookings");
 
-  const session = await validateSession(req);
-  if (!session) return json({ error: "Unauthorized" }, 401);
-
   if (method === "GET") {
     try {
       const bookings = ((await store.get("data", { type: "json" })) as Record<string, string>[]) || [];
-      const stats = (await store.get("stats", { type: "json" })) || {
+      const stats = ((await store.get("stats", { type: "json" })) as Record<string, unknown> | null) || {
         total: 0,
         confirmed: 0,
         cancelled: 0,
         cancelRate: 0,
       };
+
+      const requestUrl = new URL(req.url);
+      if (requestUrl.searchParams.get("view") === "summary") {
+        const settingsStore = getStore("settings");
+        const settings = ((await settingsStore.get("site", { type: "json" })) as Record<string, unknown> | null) || {};
+        return json(buildPublicBookingReport(bookings, settings, typeof stats.updatedAt === "string" ? stats.updatedAt : null));
+      }
+
+      const session = await validateSession(req);
+      if (!session) return json({ error: "Unauthorized" }, 401);
       return json({ bookings, stats });
     } catch {
-      return json({
-        bookings: [],
-        stats: { total: 0, confirmed: 0, cancelled: 0, cancelRate: 0 },
-      });
+      return json({ error: "Unable to load booking data" }, 500);
     }
   }
+
+  const session = await validateSession(req);
+  if (!session) return json({ error: "Unauthorized" }, 401);
 
 
   if (method === "DELETE") {
@@ -173,7 +181,7 @@ export default async (req: Request) => {
     }
 
     await store.setJSON("data", []);
-    await store.setJSON("stats", { total: 0, confirmed: 0, cancelled: 0, cancelRate: 0 });
+    await store.setJSON("stats", { total: 0, confirmed: 0, cancelled: 0, cancelRate: 0, updatedAt: new Date().toISOString() });
 
     return json({ ok: true });
   }
@@ -205,7 +213,7 @@ export default async (req: Request) => {
       return json({ error: "CSV exceeds the 50,000 row limit" }, 413);
     }
 
-    const stats = calculateStats(bookings);
+    const stats = { ...calculateStats(bookings), updatedAt: new Date().toISOString() };
     await store.setJSON("data", bookings);
     await store.setJSON("stats", stats);
 

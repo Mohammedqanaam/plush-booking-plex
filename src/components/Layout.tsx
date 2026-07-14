@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Building2, LayoutDashboard, PhoneCall, Search, UsersRound } from "lucide-react";
+import { BarChart3, Building2, LayoutDashboard, PhoneCall, Search, UsersRound } from "lucide-react";
 import BottomNav from "./BottomNav";
 import RiyadhClock from "./RiyadhClock";
 import { api } from "@/lib/api";
@@ -12,6 +12,7 @@ const desktopNav = [
   { to: "/operations", label: "البحث", icon: Search },
   { to: "/branches", label: "الفروع", icon: Building2 },
   { to: "/employees", label: "الموظفون", icon: UsersRound },
+  { to: "/booking-reports", label: "التقارير", icon: BarChart3 },
   { to: "/contact-requests", label: "طلبات التواصل", icon: PhoneCall },
 ];
 

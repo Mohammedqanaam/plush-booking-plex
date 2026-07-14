@@ -11,6 +11,7 @@ const pageNames: Record<string, string> = {
   "/complaints": "الشكاوى",
   "/contact-requests": "طلبات التواصل",
   "/employees": "الموظفون",
+  "/booking-reports": "تقارير الحجوزات",
   "/admin": "لوحة المشرف",
   "/admin/login": "دخول المشرف",
 };

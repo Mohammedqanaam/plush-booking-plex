@@ -10,6 +10,7 @@ import EnterpriseThemeLoader from "./components/EnterpriseThemeLoader";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Employees = lazy(() => import("./pages/Employees"));
+const BookingReports = lazy(() => import("./pages/BookingReports"));
 const Contacts = lazy(() => import("./pages/Contacts"));
 const HotelSearch = lazy(() => import("./pages/HotelSearch"));
 const Branches = lazy(() => import("./pages/Branches"));
@@ -42,7 +43,8 @@ const App = () => (
           <Route path="/boudl-preview/*" element={<BoudlPrototype />} />
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
+            <Route path="/employees" element={<Employees />} />
+            <Route path="/booking-reports" element={<BookingReports />} />
             <Route path="/operations" element={<HotelSearch />} />
             <Route path="/branches" element={<Branches />} />
             <Route path="/knowledge-bank" element={<KnowledgeBank />} />

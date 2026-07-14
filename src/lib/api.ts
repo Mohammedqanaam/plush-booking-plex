@@ -14,11 +14,36 @@ export type AppSettings = {
   reportMonth?: string;
   reportYear?: string;
   hiddenEmployees?: string[];
+  employeeDisplayNames?: Record<string, string>;
   complaintEmail?: string;
   complaintEmailWebhook?: string;
   complaintWhatsappNumber?: string;
   themePreset?: string;
   employeeAdjustments?: Record<string, EmployeeAdjustment>;
+};
+
+export type PublicBookingReport = {
+  generatedAt: string;
+  updatedAt: string | null;
+  period: { month: string; year: string; label: string };
+  summary: {
+    uploadedRecords: number;
+    classifiedTotal: number;
+    confirmed: number;
+    cancelled: number;
+    ignored: number;
+    employeeCount: number;
+    confirmationRate: number;
+    cancelRate: number;
+  };
+  employees: Array<{
+    id: string;
+    name: string;
+    confirmed: number;
+    cancelled: number;
+    total: number;
+    confirmationRate: number;
+  }>;
 };
 
 export type ContactRequest = {
@@ -190,6 +215,12 @@ export const api = {
     const res = await fetch(`${API_BASE}/bookings`, { headers: authHeaders() });
     if (!res.ok) throw new Error("تعذر تحميل البيانات");
     return res.json();
+  },
+
+  async getPublicBookingReport() {
+    const res = await fetch(`${API_BASE}/bookings?view=summary`);
+    if (!res.ok) throw new Error("تعذر تحميل التقرير");
+    return res.json() as Promise<PublicBookingReport>;
   },
 
   async createContactRequest(payload: { brand: string; branchName: string; guestName: string; guestPhone: string; reason: string }) {

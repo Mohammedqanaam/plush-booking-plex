@@ -6,6 +6,7 @@ type SiteSettings = {
   reportMonth: string;
   reportYear: string;
   hiddenEmployees: string[];
+  employeeDisplayNames: Record<string, string>;
   complaintEmail: string;
   complaintEmailWebhook: string;
   complaintWhatsappNumber: string;
@@ -25,6 +26,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   reportMonth: "",
   reportYear: "",
   hiddenEmployees: [],
+  employeeDisplayNames: {},
   complaintEmail: "",
   complaintEmailWebhook: "",
   complaintWhatsappNumber: "",
@@ -53,7 +55,8 @@ export default async (req: Request) => {
     if (!["superadmin", "admin", "editor"].includes(session.role)) return json({ error: "Permission Denied" }, 403);
 
     const body = (await req.json().catch(() => ({}))) as Partial<SiteSettings>;
-    const current = ((await store.get("site", { type: "json" })) as SiteSettings | null) || DEFAULT_SETTINGS;
+    const stored = ((await store.get("site", { type: "json" })) as Partial<SiteSettings> | null) || {};
+    const current: SiteSettings = { ...DEFAULT_SETTINGS, ...stored };
 
     const updated: SiteSettings = {
       siteTitle: body.siteTitle !== undefined ? String(body.siteTitle) : current.siteTitle,
@@ -61,6 +64,7 @@ export default async (req: Request) => {
       reportMonth: body.reportMonth !== undefined ? String(body.reportMonth) : current.reportMonth,
       reportYear: body.reportYear !== undefined ? String(body.reportYear) : current.reportYear,
       hiddenEmployees: Array.isArray(body.hiddenEmployees) ? body.hiddenEmployees.map(String) : current.hiddenEmployees,
+      employeeDisplayNames: typeof body.employeeDisplayNames === "object" && body.employeeDisplayNames ? body.employeeDisplayNames : current.employeeDisplayNames,
       complaintEmail: body.complaintEmail !== undefined ? String(body.complaintEmail) : current.complaintEmail,
       complaintEmailWebhook: body.complaintEmailWebhook !== undefined ? String(body.complaintEmailWebhook) : current.complaintEmailWebhook,
       complaintWhatsappNumber: body.complaintWhatsappNumber !== undefined ? String(body.complaintWhatsappNumber) : current.complaintWhatsappNumber,
