@@ -1,4 +1,4 @@
-import { BadgeCheck, Banknote, CalendarClock, FileText, LockKeyhole, Route, ShieldCheck } from "lucide-react";
+import { BadgeCheck, Banknote, CalendarClock, ChevronDown, FileText, LockKeyhole, Route, ShieldCheck } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 
 const statusRows = [
@@ -18,7 +18,7 @@ const policies = [
     points: [
       "يُطلب من الضيف إتمام السداد خلال المهلة المحددة لضمان عدم إلغاء الحجز.",
       "لا يرسل الموظف رابطًا يدويًا ما دام النظام أرسله آليًا.",
-      "يُستثنى الضيف الموجود في الاستقبال أثناء المكالمة وفق الإجراء التشغيلي.",
+      "يُستثنى الضيف الموجود في الاستقبال أثناء المكالمة وفق الإجراء المعتمد.",
     ],
   },
   {
@@ -42,7 +42,7 @@ const policies = [
     ],
   },
   {
-    title: "نطاق اختصاص الحجز المركزي",
+    title: "نطاق الاختصاص",
     icon: ShieldCheck,
     summary: "يعالج المركز الحجوزات المنشأة من قنوات الحجز المركزي التابعة له.",
     points: [
@@ -58,20 +58,20 @@ const policies = [
     points: [
       "يُتحقق من اسم الضيف ورقم الجوال وتاريخ الوصول ونوع الغرفة.",
       "لا تُشارك أرقام الجوال أو تفاصيل الإقامة مع طرف غير مخول.",
-      "تُستخدم البيانات للأغراض التشغيلية فقط ووفق الصلاحيات الممنوحة.",
+      "تُستخدم البيانات لخدمة الحجز والمتابعة ووفق الصلاحيات الممنوحة.",
     ],
   },
 ];
 
 const Policies = () => (
   <div className="page-wrap">
-    <PageHeader title="السياسات التشغيلية" subtitle="مرجع سريع للسياسات الأكثر استخدامًا في الحجز المركزي." icon={FileText} />
+    <PageHeader title="السياسات" subtitle="أهم سياسات الحجز المركزي." icon={FileText} />
 
     <section className="page-surface space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-bold">تصنيف حالات الحجوزات في التقارير</p>
-          <p className="mt-1 text-xs text-muted-foreground">الحالات غير المدرجة لا تُحتسب تلقائيًا وتحتاج مراجعة قبل اعتماد التقرير.</p>
+          <p className="text-sm font-bold">حالات الحجوزات</p>
+          <p className="mt-1 text-xs text-muted-foreground">راجع أي رمز غير مدرج قبل اعتماد التقرير.</p>
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-bold text-primary"><BadgeCheck className="h-4 w-4" /> التصنيف المعتمد</span>
       </div>
@@ -87,22 +87,23 @@ const Policies = () => (
 
     <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {policies.map((policy) => (
-        <article key={policy.title} className="page-surface card-hover">
-          <div className="flex items-start gap-3">
+        <details key={policy.title} className="group page-surface card-hover">
+          <summary className="flex cursor-pointer list-none items-start gap-3 [&::-webkit-details-marker]:hidden">
             <span className="icon-chip h-11 w-11 shrink-0"><policy.icon className="h-5 w-5" /></span>
-            <div>
+            <div className="min-w-0 flex-1">
               <h2 className="font-black">{policy.title}</h2>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">{policy.summary}</p>
             </div>
-          </div>
-          <ul className="mt-4 space-y-2 text-sm leading-6 text-muted-foreground">
+            <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-primary transition-transform group-open:rotate-180" />
+          </summary>
+          <ul className="mt-4 space-y-2 border-t border-border/20 pt-4 text-sm leading-6 text-muted-foreground">
             {policy.points.map((point) => <li key={point} className="flex items-start gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />{point}</li>)}
           </ul>
-        </article>
+        </details>
       ))}
     </section>
 
-    <p className="rounded-xl border border-amber-400/25 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100">عند تعارض هذا الملخص مع تعميم أحدث أو سياسة خاصة بفرع أو موسم، يُعمل بالتعميم الأحدث بعد التحقق من مصدره.</p>
+    <p className="rounded-xl border border-amber-400/25 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100">عند التعارض، يُعتمد التعميم الأحدث بعد التحقق من مصدره.</p>
   </div>
 );
 

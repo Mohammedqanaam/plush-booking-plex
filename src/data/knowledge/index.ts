@@ -1,5 +1,6 @@
 import { hotelBranches } from "@/data/hotels";
 import { masterHotels } from "@/data/hotelMasterData";
+import knowledgeSeed from "@/data/knowledge_bank_seed.json";
 import {
   getSheetHallContact,
   getSheetMealInfo,
@@ -44,6 +45,7 @@ export type BranchRecord = {
   gymInfo: string;
   gymHours: string;
   roomTypes: string[];
+  roomSource: "internal" | "unverified";
   hallPackages: string[];
   notes: string;
   attachments: Array<{ title: string; type: "pdf" | "image" | "circular"; url: string }>;
@@ -91,15 +93,38 @@ const regionMap: Record<string, string> = {
   "حفر الباطن": "الشرقية",
 };
 
-const normalizeName = (name: string) => name
+const canonicalBranchName = (name: string) => name
+  .replace(/قرطبه/g, "قرطبة")
+  .replace(/المجمعه/g, "المجمعة")
+  .replace(/الاحساء/g, "الأحساء")
+  .replace(/مكة اجياد/g, "مكة أجياد")
+  .replace(/^نارسس/g, "نارسيس")
+  .replace(/\s+/g, " ")
+  .trim()
+  .replace(/^بودل الشاطي$/, "بودل الشاطئ")
+  .replace(/^بودل روضة بريدة$/, "بودل الروضة")
+  .replace(/^نارسيس الحمرا$/, "نارسيس الحمراء")
+  .replace(/^نارسيس ذا رويال$/, "نارسيس رويال")
+  .replace(/^نارسيس الرياض$/, "نارس الرياض");
+const normalizeKey = (name: string) => canonicalBranchName(name)
   .replace(/[أإآ]/g, "ا")
   .replace(/ى/g, "ي")
   .replace(/ة/g, "ه")
   .replace(/\s+/g, " ")
-  .trim()
-  .replace("قرطبه", "قرطبة")
-  .replace("نارسس", "نارسيس");
-const masterByName = new Map(masterHotels.map((h) => [normalizeName(h.name), h]));
+  .trim();
+const masterByName = new Map(masterHotels.map((hotel) => [normalizeKey(hotel.name), hotel]));
+const seedRoomTypesByBranch = new Map<string, string[]>();
+for (const room of knowledgeSeed.room_types) {
+  const key = normalizeKey(room.branch);
+  const roomType = room.room_type
+    .replace(/^Premuim\b/i, "Premium")
+    .replace(/^Delux\b/i, "Deluxe")
+    .trim();
+  const label = room.room_size?.trim() ? `${roomType} · ${room.room_size.trim()}` : roomType;
+  const current = seedRoomTypesByBranch.get(key) ?? [];
+  if (!current.includes(label)) current.push(label);
+  seedRoomTypesByBranch.set(key, current);
+}
 
 const asText = (value: unknown) => (typeof value === "string" ? value : "");
 
@@ -122,14 +147,19 @@ const parseHours = (value: unknown) => {
 };
 
 const toBranchRecord = (item: (typeof hotelBranches)[number], idx: number): BranchRecord => {
-  const canonicalName = normalizeName(item.name);
-  const master = masterByName.get(canonicalName);
+  const canonicalName = canonicalBranchName(item.name);
+  const lookupKey = normalizeKey(item.name);
+  const master = masterByName.get(lookupKey);
   const operational = getSheetOperationalHotel(canonicalName);
   const meals = getSheetMealInfo(canonicalName);
   const hallContact = getSheetHallContact(canonicalName);
   const brand = brandMap[item.group] ?? "Boudl";
   const breakfast = cleanOperationalText(operational?.breakfast ?? item.breakfast, "غير متوفر");
   const mealBreakfast = cleanOperationalText(meals?.breakfast, "");
+  const seedRoomTypes = seedRoomTypesByBranch.get(lookupKey) ?? [];
+  const roomTypes = seedRoomTypes.length
+    ? seedRoomTypes
+    : master?.roomTypes?.split("،").map((type) => type.trim()).filter(Boolean) ?? [];
 
   return {
     id: item.id,
@@ -165,14 +195,15 @@ const toBranchRecord = (item: (typeof hotelBranches)[number], idx: number): Bran
     outdoorSeatingInfo: cleanOperationalText(operational?.outdoorSeating ?? item.outdoorSeating, "غير متوفر"),
     gymInfo: cleanOperationalText(operational?.gym ?? master?.gym, "غير متوفر"),
     gymHours: parseHours(operational?.gym ?? master?.gym ?? ""),
-    roomTypes: master?.roomTypes ? master.roomTypes.split("،").map((t) => t.trim()).filter(Boolean) : ["غير متوفر"],
+    roomTypes,
+    roomSource: roomTypes.length ? "internal" : "unverified",
     hallPackages: [
       cleanOperationalText(operational?.meetingHall ?? master?.meetingHall, "غير متوفر"),
       cleanOperationalText(operational?.weddingPackage ?? master?.weddingPackage, "غير متوفر"),
     ],
     notes: operational
       ? "بيانات الخدمات من شيت معلومات الفروع. الأسعار والمواعيد المتغيرة تُراجع قبل تأكيدها للضيف."
-      : "تم ترحيل البيانات من مصادر التشغيل الحالية مع توحيد أسماء الفروع.",
+      : "تم توحيد البيانات من الملفات الداخلية الحالية.",
     attachments: [],
     sourceFiles: operational
       ? [HOTEL_INFORMATION_SHEET_URL, "تبويب: hotels data"]
@@ -185,33 +216,9 @@ const toBranchRecord = (item: (typeof hotelBranches)[number], idx: number): Bran
 const deduped = new Map<string, BranchRecord>();
 for (const [idx, row] of hotelBranches.entries()) {
   const branch = toBranchRecord(row, idx);
-  const key = `${branch.brand}::${normalizeName(branch.branch)}`;
+  const key = `${branch.brand}::${normalizeKey(branch.branch)}`;
   if (!deduped.has(key)) deduped.set(key, branch);
 }
-
-
-const ensureBranch = (record: BranchRecord) => {
-  const key = `${record.brand}::${normalizeName(record.branch)}`;
-  if (!deduped.has(key)) deduped.set(key, record);
-};
-
-ensureBranch({
-  ...toBranchRecord({ id: "nr-royal-alias", name: "نارسيس رويال", group: "نارسيس", city: "الرياض", phone: "114061515", pool: "غير محدد", breakfast: "غير محدد", restaurant: "غير محدد", coffeeShop: "غير محدد", balcony: "غير محدد", spa: "غير محدد", jacuzzi: "غير محدد", kidsSection: "غير محدد", laundry: "غير محدد", outdoorSeating: "غير محدد" }, 999),
-  branch: "نارسيس رويال",
-});
-ensureBranch({
-  ...toBranchRecord({ id: "nr-hamra-alias", name: "نارسيس الحمرا", group: "نارسيس", city: "جدة", phone: "122617700", pool: "غير محدد", breakfast: "غير محدد", restaurant: "غير محدد", coffeeShop: "غير محدد", balcony: "غير محدد", spa: "غير محدد", jacuzzi: "غير محدد", kidsSection: "غير محدد", laundry: "غير محدد", outdoorSeating: "غير محدد" }, 998),
-  branch: "نارسيس الحمرا",
-});
-ensureBranch({
-  ...toBranchRecord({ id: "nr-riyadh", name: "نارس الرياض", group: "نارسيس", city: "الرياض", phone: "112946300", pool: "--", breakfast: "--", restaurant: "--", coffeeShop: "--", balcony: "--", spa: "--", jacuzzi: "--", kidsSection: "--", laundry: "--", outdoorSeating: "--" }, 997),
-  branch: "نارس الرياض",
-});
-ensureBranch({
-  ...toBranchRecord({ id: "bd-shati-alias", name: "بودل الشاطي", group: "بودل", city: "الخبر", phone: "138091117", pool: "غير محدد", breakfast: "غير محدد", restaurant: "غير محدد", coffeeShop: "غير محدد", balcony: "غير محدد", spa: "غير محدد", jacuzzi: "غير محدد", kidsSection: "غير محدد", laundry: "غير محدد", outdoorSeating: "غير محدد" }, 996),
-  branch: "بودل الشاطي",
-});
-
 export const branchRecords: BranchRecord[] = [...deduped.values()].sort((a, b) => a.brand.localeCompare(b.brand) || a.branch.localeCompare(b.branch));
 
 export const branchesByBrand: Record<BrandKey, BranchRecord[]> = {
@@ -222,7 +229,7 @@ export const branchesByBrand: Record<BrandKey, BranchRecord[]> = {
   "Z'MN": branchRecords.filter((row) => row.brand === "Z'MN"),
 };
 
-export const quickIntents = ["سياسة الإلغاء", "رقم الاستقبال", "الإفطار", "المسبح", "الغرف", "القاعات", "بروتوكول الرد"];
+export const quickIntents = ["سياسة الإلغاء", "رقم الاستقبال", "الإفطار", "المسبح", "الغرف"];
 
 export const globalReferences: GlobalReference[] = [
   {
@@ -244,7 +251,7 @@ export const globalReferences: GlobalReference[] = [
   },
   {
     id: "central-reservation-protocol",
-    title: "بروتوكول الحجز المركزي",
+    title: "خطوات الحجز المركزي",
     category: "إجراءات الحجز المركزي",
     summary: "إجراءات موحدة لموظفي الحجز المركزي للتعامل مع الاستفسارات والحجوزات والتعديلات.",
     responseProtocol: "ابدأ بالترحيب، ثم اجمع اسم الفرع وتاريخ الوصول وعدد الليالي والضيوف، واعرض الخيارات المتاحة بدقة.",
@@ -253,7 +260,7 @@ export const globalReferences: GlobalReference[] = [
   {
     id: "response-scripts",
     title: "الردود الجاهزة",
-    category: "الردود التشغيلية",
+    category: "نماذج الرد",
     summary: "نماذج مختصرة للسياسات والخدمات والتصعيد، مع ضرورة تخصيصها لكل حالة.",
     responseProtocol: "اختر الرد الأقرب، ثم راجعه وخصّصه باسم الضيف والفرع والسياسة قبل الإرسال.",
     internalSteps: ["تحديد نية العميل", "اختيار السكربت", "التخصيص", "التوثيق"],

@@ -36,7 +36,7 @@ const AdminBranches = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="إدارة الفروع" subtitle="تحديث ومراجعة بيانات الفروع من لوحة الأدمن." icon={Building2} />
+      <PageHeader title="إدارة الفروع" subtitle="تحديث ومراجعة بيانات الفروع." icon={Building2} />
       <div className="glass-card p-4 space-y-3">
         <div className="grid gap-2 md:grid-cols-4">
           <input className="h-10 rounded-lg bg-secondary border px-3 md:col-span-2" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالفرع أو المدينة أو رقم التواصل" />
@@ -47,7 +47,7 @@ const AdminBranches = () => {
 
       <div className="glass-card p-4 table-scroll custom-scrollbar">
         <table className="min-w-[900px] w-full text-sm">
-          <thead><tr className="text-right border-b"><th className="p-2">الفرع</th><th className="p-2">المدينة</th><th className="p-2">البراند</th><th className="p-2">الهاتف</th><th className="p-2">الإفطار</th><th className="p-2">الحالة</th></tr></thead>
+          <thead><tr className="text-right border-b"><th className="p-2">الفرع</th><th className="p-2">المدينة</th><th className="p-2">العلامة</th><th className="p-2">الهاتف</th><th className="p-2">الإفطار</th><th className="p-2">الحالة</th></tr></thead>
           <tbody>
             {filtered.map((branch) => (
               <tr key={branch.id} className="border-b/40 hover:bg-secondary/20 cursor-pointer" onClick={() => setSelectedId(branch.id)}>
@@ -62,7 +62,7 @@ const AdminBranches = () => {
         <div className="glass-card p-4 space-y-3">
           <h3 className="text-lg font-semibold">تفاصيل {selected.name}</h3>
           <div className="grid md:grid-cols-2 gap-2 text-sm">{Object.entries(selected.services).map(([key, value]) => <p key={key}><span className="text-muted-foreground">{key}:</span> {value}</p>)}</div>
-          <textarea className="w-full rounded-lg bg-secondary border p-2 min-h-24" value={edits[selected.id]?.notes ?? selected.notes ?? ""} onChange={(e) => setEdits((prev) => ({ ...prev, [selected.id]: { ...prev[selected.id], notes: e.target.value } }))} placeholder="ملاحظات تشغيلية (تعديل أدمن)" />
+          <textarea className="w-full rounded-lg bg-secondary border p-2 min-h-24" value={edits[selected.id]?.notes ?? selected.notes ?? ""} onChange={(e) => setEdits((prev) => ({ ...prev, [selected.id]: { ...prev[selected.id], notes: e.target.value } }))} placeholder="ملاحظات المشرف" />
         </div>
       ) : null}
     </div>

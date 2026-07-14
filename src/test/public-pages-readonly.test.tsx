@@ -19,6 +19,6 @@ describe("public pages are read-only", () => {
   it("does not render upload file input in public upload center", () => {
     const { container } = render(<MemoryRouter><UploadCenter /></MemoryRouter>);
     expect(container.querySelector('input[type="file"]')).toBeNull();
-    expect(screen.getByText(/رفع أو إعادة تعيين البيانات يتم من لوحة الأدمن/)).toBeDefined();
+    expect(screen.getByText(/رفع البيانات أو إعادة تعيينها متاح للمستخدمين المخولين/)).toBeDefined();
   });
 });

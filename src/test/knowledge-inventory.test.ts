@@ -11,7 +11,12 @@ const normalize = (value: string) => value
   .replace(/\s+/g, " ")
   .trim()
   .replace("قرطبه", "قرطبة")
-  .replace("نارسس", "نارسيس");
+  .replace("نارسس", "نارسيس")
+  .replace(/^نارسيس ذا رويال$/, "نارسيس رويال")
+  .replace(/^نارسيس الرياض$/, "نارس الرياض")
+  .replace(/^نارسيس الحمرا$/, "نارسيس الحمراء")
+  .replace(/^بودل روضه بريده$/, "بودل الروضه")
+  .replace(/^بودل الشاطي$/, "بودل الشاطئ");
 
 describe("knowledge inventory completeness", () => {
   it("contains all brands", () => {

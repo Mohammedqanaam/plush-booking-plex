@@ -77,7 +77,15 @@ const normalizeServiceValue = (value: string): string => {
   if (isMissing(clean)) return "غير متوفر";
   if (["لايوجد", "لا يوجد", "لا"].includes(clean)) return "غير متوفر";
   if (["يوجد", "نعم"].includes(clean)) return "متوفر";
-  return clean;
+  return clean
+    .replace(/افطار/g, "إفطار")
+    .replace(/اطفال/g, "أطفال")
+    .replace(/لايوجد/g, "لا يوجد")
+    .replace(/غيرمحدد/g, "غير محدد")
+    .replace(/24H/gi, "24 ساعة")
+    .replace(/24س\b/g, "24 ساعة")
+    .replace(/\s+/g, " ")
+    .trim();
 };
 
 const hotelBranchByName = new Map(hotelBranches.map((hotel) => [normalizeSheetHotelName(hotel.name), hotel]));
@@ -91,13 +99,27 @@ const inferBrand = (name: string) => {
   return "بودل";
 };
 
+const canonicalBranchName = (name: string) => name
+  .replace(/قرطبه/g, "قرطبة")
+  .replace(/المجمعه/g, "المجمعة")
+  .replace(/الاحساء/g, "الأحساء")
+  .replace(/مكة اجياد/g, "مكة أجياد")
+  .replace(/^نارسس/g, "نارسيس")
+  .replace(/\s+/g, " ")
+  .trim()
+  .replace(/^بودل الشاطي$/, "بودل الشاطئ")
+  .replace(/^بودل روضة بريدة$/, "بودل الروضة")
+  .replace(/^نارسيس الحمرا$/, "نارسيس الحمراء")
+  .replace(/^نارسيس ذا رويال$/, "نارسيس رويال")
+  .replace(/^نارسيس الرياض$/, "نارس الرياض");
+
 const sheetHotels: MasterHotel[] = sheetOperationalHotels.map((row, index) => {
   const key = normalizeSheetHotelName(row.name);
   const master = masterHotelByName.get(key);
   const hotel = hotelBranchByName.get(key);
   return {
     id: master?.id ?? hotel?.id ?? `sheet-hotel-${index + 1}`,
-    name: row.name,
+    name: canonicalBranchName(row.name),
     brand: master?.brand ?? hotel?.group ?? inferBrand(row.name),
     city: master?.city ?? hotel?.city ?? "غير محدد",
     breakfast: row.breakfast,
@@ -151,7 +173,7 @@ const computeStatus = (hotel: MasterHotel): BranchVerificationStatus => {
   return "verified";
 };
 
-export const branches: Branch[] = branchSourceHotels.map((hotel, index) => {
+const branchRows: Branch[] = branchSourceHotels.map((hotel, index) => {
   const contacts: BranchContact[] = [];
   const hotelPhones = hotel.hotelPhone ? normalizeContactNumbers(hotel.hotelPhone) : [];
   const salesPhones = hotel.salesPhone ? normalizeContactNumbers(hotel.salesPhone) : [];
@@ -160,7 +182,7 @@ export const branches: Branch[] = branchSourceHotels.map((hotel, index) => {
 
   return {
     id: hotel.id,
-    name: hotel.name.trim(),
+    name: canonicalBranchName(hotel.name),
     city: hotel.city.trim(),
     brand: hotel.brand.trim(),
     ...(hotelPhones[0] ? { phone: hotelPhones[0] } : {}),
@@ -186,3 +208,11 @@ export const branches: Branch[] = branchSourceHotels.map((hotel, index) => {
     verificationStatus: computeStatus(hotel),
   };
 });
+
+const dedupedBranches = new Map<string, Branch>();
+for (const branch of branchRows) {
+  const key = normalizeSheetHotelName(canonicalBranchName(branch.name));
+  if (!dedupedBranches.has(key)) dedupedBranches.set(key, branch);
+}
+
+export const branches: Branch[] = [...dedupedBranches.values()];

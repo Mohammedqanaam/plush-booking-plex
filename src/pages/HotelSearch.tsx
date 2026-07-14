@@ -1,60 +1,52 @@
 import { type ReactNode, useMemo, useState } from "react";
-import { Building2, FileText, LifeBuoy, PhoneCall, Search, ShieldCheck, Sparkles, Wrench } from "lucide-react";
+import { BedDouble, Building2, PhoneCall, Presentation, Search, ShieldCheck, UtensilsCrossed } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { knowledgeEntries, quickIntents } from "@/data/operations";
 
-type GroupKey = "الكل" | "أسئلة وأجوبة" | "سياسات" | "إجراءات" | "فروع" | "جهات اتصال" | "مرافق" | "تعاميم" | "حلول";
-
-const groupAliases: Record<string, GroupKey> = {
-  "سياسات": "سياسات",
-  "إجراءات": "إجراءات",
-  "جهات اتصال": "جهات اتصال",
-  "مرافق": "مرافق",
-  "تعاميم": "تعاميم",
-};
+type GroupKey = "الكل" | "سياسات" | "فروع" | "جهات اتصال" | "وجبات" | "غرف" | "مرافق" | "قاعات";
 
 const groupIcons: Record<GroupKey, ReactNode> = {
   "الكل": <Search className="w-4 h-4" />,
-  "أسئلة وأجوبة": <LifeBuoy className="w-4 h-4" />,
   "سياسات": <ShieldCheck className="w-4 h-4" />,
-  "إجراءات": <Wrench className="w-4 h-4" />,
   "فروع": <Building2 className="w-4 h-4" />,
   "جهات اتصال": <PhoneCall className="w-4 h-4" />,
+  "وجبات": <UtensilsCrossed className="w-4 h-4" />,
+  "غرف": <BedDouble className="w-4 h-4" />,
   "مرافق": <Building2 className="w-4 h-4" />,
-  "تعاميم": <FileText className="w-4 h-4" />,
-  "حلول": <LifeBuoy className="w-4 h-4" />,
+  "قاعات": <Presentation className="w-4 h-4" />,
 };
 
-const groups: GroupKey[] = ["الكل", "أسئلة وأجوبة", "سياسات", "إجراءات", "فروع", "جهات اتصال", "مرافق", "تعاميم", "حلول"];
+const groups: GroupKey[] = ["الكل", "سياسات", "فروع", "جهات اتصال", "وجبات", "غرف", "مرافق", "قاعات"];
 
 const HotelSearch = () => {
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<GroupKey>("الكل");
 
   const normalized = query.trim().toLowerCase();
+  const hasCriteria = normalized.length > 0 || group !== "الكل";
   const results = useMemo(() => {
+    if (!hasCriteria) return [];
     const filtered = knowledgeEntries.filter((entry) => {
-      const haystack = [entry.title, entry.body, entry.group, ...entry.tags].join(" ").toLowerCase();
+      const haystack = [entry.title, entry.summary, entry.body, entry.group, ...entry.tags, ...(entry.contacts || []).map((contact) => contact.value)].join(" ").toLowerCase();
       const matchesQuery = !normalized || haystack.includes(normalized);
-      const mappedGroup = groupAliases[entry.group] || "أسئلة وأجوبة";
-      const matchesGroup = group === "الكل" || mappedGroup === group;
+      const matchesGroup = group === "الكل" || entry.group === group;
       return matchesQuery && matchesGroup;
-    });
+    }).slice(0, 40);
 
     const grouped = groups
       .filter((g) => g !== "الكل")
       .map((g) => ({
         group: g,
-        items: filtered.filter((entry) => (groupAliases[entry.group] || "أسئلة وأجوبة") === g),
+        items: filtered.filter((entry) => entry.group === g),
       }))
       .filter((bucket) => bucket.items.length > 0);
 
     return grouped;
-  }, [group, normalized]);
+  }, [group, hasCriteria, normalized]);
 
   return (
     <div className="page-wrap">
-      <PageHeader title="مستكشف المعلومات التشغيلي" subtitle="بحث تشغيلي فوري مع تصنيفات واضحة واقتراحات سريعة." icon={Sparkles} />
+      <PageHeader title="البحث" subtitle="اكتب كلمة للوصول إلى المعلومة." icon={Search} />
 
       <div className="page-surface">
 
@@ -63,7 +55,7 @@ const HotelSearch = () => {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="اكتب أول حرفين أو ثلاث: إلغاء، مدير، فطور، استلام..."
+            placeholder="مثال: إلغاء، إفطار، بودل العليا…"
             className="w-full h-11 rounded-lg bg-secondary border px-9"
           />
         </div>
@@ -87,7 +79,7 @@ const HotelSearch = () => {
               <button
                 key={g}
                 onClick={() => setGroup(g)}
-                className={`whitespace-nowrap px-3 py-2 rounded-lg text-xs border ${active ? "gold-gradient text-primary-foreground border-transparent" : "bg-secondary border-border"}`}
+                className={`whitespace-nowrap px-3 py-2 rounded-lg text-xs border ${active ? "gold-gradient text-white border-transparent" : "bg-white/80 text-foreground border-primary/20"}`}
               >
                 <span className="inline-flex items-center gap-1">{groupIcons[g]}{g}</span>
               </button>
@@ -97,8 +89,10 @@ const HotelSearch = () => {
       </div>
 
       <div className="space-y-3">
-        {results.length === 0 ? (
-          <div className="page-surface text-sm text-muted-foreground">لا توجد نتائج مطابقة. جرّب كلمات أقصر أو اختر تصنيفًا مختلفًا.</div>
+        {!hasCriteria ? (
+          <div className="page-surface text-center text-sm text-muted-foreground">اكتب كلمة أو اختر تصنيفًا لعرض النتائج.</div>
+        ) : results.length === 0 ? (
+          <div className="page-surface text-sm text-muted-foreground">لا توجد نتيجة مطابقة. جرّب كلمة أقصر.</div>
         ) : (
           results.map((bucket) => (
             <section key={bucket.group} className="space-y-2">
@@ -106,11 +100,10 @@ const HotelSearch = () => {
               <div className="grid md:grid-cols-2 gap-3">
                 {bucket.items.map((entry) => (
                   <article key={entry.id} className="page-surface">
-                    <p className="text-xs text-primary">{entry.group}</p>
                     <h4 className="font-semibold">{entry.title}</h4>
-                    <p className="text-sm text-muted-foreground">{entry.body}</p>
+                    <p className="text-sm whitespace-pre-line leading-6 text-muted-foreground">{entry.body}</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {entry.tags.map((tag) => (
+                      {entry.tags.slice(0, 2).map((tag) => (
                         <span key={tag} className="text-[11px] px-2 py-1 rounded bg-secondary border">{tag}</span>
                       ))}
                     </div>

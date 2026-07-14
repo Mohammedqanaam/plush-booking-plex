@@ -1,18 +1,37 @@
 import { useMemo, useState } from "react";
-import { BookOpenCheck, Filter, Paperclip, Search, Tags } from "lucide-react";
+import { BookOpenCheck, ExternalLink, Filter, Search, Tags } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { branchRecords, branchesByBrand, globalReferences, quickIntents } from "@/data/knowledge";
 import PageHeader from "@/components/PageHeader";
 
-type ResultCategory = "سياسات" | "فروع" | "جهات اتصال" | "وجبات" | "غرف" | "مرافق" | "قاعات" | "إجراءات";
-const categories: ResultCategory[] = ["سياسات", "فروع", "جهات اتصال", "وجبات", "غرف", "مرافق", "قاعات", "إجراءات"];
+type ResultCategory = "سياسات" | "فروع" | "جهات اتصال" | "وجبات" | "غرف" | "مرافق" | "قاعات";
+const categories: ResultCategory[] = ["سياسات", "فروع", "جهات اتصال", "وجبات", "غرف", "مرافق", "قاعات"];
+type SearchResult = {
+  id: string;
+  kind: ResultCategory;
+  title: string;
+  summary: string;
+  details: string;
+  tags: string[];
+  branch?: string;
+  brand?: string;
+  sourceLabel?: string;
+  sourceUrl?: string;
+  verificationUrl?: string;
+};
+
+const unavailableValues = new Set(["", "غير متوفر", "غير محدد", "يرجى التحقق من الفرع"]);
+const isAvailable = (value: string) => !unavailableValues.has(value.trim());
+const detailLines = (items: Array<[string, string]>) => items
+  .filter(([, value]) => isAvailable(value))
+  .map(([label, value]) => `${label}: ${value}`);
 
 const KnowledgeBank = () => {
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState<"الكل" | "Braira" | "Boudl" | "Aber" | "Narcissus" | "Z'MN">("الكل");
   const [branch, setBranch] = useState("الكل");
   const [category, setCategory] = useState<"الكل" | ResultCategory>("الكل");
-  const [selected, setSelected] = useState<{ title: string; summary: string; details: string; tags: string[]; branch?: string; brand?: string } | null>(null);
+  const [selected, setSelected] = useState<SearchResult | null>(null);
 
   const branchOptions = useMemo(() => {
     if (brand === "الكل") return ["الكل", ...branchRecords.map((b) => b.branch)];
@@ -21,26 +40,82 @@ const KnowledgeBank = () => {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const policyRows = globalReferences.map((row) => ({
+    const policyRows: SearchResult[] = globalReferences.map((row) => ({
       id: row.id,
       kind: "سياسات" as ResultCategory,
       title: row.title,
       summary: row.summary,
-      details: `${row.responseProtocol}\n\nالخطوات الداخلية:\n- ${row.internalSteps.join("\n- ")}\n\nملاحظات: ${row.relatedNotes ?? "لا يوجد"}\nالمرفق: ${row.attachmentUrl ?? "غير متوفر"}`,
+      details: [
+        row.responseProtocol,
+        `الخطوات:\n- ${row.internalSteps.join("\n- ")}`,
+        row.relatedNotes ? `ملاحظة: ${row.relatedNotes}` : "",
+      ].filter(Boolean).join("\n\n"),
       tags: [row.category, "مرجع عام"],
       brand: undefined,
       branch: undefined,
     }));
 
-    const branchRows = branchRecords.flatMap((row) => [
-      { id: `${row.id}-overview`, kind: "فروع" as ResultCategory, title: `${row.branch} - نبذة`, summary: row.overview, details: `${row.city} - ${row.region}\n${row.notes}`, tags: [row.brand, row.city], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-contacts`, kind: "جهات اتصال" as ResultCategory, title: `${row.branch} - التواصل`, summary: `الاستقبال: ${row.receptionPhone}`, details: `الفندق: ${row.hotelPhone}\nالمبيعات: ${row.salesPhone}\nالقاعات: ${row.hallPhone}\nواتساب: ${row.whatsappNumber}`, tags: [row.brand, "التواصل"], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-meals`, kind: "وجبات" as ResultCategory, title: `${row.branch} - الوجبات`, summary: row.breakfastInfo, details: `الإفطار: ${row.breakfastInfo}\nالغداء: ${row.lunchInfo}\nالعشاء: ${row.dinnerInfo}`, tags: [row.brand, "الوجبات"], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-facilities`, kind: "مرافق" as ResultCategory, title: `${row.branch} - المرافق`, summary: row.poolInfo, details: `المسبح: ${row.poolInfo}\nالمطعم: ${row.restaurantInfo}\nالسبا: ${row.spaInfo}\nالنادي: ${row.gymInfo}`, tags: [row.brand, "المرافق"], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-rooms`, kind: "غرف" as ResultCategory, title: `${row.branch} - الغرف`, summary: row.roomTypes.join("، "), details: row.roomTypes.join("\n"), tags: [row.brand, "الغرف"], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-halls`, kind: "قاعات" as ResultCategory, title: `${row.branch} - القاعات`, summary: row.hallPackages.join(" / "), details: row.hallPackages.join("\n"), tags: [row.brand, "القاعات"], brand: row.brand, branch: row.branch },
-      { id: `${row.id}-protocol`, kind: "إجراءات" as ResultCategory, title: `${row.branch} - الإجراءات`, summary: "آلية الرد المعتمدة لفريق الحجوزات", details: "اذكر السياسة وتفاصيل الفرع ورقم التواصل وحالة التصعيد.", tags: [row.brand, "إجراء"], brand: row.brand, branch: row.branch },
-    ]);
+    const branchRows: SearchResult[] = branchRecords.flatMap((row) => {
+      const contacts = detailLines([
+        ["الاستقبال", row.receptionPhone],
+        ["الفندق", row.hotelPhone],
+        ["المبيعات", row.salesPhone],
+        ["القاعات", row.hallPhone],
+        ["واتساب", row.whatsappNumber],
+      ]);
+      const meals = detailLines([
+        ["الإفطار", row.breakfastInfo],
+        ["الغداء", row.lunchInfo],
+        ["العشاء", row.dinnerInfo],
+      ]);
+      const facilities = detailLines([
+        ["المسبح", row.poolInfo],
+        ["المطعم", row.restaurantInfo],
+        ["المقهى", row.coffeeShopInfo],
+        ["المواقف", row.parkingInfo],
+        ["السبا", row.spaInfo],
+        ["النادي", row.gymInfo],
+      ]);
+      const halls = row.hallPackages.filter(isAvailable);
+      const sheetSource = row.sourceFiles.find((source) => source.startsWith("http"));
+      const rows: Array<SearchResult | null> = [
+        {
+          id: `${row.id}-overview`,
+          kind: "فروع",
+          title: row.branch,
+          summary: `${row.city} · ${row.region}`,
+          details: `${row.overview}\n${row.notes}`,
+          tags: [row.brand, row.city],
+          brand: row.brand,
+          branch: row.branch,
+          sourceLabel: sheetSource ? "شيت معلومات الفروع" : "ملف الفروع الداخلي",
+          sourceUrl: sheetSource,
+        },
+        contacts.length ? {
+          id: `${row.id}-contacts`, kind: "جهات اتصال", title: `تواصل ${row.branch}`, summary: contacts[0], details: contacts.join("\n"), tags: [row.brand, "تواصل"], brand: row.brand, branch: row.branch,
+          sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
+        } : null,
+        meals.length ? {
+          id: `${row.id}-meals`, kind: "وجبات", title: `وجبات ${row.branch}`, summary: meals[0], details: meals.join("\n"), tags: [row.brand, "وجبات"], brand: row.brand, branch: row.branch,
+          sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
+        } : null,
+        facilities.length ? {
+          id: `${row.id}-facilities`, kind: "مرافق", title: `مرافق ${row.branch}`, summary: facilities[0], details: facilities.join("\n"), tags: [row.brand, "مرافق"], brand: row.brand, branch: row.branch,
+          sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
+        } : null,
+        row.roomTypes.length ? {
+          id: `${row.id}-rooms`, kind: "غرف", title: `غرف ${row.branch}`, summary: row.roomTypes.slice(0, 2).join("، "),
+          details: `${row.roomTypes.map((room) => `• ${room}`).join("\n")}\n\nتحتاج هذه القائمة إلى مطابقة نهائية مع نظام الفندق قبل تأكيدها للضيف.`,
+          tags: [row.brand, "غرف", "تحتاج تحقق"], brand: row.brand, branch: row.branch,
+          sourceLabel: "ملف الغرف الداخلي — يحتاج تحقق", verificationUrl: "https://www.boudl.com/",
+        } : null,
+        halls.length ? {
+          id: `${row.id}-halls`, kind: "قاعات", title: `قاعات ${row.branch}`, summary: halls[0], details: halls.map((hall) => `• ${hall}`).join("\n"), tags: [row.brand, "قاعات"], brand: row.brand, branch: row.branch,
+          sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
+        } : null,
+      ];
+      return rows.filter((item): item is SearchResult => Boolean(item));
+    });
 
     return [...policyRows, ...branchRows].filter((row) => {
       const matchBrand = brand === "الكل" || row.brand === brand;
@@ -52,22 +127,25 @@ const KnowledgeBank = () => {
     });
   }, [query, brand, branch, category]);
 
+  const hasCriteria = query.trim().length > 0 || brand !== "الكل" || branch !== "الكل" || category !== "الكل";
+  const visibleResults = hasCriteria ? results.slice(0, 60) : [];
+
   return (
     <div className="page-wrap">
-      <PageHeader title="بنك المعلومات" subtitle="بحث مصنف وسريع في البيانات الحالية." icon={BookOpenCheck} />
+      <PageHeader title="المعلومات" subtitle="اختر فرعًا أو اكتب كلمة." icon={BookOpenCheck} />
 
       <section className="page-surface space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <p>الصفحة للعرض فقط — مرجع سريع للمعلومات المعتمدة.</p>
-          <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary">{results.length} نتيجة</span>
+          <p>الصفحة للعرض فقط؛ الأسعار والمواعيد المتغيرة تُراجع قبل تأكيدها.</p>
+          {hasCriteria ? <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary">{results.length} نتيجة</span> : null}
         </div>
         <div className="grid md:grid-cols-4 gap-2">
           <div className="relative md:col-span-2">
             <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input className="h-11 rounded-xl bg-secondary/70 border px-10 w-full" placeholder="ابحث بالكلمات والحروف" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input className="h-11 rounded-xl bg-secondary/70 border px-10 w-full" placeholder="مثال: إفطار، مسبح، بودل العليا…" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={brand} onChange={(e) => { setBrand(e.target.value as typeof brand); setBranch("الكل"); }}>
-            <option value="الكل">كل البراندات</option><option value="Braira">Braira</option><option value="Boudl">Boudl</option><option value="Aber">Aber</option><option value="Narcissus">Narcissus</option><option value="Z'MN">Z'MN</option>
+            <option value="الكل">كل العلامات</option><option value="Braira">Braira</option><option value="Boudl">Boudl</option><option value="Aber">Aber</option><option value="Narcissus">Narcissus</option><option value="Z'MN">Z'MN</option>
           </select>
           <select className="h-11 rounded-xl bg-secondary/70 border px-3" value={branch} onChange={(e) => setBranch(e.target.value)}>{branchOptions.map((b) => <option key={b}>{b}</option>)}</select>
         </div>
@@ -83,7 +161,7 @@ const KnowledgeBank = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Tags className="w-3.5 h-3.5" /> نوايا بحث سريعة</span>
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Tags className="w-3.5 h-3.5" /> بحث سريع</span>
           {quickIntents.map((intent) => (
             <button key={intent} onClick={() => setQuery(intent)} className="text-xs px-3 py-1.5 rounded-full border border-primary/18 bg-secondary/24 hover:border-primary/50 interactive">
               {intent}
@@ -93,17 +171,20 @@ const KnowledgeBank = () => {
       </section>
 
       <div className="grid md:grid-cols-2 gap-3">
-        {results.length ? results.map((item) => (
+        {!hasCriteria ? (
+          <div className="md:col-span-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">ابدأ بالبحث أو اختر علامة أو فرعًا. لن تُعرض مئات السجلات دفعة واحدة.</div>
+        ) : visibleResults.length ? visibleResults.map((item) => (
           <button key={item.id} className="page-surface min-h-[126px] text-right card-hover" onClick={() => setSelected(item)}>
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-xs px-2 py-1 rounded-full border border-primary/30 text-primary bg-primary/10">{item.kind}</span>
-              <Paperclip className="w-4 h-4 text-muted-foreground" />
             </div>
             <h3 className="font-semibold leading-6 text-sm md:text-base">{item.title}</h3>
             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{item.summary}</p>
           </button>
-        )) : <div className="md:col-span-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">لا توجد نتائج مطابقة. جرّب كلمات بحث أخرى أو غيّر الفلاتر.</div>}
+        )) : <div className="md:col-span-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">لا توجد نتيجة مطابقة. جرّب كلمة أقصر أو غيّر الفلاتر.</div>}
       </div>
+
+      {results.length > visibleResults.length ? <p className="text-center text-xs text-muted-foreground">تظهر أول {visibleResults.length} نتيجة. استخدم اسم الفرع لتضييق البحث.</p> : null}
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="max-w-2xl glass-card border-primary/20">
@@ -116,6 +197,16 @@ const KnowledgeBank = () => {
               <div className="rounded-xl border border-primary/20 bg-secondary/24 p-3 whitespace-pre-line text-sm leading-7 max-h-[50vh] overflow-auto custom-scrollbar">
                 {selected.details}
               </div>
+              {selected.sourceLabel ? selected.sourceUrl ? (
+                <a className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline" href={selected.sourceUrl} target="_blank" rel="noreferrer">
+                  {selected.sourceLabel} <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              ) : <p className="text-xs text-muted-foreground">المصدر: {selected.sourceLabel}</p> : null}
+              {selected.verificationUrl ? (
+                <a className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline" href={selected.verificationUrl} target="_blank" rel="noreferrer">
+                  التحقق من موقع بودل <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              ) : null}
               <div className="flex flex-wrap gap-2">
                 {selected.tags.map((tag) => <span key={tag} className="text-xs px-2 py-1 rounded-full bg-secondary/70 border border-primary/18">{tag}</span>)}
               </div>

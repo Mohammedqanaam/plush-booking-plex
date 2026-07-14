@@ -111,7 +111,7 @@ const Employees = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="قائمة الموظفين" subtitle="مؤشرات الأداء المعتمدة" icon={UsersRound} />
+      <PageHeader title="الموظفون" subtitle="الحجوزات المؤكدة والملغاة." icon={UsersRound} />
 
       <div className="page-surface space-y-3">
         <div className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto]">
@@ -256,7 +256,7 @@ const Employees = () => {
         ) : canManage ? (
           <p className="text-xs text-muted-foreground inline-flex items-center gap-2">
             <BadgeCheck className="w-4 h-4 text-primary" />
-            إعدادات العرض متاحة للأدمن فقط.
+            إعدادات العرض متاحة للمشرف فقط.
           </p>
         ) : null}
       </div>

@@ -44,19 +44,19 @@ const Contacts = () => {
 
   return (
     <div className="page-wrap-narrow">
-      <PageHeader title="طلبات التواصل" subtitle="إنشاء طلب تواصل للضيف" icon={PhoneCall} />
+      <PageHeader title="طلب تواصل" subtitle="أدخل بيانات الضيف والفرع." icon={PhoneCall} />
 
       {submitted ? (
         <div className="page-surface text-center space-y-3 animate-fade-in">
           <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-300" />
-          <p className="font-semibold text-lg">تم إنشاء طلب التواصل بنجاح.</p>
+          <p className="font-semibold text-lg">تم إنشاء الطلب.</p>
           {recentRequests[0]?.requestNo ? <p className="text-sm font-bold text-primary">رقم الطلب: {recentRequests[0].requestNo}</p> : null}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="page-surface space-y-3">
           <div className="grid md:grid-cols-2 gap-3">
             <div className="space-y-2">
-              <label className="text-sm font-medium">البراند</label>
+              <label className="text-sm font-medium">العلامة</label>
               <div className="relative">
                 <select
                   required
@@ -64,7 +64,7 @@ const Contacts = () => {
                   onChange={(e) => setForm({ ...form, brand: e.target.value, branchName: "" })}
                   className={`${inputClass} appearance-none pl-10`}
                 >
-                  <option value="">-- اختر البراند --</option>
+                  <option value="">اختر العلامة</option>
                   {brands.map((brand) => (
                     <option key={brand} value={brand}>{brand}</option>
                   ))}
@@ -83,7 +83,7 @@ const Contacts = () => {
                   className={`${inputClass} appearance-none pl-10`}
                   disabled={!form.brand}
                 >
-                  <option value="">-- اختر الفرع --</option>
+                  <option value="">اختر الفرع</option>
                   {branches.map((h) => (
                     <option key={h.id} value={h.name}>
                       {h.name} - {h.city}
@@ -114,15 +114,14 @@ const Contacts = () => {
 
           <button type="submit" disabled={submitting} className="w-full h-10 rounded-xl gold-gradient text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
             <Send className="w-4 h-4" />
-            {submitting ? "جاري الإنشاء..." : "إنشاء طلب تواصل"}
+            {submitting ? "جاري الحفظ..." : "حفظ الطلب"}
           </button>
         </form>
       )}
 
-      <div className="page-surface space-y-2">
+      {recentRequests.length ? <div className="page-surface space-y-2">
         <h3 className="text-sm font-semibold inline-flex items-center gap-1"><Clock3 className="w-4 h-4 text-primary" /> آخر الطلبات</h3>
-        {recentRequests.length ? (
-          recentRequests.map((req) => (
+        {recentRequests.map((req) => (
             <div key={req.id} className="rounded-xl border border-primary/18 bg-secondary/24 p-3 flex items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-medium inline-flex items-center gap-2"><Hash className="w-3.5 h-3.5 text-primary" />{req.requestNo}</p>
@@ -131,11 +130,8 @@ const Contacts = () => {
               </div>
               <span className="text-xs px-2 py-1 rounded-full bg-primary/15 text-primary">{req.status === "new" ? "جديد" : "تم"}</span>
             </div>
-          ))
-        ) : (
-          <p className="text-xs text-muted-foreground">لا توجد طلبات حالية.</p>
-        )}
-      </div>
+          ))}
+      </div> : null}
     </div>
   );
 };

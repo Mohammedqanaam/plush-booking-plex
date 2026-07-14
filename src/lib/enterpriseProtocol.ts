@@ -73,7 +73,7 @@ export const COMPLAINT_CATEGORIES: ComplaintCategoryMap = {
   ],
 };
 
-export const DEFAULT_WHATSAPP_TEMPLATE = `رقم الشكوى: {{complaintNo}}\nالعلامة التجارية: {{brand}}\nالفرع: {{branch}}\nتصنيف الشكوى: {{mainCategory}}\nالتصنيف الفرعي: {{subCategory}}\n\nاسم الضيف: {{guestName}}\nرقم الحجز: {{bookingMobile}}\nرقم الجناح: {{suiteNumber}}\nتاريخ الدخول: {{checkInDate}}\nحالة النزيل داخل الفندق: {{inHouse}}\nالأولوية: {{urgency}}\n\nيرجى التعامل حسب البروتوكول التشغيلي.`;
+export const DEFAULT_WHATSAPP_TEMPLATE = `رقم الشكوى: {{complaintNo}}\nالعلامة التجارية: {{brand}}\nالفرع: {{branch}}\nتصنيف الشكوى: {{mainCategory}}\nالتصنيف الفرعي: {{subCategory}}\n\nاسم الضيف: {{guestName}}\nرقم الحجز: {{bookingMobile}}\nرقم الجناح: {{suiteNumber}}\nتاريخ الدخول: {{checkInDate}}\nحالة النزيل داخل الفندق: {{inHouse}}\nالأولوية: {{urgency}}\n\nيرجى التعامل حسب الإجراء المعتمد.`;
 
 export const DEFAULT_EMAIL_TEMPLATE = `
 <h2>Complaint {{complaintNo}}</h2>

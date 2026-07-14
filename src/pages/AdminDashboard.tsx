@@ -103,7 +103,7 @@ const AdminDashboard = () => {
     <div className="page-wrap">
       <PageHeader
         title="لوحة المشرف"
-        subtitle="إدارة المستخدمين والبيانات والإعدادات التشغيلية."
+        subtitle="إدارة المستخدمين والبيانات والإعدادات."
         icon={Settings}
         actions={<button className="h-10 px-4 rounded-xl border border-primary/18 bg-secondary/40 shrink-0 inline-flex items-center gap-2" onClick={async () => { await api.logout(); clearAdminSession(); navigate("/"); }}><LogOut className="w-4 h-4" /> تسجيل الخروج</button>}
       />

@@ -40,7 +40,7 @@ const OperationsSettings = () => {
             await api.updateSettings({ siteTitle, themePreset });
             setMsg("تم حفظ الإعدادات والثيم بنجاح");
           } catch {
-            setError("تعذر حفظ الإعدادات. يرجى المحاولة مجدداً.");
+            setError("تعذر حفظ الإعدادات. يرجى المحاولة مجددًا.");
           }
         }}>حفظ الإعدادات</button>
       </div>

@@ -14,7 +14,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 rounded-[1.35rem] border border-border/20 bg-background/88 backdrop-blur-2xl safe-area-bottom shadow-[0_18px_44px_rgba(0,0,0,0.35)]">
+    <nav className="relative z-50 mx-3 mb-3 shrink-0 rounded-[1.35rem] border border-border/20 bg-background/92 backdrop-blur-2xl safe-area-bottom shadow-[0_-12px_32px_rgba(0,0,0,0.12)] md:hidden">
       <div className="mx-auto flex h-[64px] max-w-xl items-center justify-around gap-1 px-2 pb-1">
         {mainNavItems.map((item) => {
           const isActive = location.pathname === item.path;

@@ -27,7 +27,7 @@ const AdminKnowledgeBank = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="h-11 rounded-xl bg-secondary border px-10 w-full"
-            placeholder="بحث بالفرع/المدينة/البراند"
+            placeholder="بحث بالفرع أو المدينة أو العلامة"
           />
         </div>
         <p className="text-xs text-muted-foreground">إجمالي المراجع العامة: {globalReferences.length}</p>

@@ -5,7 +5,6 @@ import BottomNav from "./BottomNav";
 import RiyadhClock from "./RiyadhClock";
 import { api } from "@/lib/api";
 import ViewerPreferences from "./ViewerPreferences";
-import ScrollTopButton from "./ScrollTopButton";
 import AnalyticsTracker from "./AnalyticsTracker";
 
 const desktopNav = [
@@ -79,7 +78,7 @@ const Layout = () => {
         </div>
       </header>
 
-      <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-[calc(6.25rem+env(safe-area-inset-bottom))] md:pb-8" key={location.pathname}>
+      <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-3 md:pb-8" key={location.pathname}>
         <div className="content-container pt-3 md:pt-4">
           <Outlet />
         </div>
@@ -88,12 +87,11 @@ const Layout = () => {
       <footer className="hidden md:block border-t border-border/15 bg-secondary/12 backdrop-blur-xl">
         <div className="content-container h-[60px] flex items-center justify-between text-xs text-muted-foreground">
           <p>{siteTitle}</p>
-          <p>منصة التشغيل والمعرفة</p>
+          <p>الحجز المركزي</p>
           <p>آخر تحديث اليوم {lastUpdatedAt}</p>
         </div>
       </footer>
 
-      <ScrollTopButton />
       <BottomNav />
     </div>
   );

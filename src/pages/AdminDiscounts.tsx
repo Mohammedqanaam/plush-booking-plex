@@ -17,7 +17,7 @@ const AdminDiscounts = () => {
   const filtered = useMemo(() => items.filter((i) => i.brand === activeBrand), [items, activeBrand]);
 
   return <div className="page-wrap-narrow">
-    <PageHeader title="إدارة الخصومات" subtitle="إنشاء وتحديث عروض الخصم حسب البراند." icon={BadgePercent} />
+    <PageHeader title="إدارة الخصومات" subtitle="إنشاء وتحديث عروض الخصم حسب العلامة." icon={BadgePercent} />
     <div className="flex gap-2 overflow-x-auto custom-scrollbar">{brands.map((b) => <button key={b} className={`px-3 h-10 rounded-lg ${activeBrand === b ? "gold-gradient text-primary-foreground" : "glass-card"}`} onClick={() => setActiveBrand(b)}>{b}</button>)}</div>
     <div className="glass-card p-4 flex gap-2">
       <input className="h-10 px-3 rounded-lg bg-secondary border flex-1" placeholder="عنوان الخصم" value={title} onChange={(e) => setTitle(e.target.value)} />

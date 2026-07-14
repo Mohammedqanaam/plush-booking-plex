@@ -4,7 +4,7 @@ import { api, type AnalyticsSummary } from "@/lib/api";
 
 const pageNames: Record<string, string> = {
   "/": "الرئيسية",
-  "/operations": "البحث التشغيلي",
+  "/operations": "البحث",
   "/branches": "دليل الفروع",
   "/knowledge-bank": "بنك المعلومات",
   "/policies": "السياسات",
@@ -132,7 +132,7 @@ const AdminAnalytics = () => {
         {[
           ["نوع الجهاز", data?.devices || {}],
           ["المتصفح", data?.browsers || {}],
-          ["نظام التشغيل", data?.operatingSystems || {}],
+          ["النظام", data?.operatingSystems || {}],
         ].map(([title, values]) => (
           <section key={title as string} className="page-surface space-y-3">
             <h3 className="text-sm font-bold">{title as string}</h3>

@@ -977,8 +977,8 @@ export const hotelBranches: HotelBranch[] = [
   },
   {
     id: "boudl-bani-amro",
-    name: "بودل بني عمرو",
-    group: "بودل",
+    name: "عابر بني عمرو",
+    group: "عابر",
     city: "عسير",
     phone: "172820001",
     pool: "لا يوجد مسبح",
