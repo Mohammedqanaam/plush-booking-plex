@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Building2, ExternalLink, MapPin, Phone, Search } from "lucide-react";
+import { BadgeCheck, Building2, ExternalLink, Hotel, MapPin, Phone, Search, Tags } from "lucide-react";
 import { branches, type Branch, type BranchServices } from "@/data/branches";
-import { HOTEL_INFORMATION_SHEET_URL, HOTEL_INFORMATION_SNAPSHOT_DATE } from "@/data/sheetOperationalData";
+import { HOTEL_INFORMATION_SHEET_URL, HOTEL_INFORMATION_SNAPSHOT_DATE, sheetOperationalHotels } from "@/data/sheetOperationalData";
 import PageHeader from "@/components/PageHeader";
 
 const serviceLabels: Record<keyof BranchServices, string> = {
@@ -74,6 +74,8 @@ const Branches = () => {
   const [visibleCount, setVisibleCount] = useState(12);
 
   const brands = useMemo(() => ["الكل", ...Array.from(new Set(branches.map((branch) => branch.brand)))], []);
+  const citiesCount = useMemo(() => new Set(branches.map((branch) => branch.city)).size, []);
+  const sourceCoverage = `${branches.length}/${sheetOperationalHotels.length}`;
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return branches.filter((branch) => {
@@ -91,7 +93,25 @@ const Branches = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="الفروع" subtitle="ابحث بالاسم أو المدينة." icon={Building2} />
+      <PageHeader title="الفروع" subtitle="الأرقام والخدمات في دليل واحد." icon={Building2} />
+
+      <section className="grid grid-cols-3 gap-2" aria-label="ملخص الفروع">
+        <div className="branch-summary-card">
+          <Hotel className="h-5 w-5" />
+          <strong>{branches.length}</strong>
+          <span>فرعًا</span>
+        </div>
+        <div className="branch-summary-card branch-summary-card--blue">
+          <MapPin className="h-5 w-5" />
+          <strong>{citiesCount}</strong>
+          <span>مدن</span>
+        </div>
+        <div className="branch-summary-card branch-summary-card--green">
+          <BadgeCheck className="h-5 w-5" />
+          <strong>{sourceCoverage}</strong>
+          <span>تغطية الشيت</span>
+        </div>
+      </section>
 
       <section className="page-surface">
         <div className="grid gap-2 md:grid-cols-[1fr_220px]">
@@ -103,7 +123,10 @@ const Branches = () => {
             {brands.map((item) => <option key={item} value={item}>{item === "الكل" ? "كل العلامات" : item}</option>)}
           </select>
         </div>
-        <p className="mt-2 text-[11px] text-muted-foreground">هذه الصفحة للعرض فقط.</p>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <p>هذه الصفحة للعرض فقط · آخر مطابقة {sourceDate}</p>
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1"><Tags className="h-3.5 w-3.5" /> {brands.length - 1} علامات</span>
+        </div>
       </section>
 
       {!filtered.length ? (
@@ -119,7 +142,7 @@ const Branches = () => {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h2 className="font-black">{branch.name}</h2>
-                        <p className="mt-1 text-xs text-muted-foreground">{branch.city} · {branch.brand}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{branch.city} · <span className="font-semibold text-foreground">{branch.brand}</span></p>
                       </div>
                       <span className="rounded-full border border-primary/18 bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">{isSelected ? "مفتوح" : "التفاصيل"}</span>
                     </div>

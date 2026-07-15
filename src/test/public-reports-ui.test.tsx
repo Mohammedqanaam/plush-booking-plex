@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import Employees from "@/pages/Employees";
 import BookingReports from "@/pages/BookingReports";
 import { api, type PublicBookingReport } from "@/lib/api";
 
@@ -28,22 +27,22 @@ afterEach(() => {
 });
 
 describe("public read-only reports", () => {
-  it("shows employee aggregates without management controls", async () => {
+  it("shows employee aggregates inside the booking report without management controls", async () => {
     vi.spyOn(api, "getPublicBookingReport").mockResolvedValue(report);
-    const { container } = render(<MemoryRouter><Employees /></MemoryRouter>);
+    const { container } = render(<MemoryRouter initialEntries={["/booking-reports?section=employees"]}><BookingReports /></MemoryRouter>);
 
     expect(await screen.findByText("موظف تجريبي")).toBeDefined();
-    expect(screen.getByText(/وضع مشاهدة للزوار/)).toBeDefined();
+    expect(screen.getByText(/عرض فقط دون بيانات الضيوف/)).toBeDefined();
     expect(container.querySelector('input[type="file"]')).toBeNull();
     expect(screen.queryByText("حفظ التغييرات")).toBeNull();
   });
 
-  it("keeps booking reports distinct from employee performance", async () => {
+  it("shows the booking summary in the same report page", async () => {
     vi.spyOn(api, "getPublicBookingReport").mockResolvedValue(report);
     render(<MemoryRouter><BookingReports /></MemoryRouter>);
 
-    expect(await screen.findByText("توزيع الحالات")).toBeDefined();
-    expect(screen.getByText("ملخص الحالات والأعداد دون بيانات الضيوف.")).toBeDefined();
-    expect(screen.getByText(/السجلات التفصيلية وأدوات الرفع محمية/)).toBeDefined();
+    expect(await screen.findByText("حالة الحجوزات")).toBeDefined();
+    expect(screen.getByText("ملخص الحجوزات ونتائج الموظفين.")).toBeDefined();
+    expect(screen.getByText(/عرض فقط دون بيانات الضيوف/)).toBeDefined();
   });
 });

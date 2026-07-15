@@ -1,8 +1,23 @@
 import type { ThemeVars } from "@/theme/enterpriseThemeTypes";
 
-export const DEFAULT_PRESET = "executive-dark-glass";
+export const DEFAULT_PRESET = "ios-hospitality";
 
 export const themeMap: Record<string, ThemeVars> = {
+  "ios-hospitality": {
+    backgroundDark: "240 6% 10%",
+    backgroundLight: "240 20% 97%",
+    foregroundDark: "0 0% 98%",
+    foregroundLight: "240 3% 11%",
+    cardDark: "240 5% 16%",
+    cardLight: "0 0% 100%",
+    cardForegroundDark: "0 0% 98%",
+    cardForegroundLight: "240 3% 11%",
+    primary: "36 33% 46%",
+    accent: "211 100% 50%",
+    borderDark: "240 4% 28%",
+    borderLight: "240 5% 84%",
+    ring: "211 100% 50%",
+  },
   "executive-dark-glass": {
     backgroundDark: "224 52% 6%",
     backgroundLight: "220 33% 97%",

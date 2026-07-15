@@ -3,19 +3,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 import EnterpriseThemeLoader from "./components/EnterpriseThemeLoader";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Employees = lazy(() => import("./pages/Employees"));
 const BookingReports = lazy(() => import("./pages/BookingReports"));
 const Contacts = lazy(() => import("./pages/Contacts"));
 const HotelSearch = lazy(() => import("./pages/HotelSearch"));
 const Branches = lazy(() => import("./pages/Branches"));
 const KnowledgeBank = lazy(() => import("./pages/KnowledgeBank"));
-const Policies = lazy(() => import("./pages/Policies"));
 const Complaints = lazy(() => import("./pages/Complaints"));
 const UploadCenter = lazy(() => import("./pages/UploadCenter"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -43,12 +41,12 @@ const App = () => (
           <Route path="/boudl-preview/*" element={<BoudlPrototype />} />
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/employees" element={<Employees />} />
+            <Route path="/employees" element={<Navigate to="/booking-reports?section=employees" replace />} />
             <Route path="/booking-reports" element={<BookingReports />} />
             <Route path="/operations" element={<HotelSearch />} />
             <Route path="/branches" element={<Branches />} />
             <Route path="/knowledge-bank" element={<KnowledgeBank />} />
-            <Route path="/policies" element={<Policies />} />
+            <Route path="/policies" element={<Navigate to="/" replace />} />
             <Route path="/complaints" element={<Complaints />} />
             <Route path="/upload-center" element={<UploadCenter />} />
             <Route path="/contact-requests" element={<Contacts />} />

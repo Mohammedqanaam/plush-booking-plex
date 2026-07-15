@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
-import { ArrowLeft, BadgeCheck, BarChart3, CalendarDays, ShieldCheck, UsersRound } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { BarChart3, CalendarDays, LockKeyhole, Search } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { api, type PublicBookingReport } from "@/lib/api";
+
+type ReportSection = "summary" | "employees";
+type SortKey = "confirmed" | "total" | "rate" | "name";
 
 const formatDate = (value: string | null) => {
   if (!value) return "غير متاح";
@@ -10,9 +13,14 @@ const formatDate = (value: string | null) => {
 };
 
 const BookingReports = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [report, setReport] = useState<PublicBookingReport | null>(null);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortKey>("confirmed");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const section: ReportSection = searchParams.get("section") === "employees" ? "employees" : "summary";
 
   useEffect(() => {
     api.getPublicBookingReport()
@@ -20,85 +28,138 @@ const BookingReports = () => {
         setReport(data);
         setError("");
       })
-      .catch(() => setError("تعذر تحميل تقرير الحجوزات حاليًا."))
+      .catch(() => setError("تعذر تحميل التقرير حاليًا."))
       .finally(() => setLoading(false));
   }, []);
 
+  const employees = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("ar");
+    const rows = (report?.employees || []).filter((employee) => !query || employee.name.toLocaleLowerCase("ar").includes(query));
+    return [...rows].sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name, "ar");
+      if (sortBy === "total") return b.total - a.total || b.confirmed - a.confirmed;
+      if (sortBy === "rate") return b.confirmationRate - a.confirmationRate || b.confirmed - a.confirmed;
+      return b.confirmed - a.confirmed || b.total - a.total;
+    });
+  }, [report, search, sortBy]);
+
+  const setSection = (next: ReportSection) => {
+    setSearchParams(next === "employees" ? { section: "employees" } : {}, { replace: true });
+  };
+
   return (
     <div className="page-wrap">
-      <PageHeader
-        title="تقارير الحجوزات"
-        subtitle="ملخص الحالات والأعداد دون بيانات الضيوف."
-        icon={BarChart3}
-        actions={
-          <Link to="/employees" className="hidden h-10 items-center gap-2 rounded-xl border border-primary/20 bg-secondary/40 px-3 text-xs font-bold sm:inline-flex">
-            أداء الموظفين <ArrowLeft className="h-4 w-4" />
-          </Link>
-        }
-      />
+      <PageHeader title="تقارير الحجوزات" subtitle="ملخص الحجوزات ونتائج الموظفين." icon={BarChart3} />
 
-      <div className="flex items-center gap-2 rounded-2xl border border-emerald-400/20 bg-emerald-400/8 px-4 py-3 text-xs text-emerald-100">
-        <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-300" />
-        <span>تقرير عام للعرض فقط؛ السجلات التفصيلية وأدوات الرفع محمية داخل لوحة المشرف.</span>
+      <div className="ios-segmented" role="tablist" aria-label="أقسام التقرير">
+        <button role="tab" aria-selected={section === "summary"} className={section === "summary" ? "is-active" : ""} onClick={() => setSection("summary")}>الملخص</button>
+        <button role="tab" aria-selected={section === "employees"} className={section === "employees" ? "is-active" : ""} onClick={() => setSection("employees")}>نتائج الموظفين</button>
       </div>
 
-      {loading ? <div className="page-surface text-sm text-muted-foreground">جاري إعداد التقرير…</div> : null}
-      {error ? <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}
+      <div className="viewer-note">
+        <LockKeyhole className="h-[18px] w-[18px]" strokeWidth={1.8} />
+        <span>عرض فقط دون بيانات الضيوف أو أدوات تعديل.</span>
+      </div>
 
-      {report ? (
-        <>
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      {loading ? <div className="page-surface text-sm text-muted-foreground">جاري تحميل التقرير…</div> : null}
+      {error ? <div className="rounded-2xl border border-destructive/25 bg-destructive/5 p-4 text-sm text-destructive">{error}</div> : null}
+
+      {report && section === "summary" ? (
+        <div className="space-y-4">
+          <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[
-              { label: "إجمالي الحجوزات", value: report.summary.classifiedTotal, tone: "text-primary" },
-              { label: "المؤكدة", value: report.summary.confirmed, tone: "text-emerald-300" },
-              { label: "الملغاة", value: report.summary.cancelled, tone: "text-amber-300" },
-              { label: "نسبة التأكيد", value: `${report.summary.confirmationRate}%`, tone: "text-sky-300" },
-              { label: "عدد الموظفين", value: report.summary.employeeCount, tone: "text-foreground" },
+              { label: "إجمالي الحجوزات", value: report.summary.classifiedTotal, tone: "" },
+              { label: "المؤكدة", value: report.summary.confirmed, tone: "metric-success" },
+              { label: "الملغاة", value: report.summary.cancelled, tone: "metric-warning" },
+              { label: "نسبة التأكيد", value: `${report.summary.confirmationRate}%`, tone: "metric-accent" },
             ].map((item) => (
-              <div key={item.label} className="compact-card">
-                <p className="text-xs text-muted-foreground">{item.label}</p>
-                <p className={`mt-2 kpi-value ${item.tone}`}>{typeof item.value === "number" ? item.value.toLocaleString("ar-SA") : item.value}</p>
-              </div>
+              <article key={item.label} className="metric-card">
+                <p>{item.label}</p>
+                <strong className={item.tone}>{typeof item.value === "number" ? item.value.toLocaleString("ar-SA") : item.value}</strong>
+              </article>
             ))}
           </section>
 
-          <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
-            <div className="page-surface space-y-5">
+          <section className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
+            <article className="page-surface space-y-5">
               <div>
-                <h2 className="section-title">توزيع الحالات</h2>
-                <p className="mt-1 text-xs text-muted-foreground">النسب محسوبة من الحجوزات المصنفة فقط.</p>
+                <h2 className="section-title">حالة الحجوزات</h2>
+                <p className="mt-1 text-xs text-muted-foreground">من إجمالي الحجوزات المصنفة.</p>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div>
                   <div className="mb-2 flex items-center justify-between text-sm"><span>مؤكد</span><strong>{report.summary.confirmationRate}%</strong></div>
-                  <div className="h-3 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-emerald-400" style={{ width: `${report.summary.confirmationRate}%` }} /></div>
+                  <div className="report-track"><span className="report-fill is-success" style={{ width: `${report.summary.confirmationRate}%` }} /></div>
                 </div>
                 <div>
                   <div className="mb-2 flex items-center justify-between text-sm"><span>ملغي</span><strong>{report.summary.cancelRate}%</strong></div>
-                  <div className="h-3 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-amber-400" style={{ width: `${report.summary.cancelRate}%` }} /></div>
+                  <div className="report-track"><span className="report-fill is-warning" style={{ width: `${report.summary.cancelRate}%` }} /></div>
                 </div>
               </div>
-              <Link to="/employees" className="inline-flex h-11 items-center gap-2 rounded-xl border border-primary/20 bg-primary/8 px-4 text-sm font-bold text-primary">
-                <UsersRound className="h-4 w-4" /> عرض أداء الموظفين <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </div>
+              <button className="ios-link-button" onClick={() => setSection("employees")}>عرض نتائج الموظفين</button>
+            </article>
 
-            <div className="page-surface space-y-4">
-              <h2 className="section-title">معلومات التقرير</h2>
-              <div className="compact-card flex items-center gap-3">
-                <CalendarDays className="h-5 w-5 text-primary" />
-                <div><p className="text-xs text-muted-foreground">الفترة</p><p className="font-bold">{report.period.label}</p></div>
+            <article className="page-surface space-y-3">
+              <h2 className="section-title">بيانات التقرير</h2>
+              <div className="info-row">
+                <CalendarDays className="h-5 w-5" strokeWidth={1.7} />
+                <div><p>الفترة</p><strong>{report.period.label}</strong></div>
               </div>
-              <div className="compact-card flex items-center gap-3">
-                <BadgeCheck className="h-5 w-5 text-primary" />
-                <div><p className="text-xs text-muted-foreground">آخر تحديث للبيانات</p><p className="font-bold">{formatDate(report.updatedAt)}</p></div>
+              <div className="info-row">
+                <BarChart3 className="h-5 w-5" strokeWidth={1.7} />
+                <div><p>آخر تحديث</p><strong>{formatDate(report.updatedAt)}</strong></div>
               </div>
-              <div className="rounded-xl border border-border/20 bg-secondary/20 p-3 text-xs leading-6 text-muted-foreground">
-                رُفع {report.summary.uploadedRecords.toLocaleString("ar-SA")} سجل، وصُنّف {report.summary.classifiedTotal.toLocaleString("ar-SA")} منها. السجلات غير المعروفة: {report.summary.ignored.toLocaleString("ar-SA")}.
-              </div>
-            </div>
+              <p className="data-footnote">تم تصنيف {report.summary.classifiedTotal.toLocaleString("ar-SA")} من أصل {report.summary.uploadedRecords.toLocaleString("ar-SA")} سجل. غير المصنف: {report.summary.ignored.toLocaleString("ar-SA")}.</p>
+            </article>
           </section>
-        </>
+        </div>
+      ) : null}
+
+      {report && section === "employees" ? (
+        <section className="page-surface space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div><h2 className="section-title">نتائج الموظفين</h2><p className="mt-1 text-xs text-muted-foreground">مرتبة حسب الحجوزات المؤكدة.</p></div>
+            <span className="report-count">{report.summary.employeeCount.toLocaleString("ar-SA")} موظف</span>
+          </div>
+
+          <div className="grid gap-2 md:grid-cols-[1fr_180px]">
+            <label className="relative block">
+              <span className="sr-only">بحث باسم الموظف</span>
+              <Search className="absolute right-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" strokeWidth={1.8} />
+              <input className="h-11 w-full rounded-xl px-10" placeholder="بحث باسم الموظف" value={search} onChange={(event) => setSearch(event.target.value)} />
+            </label>
+            <label>
+              <span className="sr-only">ترتيب النتائج</span>
+              <select className="h-11 w-full rounded-xl px-3" value={sortBy} onChange={(event) => setSortBy(event.target.value as SortKey)}>
+                <option value="confirmed">الأعلى تأكيدًا</option>
+                <option value="total">الأعلى إجمالًا</option>
+                <option value="rate">أفضل نسبة</option>
+                <option value="name">الاسم</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="employee-report-list">
+            {employees.map((employee, index) => (
+              <article key={employee.id} className="employee-report-row">
+                <span className="employee-rank">{index + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate">{employee.name}</h3>
+                  <p>{employee.total.toLocaleString("ar-SA")} إجمالي · {employee.cancelled.toLocaleString("ar-SA")} ملغي</p>
+                </div>
+                <div className="employee-primary-stat">
+                  <strong>{employee.confirmed.toLocaleString("ar-SA")}</strong>
+                  <span>مؤكد</span>
+                </div>
+                <div className="employee-rate">
+                  <strong>{employee.confirmationRate}%</strong>
+                  <span>نسبة التأكيد</span>
+                </div>
+              </article>
+            ))}
+          </div>
+          {!employees.length ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">لا توجد نتائج مطابقة.</div> : null}
+        </section>
       ) : null}
     </div>
   );

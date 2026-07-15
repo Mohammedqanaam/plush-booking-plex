@@ -206,7 +206,7 @@ const AdminDashboard = () => {
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-primary/15 bg-secondary/20 px-4 py-3 text-xs">
         <span className="font-bold">{session?.username} · {ROLE_LABELS[(session?.role as UserRole) || "viewer"]}</span>
-        <span className="text-muted-foreground">صفحات الموظفين والتقارير العامة متاحة للزوار بوضع مشاهدة منفصل.</span>
+        <span className="text-muted-foreground">تقرير الحجوزات العام متاح للزوار بوضع مشاهدة فقط.</span>
       </div>
 
       <nav className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar" aria-label="أقسام لوحة الإدارة">
@@ -221,7 +221,7 @@ const AdminDashboard = () => {
 
       {activeTab === "overview" ? (
         <div className="space-y-4">
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <section className="grid grid-cols-2 gap-3 xl:grid-cols-5">
             {[
               ["الحجوزات", report?.classifiedTotal || 0, FileText],
               ["المؤكدة", report?.confirmed || 0, ShieldCheck],
@@ -266,7 +266,7 @@ const AdminDashboard = () => {
 
       {activeTab === "bookings" ? (
         <div className="space-y-4">
-          <section className="grid gap-3 sm:grid-cols-4">
+          <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               ["السجلات المصنفة", report?.classifiedTotal || 0],
               ["المؤكدة", report?.confirmed || 0],
