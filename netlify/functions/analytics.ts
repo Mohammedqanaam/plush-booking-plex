@@ -123,7 +123,15 @@ function maskIp(ip: string) {
 }
 
 function cleanText(value: unknown, max = 80) {
-  return String(value || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
+  return String(value || "")
+    .split("")
+    .map((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 31 || code === 127 ? " " : character;
+    })
+    .join("")
+    .trim()
+    .slice(0, max);
 }
 
 function cleanNumber(value: unknown, min: number, max: number) {

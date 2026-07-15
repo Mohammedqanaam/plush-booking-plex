@@ -386,6 +386,144 @@
   }
 }
 
+.runner-shell {
+  overflow: hidden;
+  border: 1px solid rgba(60, 60, 67, .11);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 20px 55px rgba(24, 55, 48, .10);
+}
+
+.runner-hud {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 72px;
+  padding: 11px 14px;
+  color: #f8fffc;
+  background: linear-gradient(135deg, #0d4d40, #173a34);
+}
+
+.runner-hud > div {
+  min-width: 0;
+  border-left: 1px solid rgba(255,255,255,.1);
+  padding-inline: 6px;
+}
+
+.runner-hud > div:nth-child(3) { border-left: 0; }
+.runner-hud span { display: block; color: rgba(255,255,255,.64); font-size: 9px; }
+.runner-hud strong { display: flex; align-items: center; gap: 5px; margin-top: 4px; font-size: clamp(14px, 4vw, 19px); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.runner-hud button { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid rgba(255,255,255,.12); border-radius: 13px; color: #fff; background: rgba(255,255,255,.08); }
+
+.runner-stage {
+  position: relative;
+  height: clamp(380px, 57dvh, 560px);
+  min-height: 380px;
+  overflow: hidden;
+  background: #e6f5f2;
+}
+
+.runner-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.runner-overlay {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 28px;
+  color: #163b33;
+  text-align: center;
+  background: rgba(239, 249, 246, .72);
+  backdrop-filter: blur(10px);
+}
+
+.runner-overlay__icon { display: grid; width: 64px; height: 64px; place-items: center; border: 1px solid rgba(8,112,90,.12); border-radius: 21px; color: #08705a; background: rgba(255,255,255,.72); box-shadow: 0 12px 30px rgba(8,112,90,.10); }
+.runner-overlay h2 { font-size: clamp(21px, 5vw, 28px); font-weight: 800; }
+.runner-overlay p { max-width: 430px; color: #647b75; font-size: 12px; line-height: 1.9; }
+.runner-overlay button { display: inline-flex; min-width: 165px; min-height: 48px; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; border-radius: 15px; color: #fff; background: linear-gradient(135deg, #08705a, #0f4c40); padding: 0 20px; font-size: 13px; font-weight: 750; box-shadow: 0 12px 25px rgba(8,112,90,.2); }
+.runner-overlay__score { color: #08705a; font-size: clamp(38px, 10vw, 58px); font-weight: 900; letter-spacing: -.04em; line-height: 1; }
+.runner-overlay--over { background: rgba(249, 246, 237, .78); }
+
+.runner-controls {
+  display: flex;
+  min-height: 84px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 13px 16px 15px;
+  background: #fff;
+}
+
+.runner-controls button {
+  display: inline-flex;
+  min-width: 105px;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(8,112,90,.14);
+  border-radius: 14px;
+  color: #0d594a;
+  background: #eef8f5;
+}
+
+.runner-controls button span { font-size: 22px; line-height: 1; }
+.runner-controls button strong { font-size: 12px; }
+.runner-controls p { flex-basis: 100%; color: #818b88; text-align: center; font-size: 9px; }
+
+.runner-brand-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+
+.runner-brand-strip > span {
+  display: flex;
+  min-height: 62px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid;
+  border-radius: 15px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.runner-brand-strip small { margin-top: 3px; opacity: .65; font-size: 8px; letter-spacing: .08em; }
+
+@media (max-width: 640px) {
+  .runner-page .page-heading { padding-top: 2px; }
+  .runner-shell { border-radius: 18px; }
+  .runner-hud { min-height: 63px; padding-inline: 9px; }
+  .runner-hud > div { padding-inline: 3px; }
+  .runner-hud button { width: 38px; height: 38px; }
+  .runner-stage { height: min(51dvh, 470px); min-height: 350px; }
+  .runner-overlay { padding: 20px; }
+  .runner-controls { min-height: 75px; padding-block: 10px; }
+  .runner-brand-strip { gap: 5px; }
+  .runner-brand-strip > span { min-height: 54px; border-radius: 12px; font-size: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .runner-overlay,
+  .runner-controls button { transition: none !important; }
+}
+
 @supports (-webkit-hyphens: none) {
   .glass-card,
   .safe-area-bottom,
