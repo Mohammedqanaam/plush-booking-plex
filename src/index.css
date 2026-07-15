@@ -439,15 +439,121 @@
 
   .warning-document {
     width: 210mm !important;
-    height: 297mm !important;
-    min-height: 297mm !important;
+    height: 296mm !important;
+    min-height: 296mm !important;
+    max-height: 296mm !important;
     margin: 0 !important;
-    padding: 14mm 15mm 10mm !important;
+    padding: 9mm 13mm 7mm !important;
+    overflow: hidden !important;
     border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
     break-inside: avoid;
+    page-break-inside: avoid;
+    page-break-after: avoid;
+  }
+
+  .warning-document__brand {
+    width: 66mm;
+    height: 19mm;
+  }
+
+  .warning-document__meta {
+    font-size: 11px;
+  }
+
+  .warning-document__rule {
+    margin-block: 3mm 4mm;
+  }
+
+  .warning-document__title span {
+    padding: 1mm 4mm;
+    font-size: 9px;
+  }
+
+  .warning-document__title h1 {
+    margin-block: 1.2mm .5mm;
+    font-size: 20px;
+  }
+
+  .warning-document__title p {
+    font-size: 9px;
+  }
+
+  .warning-document__fields {
+    gap: 2mm;
+    margin-block: 4mm 3mm;
+  }
+
+  .warning-document__fields > div {
+    min-height: 13mm;
+    padding: 2mm 3mm;
+  }
+
+  .warning-document__fields dt {
+    margin-bottom: .8mm;
+    font-size: 8px;
+  }
+
+  .warning-document__fields dd {
+    font-size: 10px;
+  }
+
+  .warning-document__section,
+  .warning-document__ack {
+    margin-top: 2.5mm;
+    padding: 2.5mm 4mm;
+  }
+
+  .warning-document__section h2,
+  .warning-document__ack h2 {
+    margin-bottom: 1mm;
+    font-size: 10px;
+  }
+
+  .warning-document__section p,
+  .warning-document__ack p {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 9px;
+    line-height: 1.65;
+    -webkit-box-orient: vertical;
+  }
+
+  .warning-document__section p {
+    -webkit-line-clamp: 4;
+  }
+
+  .warning-document__ack p {
+    -webkit-line-clamp: 3;
+  }
+
+  .warning-document__signatures {
+    gap: 3mm;
+    margin-top: 4mm;
+  }
+
+  .warning-document__signatures > div {
+    min-height: 31mm;
+    gap: 1.8mm;
+    padding: 3mm;
+    font-size: 8px;
+  }
+
+  .warning-document__signatures strong {
+    font-size: 9px;
+  }
+
+  .warning-document__footer {
+    margin-top: 4mm;
+    padding-top: 2.5mm;
+    font-size: 7px;
+  }
+
+  .warning-document__footer-logo {
+    width: 32mm;
+    height: 11mm;
   }
 }
