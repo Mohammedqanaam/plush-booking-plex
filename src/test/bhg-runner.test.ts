@@ -23,10 +23,11 @@ describe("BHG Runner", () => {
     expect(game).toContain("bhg_runner_high_score");
   });
 
-  it("collects bookings while Sadiq chases through real named hotels", () => {
+  it("collects bookings while a generic supervisor chases through real named hotels", () => {
     const game = fs.readFileSync(path.join(process.cwd(), "src/pages/BoudlRunner.tsx"), "utf8");
     expect(game).toContain('type TrackObjectType = "booking" | "call" | "cart"');
-    expect(game).toContain("صادق وراك");
+    expect(game).toContain("المكالمات وراك");
+    expect(game).toContain("المشرف يقترب");
     expect(game).toContain("نارسيس الرياض");
     expect(game).toContain("بريرا النخيل");
     expect(game).toContain("عابر المونسية");

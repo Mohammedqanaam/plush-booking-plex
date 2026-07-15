@@ -706,10 +706,10 @@ const BoudlRunner = () => {
 
       const playerPoint = project(0.9, world.lane, width, height);
       const danger = 1 - world.lead / 100;
-      const sadiqSide = world.lane > 0.35 ? -1 : 1;
-      const sadiqX = playerPoint.x + sadiqSide * (42 - danger * 14);
-      const sadiqBaseline = Math.min(height + 3, playerPoint.y + 39 - danger * 34);
-      drawRunner(sadiqX, sadiqBaseline, 0.72 + danger * 0.15, time + 28, "#684476", "صادق");
+      const chaserSide = world.lane > 0.35 ? -1 : 1;
+      const chaserX = playerPoint.x + chaserSide * (42 - danger * 14);
+      const chaserBaseline = Math.min(height + 3, playerPoint.y + 39 - danger * 34);
+      drawRunner(chaserX, chaserBaseline, 0.72 + danger * 0.15, time + 28, "#684476", "المشرف");
       drawRunner(playerPoint.x, playerPoint.y - world.jumpY, 1.04, time, "#08705a", undefined, !world.grounded);
 
       if (danger > 0.64 && stateRef.current === "running") {
@@ -745,11 +745,11 @@ const BoudlRunner = () => {
     else jump();
   };
 
-  const chaseLabel = lead > 58 ? "صادق بعيد" : lead > 28 ? "صادق يقترب" : "انتبه! صادق خلفك";
+  const chaseLabel = lead > 58 ? "المشرف بعيد" : lead > 28 ? "المشرف يقترب" : "انتبه! المشرف خلفك";
 
   return (
     <div className="page-wrap-narrow runner-page">
-      <PageHeader title="BHG Runner" subtitle="اجمع الحجوزات قبل أن يلحق بك صادق ويسحب لك المكالمات." icon={Gamepad2} />
+      <PageHeader title="BHG Runner" subtitle="اجمع الحجوزات قبل أن تلحق بك المكالمات." icon={Gamepad2} />
       <section className="runner-shell">
         <div className="runner-hud">
           <div><span>النقاط</span><strong>{score.toLocaleString("ar-SA")}</strong></div>
@@ -757,7 +757,7 @@ const BoudlRunner = () => {
           <div><span>الأفضل</span><strong><Trophy className="h-4 w-4" /> {highScore.toLocaleString("ar-SA")}</strong></div>
           <button onClick={() => setSound((value) => !value)} aria-label={sound ? "إيقاف الصوت" : "تشغيل الصوت"}>{sound ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}</button>
         </div>
-        <div className="runner-chase" aria-label={`المسافة عن صادق ${lead}%`}>
+        <div className="runner-chase" aria-label={`المسافة عن المشرف ${lead}%`}>
           <span>{chaseLabel}</span>
           <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={lead}><i style={{ width: `${lead}%` }} /></div>
           <span><PhoneCall className="h-3.5 w-3.5" /> {calls.toLocaleString("ar-SA")}</span>
@@ -772,8 +772,8 @@ const BoudlRunner = () => {
           {state === "idle" ? (
             <div className="runner-overlay">
               <span className="runner-overlay__icon"><Gamepad2 className="h-8 w-8" /></span>
-              <h2>صادق وراك!</h2>
-              <p>تحرك بين المسارات واجمع بطاقات الحجوزات. تجنب المكالمات وعربات الخدمة قبل أن يلحق بك صادق.</p>
+              <h2>المكالمات وراك!</h2>
+              <p>تحرك بين المسارات واجمع بطاقات الحجوزات. تجنب المكالمات وعربات الخدمة قبل أن يلحق بك المشرف.</p>
               <div className="runner-howto"><span>↔ اسحب للمسارات</span><span>↑ المس للقفز</span></div>
               <button onClick={startGame}><Play className="h-5 w-5 fill-current" /> ابدأ المطاردة</button>
             </div>
@@ -784,8 +784,8 @@ const BoudlRunner = () => {
           {state === "over" ? (
             <div className="runner-overlay runner-overlay--over">
               <span className="runner-overlay__score">{score.toLocaleString("ar-SA")}</span>
-              <h2>صادق لحقك!</h2>
-              <p>جمعت {bookings.toLocaleString("ar-SA")} حجزًا، وسحب لك صادق {calls.toLocaleString("ar-SA")} مكالمات خلال الجولة.</p>
+              <h2>المشرف لحقك!</h2>
+              <p>جمعت {bookings.toLocaleString("ar-SA")} حجزًا، واستلمت {calls.toLocaleString("ar-SA")} مكالمات خلال الجولة.</p>
               <button onClick={startGame}><RotateCcw className="h-5 w-5" /> اهرب من جديد</button>
             </div>
           ) : null}
