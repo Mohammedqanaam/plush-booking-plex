@@ -25,13 +25,23 @@ describe("BHG Runner", () => {
 
   it("collects bookings while a generic supervisor chases through real named hotels", () => {
     const game = fs.readFileSync(path.join(process.cwd(), "src/pages/BoudlRunner.tsx"), "utf8");
-    expect(game).toContain('type TrackObjectType = "booking" | "call" | "cart"');
-    expect(game).toContain("المكالمات وراك");
+    expect(game).toContain('type TrackObjectType = "booking" | "vip" | "coffee" | "call" | "cart"');
+    expect(game).toContain("الشفت بدأ");
     expect(game).toContain("المشرف يقترب");
     expect(game).toContain("نارسيس الرياض");
     expect(game).toContain("بريرا النخيل");
     expect(game).toContain("عابر المونسية");
     expect(game).toContain("بودل السليمانية");
     expect(game).toContain("/images/narcissus-riyadh.png");
+  });
+
+  it("makes the 500-booking challenge winnable and labels its prize as virtual", () => {
+    const game = fs.readFileSync(path.join(process.cwd(), "src/pages/BoudlRunner.tsx"), "utf8");
+    expect(game).toContain("const CONTEST_GOAL = 500");
+    expect(game).toContain("world.bookings >= CONTEST_GOAL");
+    expect(game).toContain("winChallenge()");
+    expect(game).toContain("PRESSURE_THRESHOLDS = [100, 250, 400, 475]");
+    expect(game).toContain("افتراضي داخل اللعبة");
+    expect(game).toContain("ليست جائزة حقيقية");
   });
 });
