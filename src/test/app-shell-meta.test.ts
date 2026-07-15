@@ -38,5 +38,8 @@ describe("app shell and web app metadata", () => {
     expect(css).toContain("@media print");
     expect(css).toContain("size: A4 portrait");
     expect(css).toContain(".warning-print-only");
+    expect(css).toContain("max-height: 296mm");
+    expect(css).toContain("overflow: hidden !important");
+    expect(css).toContain("page-break-inside: avoid");
   });
 });
