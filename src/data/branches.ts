@@ -88,9 +88,6 @@ const normalizeServiceValue = (value: string): string => {
     .trim();
 };
 
-const hotelBranchByName = new Map(hotelBranches.map((hotel) => [normalizeSheetHotelName(hotel.name), hotel]));
-const masterHotelByName = new Map(masterHotels.map((hotel) => [normalizeSheetHotelName(hotel.name), hotel]));
-
 const inferBrand = (name: string) => {
   if (name.startsWith("بريرا")) return "بريرا";
   if (name.startsWith("عابر")) return "عابر";
@@ -113,8 +110,12 @@ const canonicalBranchName = (name: string) => name
   .replace(/^نارسيس ذا رويال$/, "نارسيس رويال")
   .replace(/^نارسيس الرياض$/, "نارس الرياض");
 
+const canonicalKey = (name: string) => normalizeSheetHotelName(canonicalBranchName(name));
+const hotelBranchByName = new Map(hotelBranches.map((hotel) => [canonicalKey(hotel.name), hotel]));
+const masterHotelByName = new Map(masterHotels.map((hotel) => [canonicalKey(hotel.name), hotel]));
+
 const sheetHotels: MasterHotel[] = sheetOperationalHotels.map((row, index) => {
-  const key = normalizeSheetHotelName(row.name);
+  const key = canonicalKey(row.name);
   const master = masterHotelByName.get(key);
   const hotel = hotelBranchByName.get(key);
   return {

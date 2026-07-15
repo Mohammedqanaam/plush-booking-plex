@@ -16,6 +16,15 @@ describe("Google Sheet operational data integration", () => {
     expect(branches.find((branch) => branch.name === "بودل جابر")?.services.breakfast).toContain("منيو خدمة الغرف");
   });
 
+  it("covers every row in the hotel sheet without incomplete branch identity", () => {
+    const incomplete = branches
+      .filter((branch) => !branch.name.trim() || branch.city === "غير محدد" || branch.brand === "غير محدد")
+      .map((branch) => ({ name: branch.name, city: branch.city, brand: branch.brand }));
+    expect(branches).toHaveLength(sheetOperationalHotels.length);
+    expect(incomplete).toEqual([]);
+    expect(branches.every((branch) => branch.sourceRowRef.startsWith("Google Sheets / hotels data / row"))).toBe(true);
+  });
+
   it("publishes corrected canonical branch names", () => {
     const names = branches.map((branch) => branch.name);
     expect(names).toContain("بريرا قرطبة");

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { BarChart3, Building2, LayoutDashboard, PhoneCall, Search } from "lucide-react";
+import { BarChart3, Building2, LayoutDashboard, LockKeyhole, PhoneCall, Search } from "lucide-react";
 import BottomNav from "./BottomNav";
 import RiyadhClock from "./RiyadhClock";
 import { api } from "@/lib/api";
 import ViewerPreferences from "./ViewerPreferences";
 import AnalyticsTracker from "./AnalyticsTracker";
+import BrandFooter from "./BrandFooter";
 
 const desktopNav = [
   { to: "/", label: "الرئيسية", icon: LayoutDashboard },
@@ -74,6 +75,12 @@ const Layout = () => {
               <RiyadhClock />
             </div>
             <div className="hidden md:block"><ViewerPreferences /></div>
+            {!isAdminArea ? (
+              <NavLink to="/admin/login" className="admin-entry-link" aria-label="دخول الإدارة" title="دخول الإدارة">
+                <LockKeyhole className="h-[18px] w-[18px]" strokeWidth={1.8} />
+                <span className="hidden xl:inline">الإدارة</span>
+              </NavLink>
+            ) : null}
           </div>
         </div>
       </header>
@@ -81,16 +88,16 @@ const Layout = () => {
       <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-3 md:pb-8" key={location.pathname}>
         <div className="content-container pt-3 md:pt-4">
           <Outlet />
+          {!isAdminArea ? <BrandFooter className="mt-5 md:hidden" /> : null}
         </div>
       </main>
 
-      {!isAdminArea ? <footer className="hidden md:block border-t border-border/15 bg-secondary/12 backdrop-blur-xl">
-        <div className="content-container h-[60px] flex items-center justify-between text-xs text-muted-foreground">
-          <p>{siteTitle}</p>
-          <p>الحجز المركزي</p>
-          <p>آخر تحديث اليوم {lastUpdatedAt}</p>
+      {!isAdminArea ? (
+        <div className="relative hidden md:block">
+          <BrandFooter />
+          <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">آخر تحديث اليوم {lastUpdatedAt}</span>
         </div>
-      </footer> : null}
+      ) : null}
 
       {!isAdminArea ? <BottomNav /> : null}
     </div>

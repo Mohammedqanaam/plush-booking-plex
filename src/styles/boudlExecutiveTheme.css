@@ -109,12 +109,71 @@ footer {
   background: #f9f9fb !important;
 }
 
+.brand-footer {
+  border-top: 1px solid rgba(60, 60, 67, 0.10);
+  background: rgba(249, 249, 251, 0.94) !important;
+}
+
+.brand-footer__inner {
+  display: flex;
+  min-height: 82px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 7px 16px;
+}
+
+.brand-footer__logo {
+  position: relative;
+  height: 66px;
+  width: 176px;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.brand-footer__logo img {
+  position: absolute;
+  left: 50%;
+  top: -54px;
+  width: 234px;
+  max-width: none;
+  transform: translateX(-50%);
+}
+
+.brand-footer p {
+  color: #6e6e73;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .mobile-tab-bar {
   border-top: 1px solid rgba(60, 60, 67, 0.12);
   background: rgba(249, 249, 249, 0.94);
   box-shadow: none;
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
+}
+
+.admin-entry-link {
+  display: inline-flex;
+  min-height: 40px;
+  min-width: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(60, 60, 67, 0.12);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0 11px;
+  color: #4d4d52;
+  font-size: 12px;
+  font-weight: 650;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.035);
+}
+
+.admin-entry-link:hover {
+  color: #7d603d;
+  border-color: rgba(155, 121, 75, 0.28);
 }
 
 .text-muted-foreground {
@@ -175,7 +234,12 @@ footer {
   padding: 16px;
   text-align: right;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.035);
-  transition: transform 160ms ease, border-color 160ms ease;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.service-card:hover {
+  border-color: rgba(60, 60, 67, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.055);
 }
 
 .service-card:active {
@@ -203,9 +267,61 @@ footer {
   align-items: center;
   justify-content: center;
   border-radius: 11px;
-  color: #98754a;
-  background: #f2f2f7;
+  color: #0878cf;
+  background: #eaf3ff;
 }
+
+.service-icon--green { color: #16845b; background: #e9f8ef; }
+.service-icon--violet { color: #7556b8; background: #f2edff; }
+.service-icon--orange { color: #a15c00; background: #fff3e6; }
+.service-icon--teal { color: #087f7a; background: #e8f7f6; }
+.service-icon--red { color: #c9342f; background: #fff0f0; }
+
+.home-overview {
+  display: flex;
+  min-height: 84px;
+  align-items: center;
+  gap: 13px;
+  overflow: hidden;
+  border: 1px solid rgba(60, 60, 67, 0.09);
+  border-radius: 18px;
+  background: linear-gradient(125deg, #eef6ff 0%, #f3fbf6 100%);
+  padding: 15px 16px;
+}
+
+.home-overview__icon {
+  display: grid;
+  height: 44px;
+  width: 44px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 13px;
+  color: #0878cf;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.home-overview p { color: #6e6e73; font-size: 11px; }
+.home-overview strong { display: block; margin-top: 2px; color: #1d1d1f; font-size: 17px; }
+.home-overview__meta { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.76); padding: 7px 10px; color: #4d4d52; font-size: 11px; font-weight: 650; }
+
+.branch-summary-card {
+  display: grid;
+  min-height: 92px;
+  grid-template-columns: auto 1fr;
+  align-content: center;
+  align-items: center;
+  gap: 1px 8px;
+  border: 1px solid rgba(60, 60, 67, 0.09);
+  border-radius: 16px;
+  background: #fff8ee;
+  padding: 12px;
+  color: #9a5800;
+}
+
+.branch-summary-card strong { color: #1d1d1f; font-size: clamp(1.15rem, 4vw, 1.55rem); line-height: 1; }
+.branch-summary-card span { grid-column: 1 / -1; margin-top: 5px; color: #6e6e73; font-size: 10px; }
+.branch-summary-card--blue { color: #0878cf; background: #eef6ff; }
+.branch-summary-card--green { color: #16845b; background: #edf9f2; }
 
 .ios-segmented {
   display: grid;
@@ -341,6 +457,12 @@ footer {
 @media (max-width: 520px) {
   .employee-rate { display: none; }
   .metric-card { min-height: 96px; padding: 14px; }
+  .home-overview__meta { padding-inline: 8px; }
+  .branch-summary-card { min-height: 86px; padding: 10px; }
+  .brand-footer__inner { min-height: 74px; padding-block: 5px; }
+  .brand-footer__logo { height: 60px; width: 160px; }
+  .brand-footer__logo img { top: -49px; width: 214px; }
+  .brand-footer p { display: none; }
 }
 
 @media (max-width: 767px) {
