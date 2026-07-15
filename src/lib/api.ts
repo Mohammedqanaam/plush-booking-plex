@@ -113,7 +113,53 @@ export type AnalyticsSummary = {
     city: string;
     path: string;
     lastSeen: string;
+    ipMasked?: string;
+    browserVersion?: string;
+    osVersion?: string;
+    region?: string;
+    language?: string;
+    screen?: string;
+    timezone?: string;
+    connection?: string;
   }>;
+};
+
+export type GhostVisitor = {
+  visitorId: string;
+  views: number;
+  sessionCount: number;
+  pages: Record<string, number>;
+  device: string;
+  browser: string;
+  browserVersion: string;
+  os: string;
+  osVersion: string;
+  ipMasked: string;
+  country: string;
+  city: string;
+  region: string;
+  geoTimezone: string;
+  referrer: string;
+  firstSeen: string;
+  lastSeen: string;
+  language?: string;
+  languages?: string[];
+  screen?: string;
+  viewport?: string;
+  timezone?: string;
+  platform?: string;
+  connection?: string;
+  downlink?: number;
+  saveData?: boolean;
+  memory?: number;
+  cpuCores?: number;
+  touchPoints?: number;
+  isPwa?: boolean;
+};
+
+export type GhostAnalyticsSummary = AnalyticsSummary & {
+  recentVisitors: GhostVisitor[];
+  privacy: { ipMode: "masked"; preciseLocation: false; fingerprinting: false };
 };
 
 const API_BASE = "/.netlify/functions";
@@ -193,6 +239,12 @@ export const api = {
     const res = await fetch(`${API_BASE}/analytics?days=${days}`, { headers: authHeaders() });
     if (!res.ok) throw new Error("تعذر تحميل إحصائيات الموقع");
     return res.json() as Promise<AnalyticsSummary>;
+  },
+
+  async getGhostAnalytics(days: 7 | 30 | 90 = 30) {
+    const res = await fetch(`${API_BASE}/analytics?days=${days}&detail=ghost`, { headers: authHeaders() });
+    if (!res.ok) throw new Error("تعذر تحميل سجل الزوار المحمي");
+    return res.json() as Promise<GhostAnalyticsSummary>;
   },
 
   async uploadBookings(csvText: string) {

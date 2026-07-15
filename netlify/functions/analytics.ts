@@ -2,7 +2,23 @@ import type { Context } from "@netlify/functions";
 import { getDeployStore, getStore } from "@netlify/blobs";
 import { json, validateSession } from "./_shared/security";
 
-type AnalyticsEvent = {
+type ClientInfo = {
+  language?: string;
+  languages?: string[];
+  screen?: string;
+  viewport?: string;
+  timezone?: string;
+  platform?: string;
+  connection?: string;
+  downlink?: number;
+  saveData?: boolean;
+  memory?: number;
+  cpuCores?: number;
+  touchPoints?: number;
+  isPwa?: boolean;
+};
+
+type AnalyticsEvent = ClientInfo & {
   event?: "pageview" | "heartbeat";
   visitorId?: string;
   sessionId?: string;
@@ -10,24 +26,28 @@ type AnalyticsEvent = {
   referrer?: string;
 };
 
-type VisitorRecord = {
+type VisitorRecord = ClientInfo & {
   visitorId: string;
   views: number;
   pages: Record<string, number>;
   sessions: string[];
   device: string;
   browser: string;
+  browserVersion: string;
   os: string;
+  osVersion: string;
+  ipMasked: string;
   country: string;
   city: string;
+  region: string;
+  geoTimezone: string;
   referrer: string;
   firstSeen: string;
   lastSeen: string;
 };
 
-type PresenceRecord = Pick<VisitorRecord, "visitorId" | "device" | "browser" | "os" | "country" | "city"> & {
+type PresenceRecord = Omit<VisitorRecord, "views" | "pages" | "sessions" | "firstSeen"> & {
   path: string;
-  lastSeen: string;
 };
 
 const ID_PATTERN = /^[a-zA-Z0-9_-]{16,80}$/;
@@ -41,6 +61,10 @@ function analyticsStore(context: Context) {
   return getDeployStore({ name: "site_analytics", deployID: context.deploy.id });
 }
 
+function versionFrom(userAgent: string, expression: RegExp) {
+  return userAgent.match(expression)?.[1]?.replace(/_/g, ".").slice(0, 20) || "غير محدد";
+}
+
 function parseUserAgent(userAgent: string) {
   const device = /iPad|Tablet|Android(?!.*Mobile)/i.test(userAgent)
     ? "جهاز لوحي"
@@ -48,31 +72,81 @@ function parseUserAgent(userAgent: string) {
       ? "جوال"
       : "كمبيوتر";
 
-  const browser = /Edg\//i.test(userAgent)
-    ? "Edge"
-    : /OPR\//i.test(userAgent)
-      ? "Opera"
-      : /CriOS|Chrome/i.test(userAgent)
-        ? "Chrome"
-        : /FxiOS|Firefox/i.test(userAgent)
-          ? "Firefox"
-          : /Safari/i.test(userAgent)
-            ? "Safari"
-            : "أخرى";
+  let browser = "أخرى";
+  let browserVersion = "غير محدد";
+  if (/Edg\//i.test(userAgent)) {
+    browser = "Edge";
+    browserVersion = versionFrom(userAgent, /Edg\/([\d.]+)/i);
+  } else if (/OPR\//i.test(userAgent)) {
+    browser = "Opera";
+    browserVersion = versionFrom(userAgent, /OPR\/([\d.]+)/i);
+  } else if (/CriOS|Chrome/i.test(userAgent)) {
+    browser = "Chrome";
+    browserVersion = versionFrom(userAgent, /(?:CriOS|Chrome)\/([\d.]+)/i);
+  } else if (/FxiOS|Firefox/i.test(userAgent)) {
+    browser = "Firefox";
+    browserVersion = versionFrom(userAgent, /(?:FxiOS|Firefox)\/([\d.]+)/i);
+  } else if (/Safari/i.test(userAgent)) {
+    browser = "Safari";
+    browserVersion = versionFrom(userAgent, /Version\/([\d.]+)/i);
+  }
 
-  const os = /iPhone|iPad|iPod/i.test(userAgent)
-    ? "iOS"
-    : /Android/i.test(userAgent)
-      ? "Android"
-      : /Windows/i.test(userAgent)
-        ? "Windows"
-        : /Mac OS|Macintosh/i.test(userAgent)
-          ? "macOS"
-          : /Linux/i.test(userAgent)
-            ? "Linux"
-            : "أخرى";
+  let os = "أخرى";
+  let osVersion = "غير محدد";
+  if (/iPhone|iPad|iPod/i.test(userAgent)) {
+    os = "iOS";
+    osVersion = versionFrom(userAgent, /OS ([\d_]+)/i);
+  } else if (/Android/i.test(userAgent)) {
+    os = "Android";
+    osVersion = versionFrom(userAgent, /Android\s([\d.]+)/i);
+  } else if (/Windows/i.test(userAgent)) {
+    os = "Windows";
+    osVersion = /Windows NT 10/i.test(userAgent) ? "10/11" : versionFrom(userAgent, /Windows NT\s([\d.]+)/i);
+  } else if (/Mac OS|Macintosh/i.test(userAgent)) {
+    os = "macOS";
+    osVersion = versionFrom(userAgent, /Mac OS X\s([\d_]+)/i);
+  } else if (/Linux/i.test(userAgent)) {
+    os = "Linux";
+  }
 
-  return { device, browser, os };
+  return { device, browser, browserVersion, os, osVersion };
+}
+
+function maskIp(ip: string) {
+  if (!ip) return "غير متاح";
+  if (ip.includes(".")) {
+    const parts = ip.split(".");
+    return parts.length === 4 ? `${parts[0]}.${parts[1]}.*.*` : "IPv4 محمي";
+  }
+  const parts = ip.split(":").filter(Boolean);
+  return parts.length ? `${parts.slice(0, 3).join(":")}:*:*` : "IPv6 محمي";
+}
+
+function cleanText(value: unknown, max = 80) {
+  return String(value || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
+}
+
+function cleanNumber(value: unknown, min: number, max: number) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : undefined;
+}
+
+function cleanClientInfo(body: AnalyticsEvent): ClientInfo {
+  return {
+    language: cleanText(body.language, 20),
+    languages: Array.isArray(body.languages) ? body.languages.slice(0, 5).map((value) => cleanText(value, 20)).filter(Boolean) : [],
+    screen: cleanText(body.screen, 24),
+    viewport: cleanText(body.viewport, 24),
+    timezone: cleanText(body.timezone, 50),
+    platform: cleanText(body.platform, 50),
+    connection: cleanText(body.connection, 20),
+    downlink: cleanNumber(body.downlink, 0, 1000),
+    saveData: body.saveData === true,
+    memory: cleanNumber(body.memory, 0, 64),
+    cpuCores: cleanNumber(body.cpuCores, 0, 128),
+    touchPoints: cleanNumber(body.touchPoints, 0, 20),
+    isPwa: body.isPwa === true,
+  };
 }
 
 function cleanPath(value: unknown) {
@@ -121,11 +195,23 @@ export default async (req: Request, context: Context) => {
     const sessionId = body.sessionId as string;
     const path = cleanPath(body.path);
     const now = new Date().toISOString();
-    const { device, browser, os } = parseUserAgent(userAgent);
+    const agent = parseUserAgent(userAgent);
+    const client = cleanClientInfo(body);
     const country = context.geo.country?.name || context.geo.country?.code || "غير محدد";
     const city = context.geo.city || "غير محدد";
+    const region = context.geo.subdivision?.name || context.geo.subdivision?.code || "غير محدد";
+    const geoTimezone = context.geo.timezone || "غير محدد";
+    const network = { ipMasked: maskIp(context.ip || ""), country, city, region, geoTimezone };
 
-    const presence: PresenceRecord = { visitorId, device, browser, os, country, city, path, lastSeen: now };
+    const presence: PresenceRecord = {
+      visitorId,
+      ...agent,
+      ...client,
+      ...network,
+      referrer: referrerHost(body.referrer),
+      path,
+      lastSeen: now,
+    };
     await store.setJSON(`presence/${visitorId}`, presence);
 
     if (event === "pageview") {
@@ -137,11 +223,9 @@ export default async (req: Request, context: Context) => {
         views: 0,
         pages: {},
         sessions: [],
-        device,
-        browser,
-        os,
-        country,
-        city,
+        ...agent,
+        ...client,
+        ...network,
         referrer: referrerHost(body.referrer),
         firstSeen: now,
         lastSeen: now,
@@ -150,9 +234,7 @@ export default async (req: Request, context: Context) => {
       record.views += 1;
       increment(record.pages, path);
       record.lastSeen = now;
-      record.device = device;
-      record.browser = browser;
-      record.os = os;
+      Object.assign(record, agent, client, network);
       if (!record.sessions.includes(sessionId)) record.sessions = [...record.sessions, sessionId].slice(-30);
       await store.setJSON(key, record);
     }
@@ -164,7 +246,13 @@ export default async (req: Request, context: Context) => {
     const session = await validateSession(req);
     if (!session) return json({ error: "Unauthorized" }, 401);
 
-    const requestedDays = Number(new URL(req.url).searchParams.get("days") || 30);
+    const url = new URL(req.url);
+    const detailed = url.searchParams.get("detail") === "ghost";
+    if (detailed && !["superadmin", "admin"].includes(session.role)) {
+      return json({ error: "Permission Denied" }, 403);
+    }
+
+    const requestedDays = Number(url.searchParams.get("days") || 30);
     const days = [7, 30, 90].includes(requestedDays) ? requestedDays : 30;
     const dates = dateKeys(days);
     const dailyLists = await Promise.all(dates.map((date) => store.list({ prefix: `daily/${date}/` })));
@@ -186,6 +274,7 @@ export default async (req: Request, context: Context) => {
     const pages: Record<string, number> = {};
     const referrers: Record<string, number> = {};
     const latestByVisitor = new Map<string, VisitorRecord>();
+    const totalsByVisitor = new Map<string, { views: number; sessions: Set<string>; pages: Record<string, number>; firstSeen: string }>();
     const trend = Object.fromEntries(dates.map((date) => [date, { date, views: 0, visitors: 0 }]));
     let totalViews = 0;
     let sessions = 0;
@@ -197,7 +286,15 @@ export default async (req: Request, context: Context) => {
       increment(referrers, record.referrer || "مباشر");
       const latest = latestByVisitor.get(record.visitorId);
       if (!latest || record.lastSeen > latest.lastSeen) latestByVisitor.set(record.visitorId, record);
-      for (const [path, count] of Object.entries(record.pages || {})) increment(pages, path, count);
+      const total = totalsByVisitor.get(record.visitorId) || { views: 0, sessions: new Set<string>(), pages: {}, firstSeen: record.firstSeen };
+      total.views += record.views || 0;
+      for (const id of record.sessions || []) total.sessions.add(id);
+      for (const [page, count] of Object.entries(record.pages || {})) {
+        increment(pages, page, count);
+        increment(total.pages, page, count);
+      }
+      if (record.firstSeen < total.firstSeen) total.firstSeen = record.firstSeen;
+      totalsByVisitor.set(record.visitorId, total);
       const date = record.firstSeen.slice(0, 10);
       if (trend[date]) {
         trend[date].views += record.views || 0;
@@ -210,6 +307,20 @@ export default async (req: Request, context: Context) => {
       increment(browsers, record.browser || "غير محدد");
       increment(operatingSystems, record.os || "غير محدد");
     }
+
+    const recentVisitors = detailed
+      ? [...latestByVisitor.values()].sort((a, b) => b.lastSeen.localeCompare(a.lastSeen)).slice(0, 150).map((record) => {
+          const totals = totalsByVisitor.get(record.visitorId);
+          return {
+            ...record,
+            views: totals?.views || record.views || 0,
+            sessionCount: totals?.sessions.size || record.sessions?.length || 0,
+            pages: totals?.pages || record.pages || {},
+            firstSeen: totals?.firstSeen || record.firstSeen,
+            sessions: undefined,
+          };
+        })
+      : undefined;
 
     const today = dates[dates.length - 1];
     return json({
@@ -228,6 +339,12 @@ export default async (req: Request, context: Context) => {
       referrers,
       trend: Object.values(trend),
       online: online.slice(0, 50),
+      recentVisitors,
+      privacy: {
+        ipMode: "masked",
+        preciseLocation: false,
+        fingerprinting: false,
+      },
     });
   }
 
