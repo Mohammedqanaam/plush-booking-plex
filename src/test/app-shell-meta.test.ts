@@ -32,4 +32,11 @@ describe("app shell and web app metadata", () => {
     expect(footer).toContain('مجموعة بودل للضيافة');
     expect(fs.existsSync(path.join(process.cwd(), "public/bhg-hospitality-group.jpg"))).toBe(true);
   });
+
+  it("defines an A4 print layout for employee warnings", () => {
+    const css = fs.readFileSync(path.join(process.cwd(), "src/index.css"), "utf8");
+    expect(css).toContain("@media print");
+    expect(css).toContain("size: A4 portrait");
+    expect(css).toContain(".warning-print-only");
+  });
 });
