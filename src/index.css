@@ -416,6 +416,37 @@
 .runner-hud strong { display: flex; align-items: center; gap: 5px; margin-top: 4px; font-size: clamp(14px, 4vw, 19px); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .runner-hud button { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid rgba(255,255,255,.12); border-radius: 13px; color: #fff; background: rgba(255,255,255,.08); }
 
+.runner-chase {
+  display: grid;
+  min-height: 35px;
+  grid-template-columns: minmax(78px, auto) minmax(90px, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding: 7px 14px;
+  color: rgba(255,255,255,.78);
+  background: #142d29;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.runner-chase > div {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255,255,255,.1);
+}
+
+.runner-chase i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #c89d4e, #46c59a);
+  transition: width .18s ease;
+}
+
+.runner-chase > span:last-child { display: inline-flex; align-items: center; gap: 4px; color: #f4c5ca; }
+
 .runner-stage {
   position: relative;
   height: clamp(380px, 57dvh, 560px);
@@ -429,7 +460,7 @@
   width: 100%;
   height: 100%;
   cursor: pointer;
-  touch-action: manipulation;
+  touch-action: none;
   -webkit-user-select: none;
   user-select: none;
 }
@@ -456,6 +487,9 @@
 .runner-overlay button { display: inline-flex; min-width: 165px; min-height: 48px; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; border-radius: 15px; color: #fff; background: linear-gradient(135deg, #08705a, #0f4c40); padding: 0 20px; font-size: 13px; font-weight: 750; box-shadow: 0 12px 25px rgba(8,112,90,.2); }
 .runner-overlay__score { color: #08705a; font-size: clamp(38px, 10vw, 58px); font-weight: 900; letter-spacing: -.04em; line-height: 1; }
 .runner-overlay--over { background: rgba(249, 246, 237, .78); }
+
+.runner-howto { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+.runner-howto span { border: 1px solid rgba(8,112,90,.1); border-radius: 99px; color: #49665f; background: rgba(255,255,255,.64); padding: 5px 10px; font-size: 9px; font-weight: 700; }
 
 .runner-controls {
   display: flex;
@@ -484,6 +518,15 @@
 .runner-controls button span { font-size: 22px; line-height: 1; }
 .runner-controls button strong { font-size: 12px; }
 .runner-controls p { flex-basis: 100%; color: #818b88; text-align: center; font-size: 9px; }
+.runner-controls button:disabled { cursor: default; opacity: .38; }
+
+.runner-controls--lanes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 112px));
+}
+
+.runner-controls--lanes .runner-controls__pause { grid-column: 1 / -1; justify-self: center; }
+.runner-controls--lanes p { grid-column: 1 / -1; }
 
 .runner-brand-strip {
   display: grid;
@@ -512,9 +555,12 @@
   .runner-hud { min-height: 63px; padding-inline: 9px; }
   .runner-hud > div { padding-inline: 3px; }
   .runner-hud button { width: 38px; height: 38px; }
+  .runner-chase { padding-inline: 10px; }
   .runner-stage { height: min(51dvh, 470px); min-height: 350px; }
   .runner-overlay { padding: 20px; }
   .runner-controls { min-height: 75px; padding-block: 10px; }
+  .runner-controls--lanes { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-inline: 12px; }
+  .runner-controls--lanes button { min-width: 0; }
   .runner-brand-strip { gap: 5px; }
   .runner-brand-strip > span { min-height: 54px; border-radius: 12px; font-size: 11px; }
 }

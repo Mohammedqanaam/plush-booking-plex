@@ -46,7 +46,7 @@ const publicEntries: PublicEntry[] = [
     to: "/runner",
     label: "BHG Runner",
     icon: Wind,
-    description: "اركض بين فنادق المجموعة واجمع المفاتيح.",
+    description: "اجمع الحجوزات واهرب من المكالمات.",
     tone: "violet",
   },
   {
