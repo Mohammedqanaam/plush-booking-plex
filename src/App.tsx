@@ -25,6 +25,7 @@ const AdminBranches = lazy(() => import("./pages/AdminBranches"));
 const AdminKnowledgeBank = lazy(() => import("./pages/AdminKnowledgeBank"));
 const AdminComplaints = lazy(() => import("./pages/AdminComplaints"));
 const AdminWarnings = lazy(() => import("./pages/AdminWarnings"));
+const AdminGhost = lazy(() => import("./pages/AdminGhost"));
 const BoudlPrototype = lazy(() => import("./pages/BoudlPrototype"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/complaints" element={<ProtectedRoute><AdminComplaints /></ProtectedRoute>} />
             <Route path="/admin/warnings" element={<ProtectedRoute><AdminWarnings /></ProtectedRoute>} />
+            <Route path="/admin/ghost" element={<ProtectedRoute><AdminGhost /></ProtectedRoute>} />
             <Route path="/admin/discounts" element={<ProtectedRoute><AdminDiscounts /></ProtectedRoute>} />
             <Route path="/admin/enterprise-control" element={<ProtectedRoute><AdminEnterpriseControl /></ProtectedRoute>} />
             <Route path="/admin/errors" element={<ProtectedRoute><AdminErrors /></ProtectedRoute>} />

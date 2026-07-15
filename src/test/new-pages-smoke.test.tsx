@@ -8,6 +8,7 @@ import EnterpriseThemeLoader from "@/components/EnterpriseThemeLoader";
 import AdminBranches from "@/pages/AdminBranches";
 import AdminKnowledgeBank from "@/pages/AdminKnowledgeBank";
 import AdminWarnings from "@/pages/AdminWarnings";
+import AdminGhost from "@/pages/AdminGhost";
 
 describe("new page modules added in PR #86", () => {
   it("KnowledgeBank loads without syntax errors", () => {
@@ -44,5 +45,9 @@ describe("new page modules added in PR #86", () => {
 
   it("AdminWarnings loads without syntax errors", () => {
     expect(typeof AdminWarnings).toBe("function");
+  });
+
+  it("AdminGhost loads without syntax errors", () => {
+    expect(typeof AdminGhost).toBe("function");
   });
 });
