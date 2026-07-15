@@ -7,6 +7,7 @@ import OperationsSettings from "@/pages/OperationsSettings";
 import EnterpriseThemeLoader from "@/components/EnterpriseThemeLoader";
 import AdminBranches from "@/pages/AdminBranches";
 import AdminKnowledgeBank from "@/pages/AdminKnowledgeBank";
+import AdminWarnings from "@/pages/AdminWarnings";
 
 describe("new page modules added in PR #86", () => {
   it("KnowledgeBank loads without syntax errors", () => {
@@ -39,5 +40,9 @@ describe("new page modules added in PR #86", () => {
 
   it("AdminKnowledgeBank loads without syntax errors", () => {
     expect(typeof AdminKnowledgeBank).toBe("function");
+  });
+
+  it("AdminWarnings loads without syntax errors", () => {
+    expect(typeof AdminWarnings).toBe("function");
   });
 });
