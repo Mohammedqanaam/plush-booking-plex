@@ -15,6 +15,7 @@ const HotelSearch = lazy(() => import("./pages/HotelSearch"));
 const Branches = lazy(() => import("./pages/Branches"));
 const KnowledgeBank = lazy(() => import("./pages/KnowledgeBank"));
 const Complaints = lazy(() => import("./pages/Complaints"));
+const BoudlRunner = lazy(() => import("./pages/BoudlRunner"));
 const UploadCenter = lazy(() => import("./pages/UploadCenter"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminDiscounts = lazy(() => import("./pages/AdminDiscounts"));
@@ -50,6 +51,8 @@ const App = () => (
             <Route path="/knowledge-bank" element={<KnowledgeBank />} />
             <Route path="/policies" element={<Navigate to="/" replace />} />
             <Route path="/complaints" element={<Complaints />} />
+            <Route path="/runner" element={<BoudlRunner />} />
+            <Route path="/relax" element={<Navigate to="/runner" replace />} />
             <Route path="/upload-center" element={<UploadCenter />} />
             <Route path="/contact-requests" element={<Contacts />} />
             <Route path="/contacts" element={<Contacts />} />
