@@ -171,7 +171,56 @@ export type CroExportStatus = {
   optionalEnv?: string[];
 };
 
+export type OperaEnvironmentStatus = {
+  id: "legacy" | "new";
+  label: string;
+  uiUrl: string;
+  configured: boolean;
+  authScheme: "client_credentials" | "resource_owner";
+  hotels: Array<{ id: string; name: string }>;
+  missing: string[];
+};
+
+export type OperaSearchStatus = {
+  environments: OperaEnvironmentStatus[];
+  readOnly: true;
+};
+
+export type OperaReservationSummary = {
+  confirmationNumber: string;
+  reservationId: string;
+  guestName: string;
+  status: string;
+  arrivalDate: string;
+  departureDate: string;
+  hotelId: string;
+  hotelName: string;
+  roomType: string;
+  roomNumber: string;
+  numberOfRooms: number | null;
+};
+
+export type OperaSearchRequest = {
+  environment: "legacy" | "new";
+  hotelId: string;
+  query: string;
+  arrivalStartDate?: string;
+  arrivalEndDate?: string;
+  departureStartDate?: string;
+  departureEndDate?: string;
+};
+
+export type OperaSearchResponse = {
+  reservations: OperaReservationSummary[];
+  totalResults: number;
+  hasMore: boolean;
+  requestId: string;
+  searchedAt: string;
+  readOnly: true;
+};
+
 const API_BASE = "/.netlify/functions";
+const OPERA_SEARCH_API = "/api/admin/opera-search";
 
 const getToken = (): string | null => (typeof window === "undefined" ? null : sessionStorage.getItem("admin_token"));
 
@@ -281,6 +330,24 @@ export const api = {
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "تعذر تصدير الحجوزات من CRO");
     return res.blob();
+  },
+
+  async getOperaSearchStatus() {
+    const res = await fetch(OPERA_SEARCH_API, { headers: authHeaders() });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "تعذر تحميل حالة ربط OPERA");
+    return data as OperaSearchStatus;
+  },
+
+  async searchOperaReservations(payload: OperaSearchRequest) {
+    const res = await fetch(OPERA_SEARCH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "تعذر البحث في حجوزات OPERA");
+    return data as OperaSearchResponse;
   },
 
   async uploadBookings(csvText: string) {
