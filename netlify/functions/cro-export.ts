@@ -1,11 +1,12 @@
 import { json, validateSession } from "./_shared/security";
+import { primaryCroFormHtml } from "./_shared/croForms";
 
 const DEFAULT_CRO_LOGIN_URL = "https://res.windsurfercrs.com/cromh/login/signin.aspx?croID=51";
 const DEFAULT_CRO_DASHBOARD_URL = "https://res.windsurfercrs.com/cromh/dashboards.aspx";
 const BROWSER_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36";
 const HTML_ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
 
-type CroRequest = {
+export type CroRequest = {
   from?: string;
   to?: string;
   dryRun?: boolean;
@@ -16,18 +17,18 @@ type CroRequest = {
 const canExport = (role: string) => ["superadmin", "admin", "editor"].includes(role);
 
 const readConfig = () => ({
-  loginUrl: process.env.CRO_LOGIN_URL || DEFAULT_CRO_LOGIN_URL,
-  dashboardUrl: process.env.CRO_DASHBOARD_URL || DEFAULT_CRO_DASHBOARD_URL,
-  exportUrl: process.env.CRO_EXPORT_URL || "",
-  checkoutFromField: process.env.CRO_CHECKOUT_FROM_FIELD || "",
-  checkoutToField: process.env.CRO_CHECKOUT_TO_FIELD || "",
-  dateFilterField: process.env.CRO_DATE_FILTER_FIELD || "",
-  dateFilterValue: process.env.CRO_DATE_FILTER_VALUE || "CheckOutDate",
-  reservationsButton: process.env.CRO_RESERVATIONS_BUTTON || "",
-  exportButton: process.env.CRO_EXPORT_BUTTON || "",
-  dateFormat: process.env.CRO_DATE_FORMAT || "yyyy/MM/dd",
-  username: process.env.CRO_USERNAME || "",
-  password: process.env.CRO_PASSWORD || "",
+  loginUrl: Netlify.env.get("CRO_LOGIN_URL") || DEFAULT_CRO_LOGIN_URL,
+  dashboardUrl: Netlify.env.get("CRO_DASHBOARD_URL") || DEFAULT_CRO_DASHBOARD_URL,
+  exportUrl: Netlify.env.get("CRO_EXPORT_URL") || "",
+  checkoutFromField: Netlify.env.get("CRO_CHECKOUT_FROM_FIELD") || "",
+  checkoutToField: Netlify.env.get("CRO_CHECKOUT_TO_FIELD") || "",
+  dateFilterField: Netlify.env.get("CRO_DATE_FILTER_FIELD") || "",
+  dateFilterValue: Netlify.env.get("CRO_DATE_FILTER_VALUE") || "CheckOutDate",
+  reservationsButton: Netlify.env.get("CRO_RESERVATIONS_BUTTON") || "",
+  exportButton: Netlify.env.get("CRO_EXPORT_BUTTON") || "",
+  dateFormat: Netlify.env.get("CRO_DATE_FORMAT") || "yyyy/MM/dd",
+  username: Netlify.env.get("CRO_USERNAME") || "",
+  password: Netlify.env.get("CRO_PASSWORD") || "",
 });
 
 const decodeHtmlAttribute = (value: string) => value
@@ -52,9 +53,10 @@ const hasBooleanAttr = (tag: string, name: string) => new RegExp(`\\s${name}(?:\
 const optionLabel = (option: string) => decodeHtmlAttribute(option.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
 
 const collectFormInputs = (html: string) => {
+  const formHtml = primaryCroFormHtml(html);
   const fields = new URLSearchParams();
 
-  for (const input of html.match(/<input\b[^>]*>/gi) || []) {
+  for (const input of formHtml.match(/<input\b[^>]*>/gi) || []) {
     const attrs = readAttrs(input);
     const type = (attrs.type || "text").toLowerCase();
     if (!attrs.name || hasBooleanAttr(input, "disabled")) continue;
@@ -63,7 +65,7 @@ const collectFormInputs = (html: string) => {
     fields.append(attrs.name, attrs.value || "");
   }
 
-  for (const textarea of html.match(/<textarea\b[\s\S]*?<\/textarea>/gi) || []) {
+  for (const textarea of formHtml.match(/<textarea\b[\s\S]*?<\/textarea>/gi) || []) {
     const openingTag = textarea.match(/^<textarea\b[^>]*>/i)?.[0] || textarea;
     const attrs = readAttrs(openingTag);
     if (!attrs.name || hasBooleanAttr(openingTag, "disabled")) continue;
@@ -71,7 +73,7 @@ const collectFormInputs = (html: string) => {
     fields.append(attrs.name, decodeHtmlAttribute(value));
   }
 
-  for (const select of html.match(/<select\b[\s\S]*?<\/select>/gi) || []) {
+  for (const select of formHtml.match(/<select\b[\s\S]*?<\/select>/gi) || []) {
     const openingTag = select.match(/^<select\b[^>]*>/i)?.[0] || select;
     const attrs = readAttrs(openingTag);
     if (!attrs.name || hasBooleanAttr(openingTag, "disabled")) continue;
@@ -285,7 +287,7 @@ const checkedDownload = async (response: Response, from?: string, to?: string) =
   if (!response.ok) throw new Error("تعذر تنزيل ملف الحجوزات من CRO.");
   const payload = await response.arrayBuffer();
   if (payload.byteLength === 0) {
-    throw new Error(`لم يُرجع CRO حجوزات قابلة للتصدير للفترة ${from || "المحددة"} إلى ${to || "المحددة"}. تحقق من وجود سجلات Check-Out في هذه المدة.`);
+    throw new Error(`أعاد CRO ملف تصدير فارغًا للفترة ${from || "المحددة"} إلى ${to || "المحددة"}. لم يتم استبدال التقرير الحالي.`);
   }
   return new Response(payload, {
     status: 200,
@@ -367,6 +369,44 @@ const exportViaDashboardFlow = async (
 
 const validIsoDate = (value?: string) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
 
+const requestConfigFor = (body: CroRequest) => {
+  const config = readConfig();
+  return {
+    ...config,
+    username: body.username?.trim() || config.username,
+    password: body.password || config.password,
+  };
+};
+
+const exportWithSession = async (
+  requestConfig: ReturnType<typeof readConfig>,
+  cookie: string,
+  body: CroRequest,
+) => requestConfig.exportUrl
+  ? await (async () => {
+    const url = new URL(requestConfig.exportUrl);
+    if (body.from) url.searchParams.set("from", body.from);
+    if (body.to) url.searchParams.set("to", body.to);
+    const result = await fetchCro(url.toString(), { method: "GET" }, cookie);
+    if (!isDownloadResponse(result.response)) throw new Error("رابط التصدير المباشر لم يُرجع ملفًا صالحًا.");
+    return checkedDownload(result.response, body.from, body.to);
+  })()
+  : exportViaDashboardFlow(requestConfig, cookie, body);
+
+export const downloadCroBookings = async (body: CroRequest) => {
+  if (!validIsoDate(body.from) || !validIsoDate(body.to) || (body.from && body.to && body.from > body.to)) {
+    throw new Error("نطاق التاريخ غير صالح. اختر تاريخ بداية ونهاية صحيحين.");
+  }
+
+  const requestConfig = requestConfigFor(body);
+  if (!requestConfig.username || !requestConfig.password) {
+    throw new Error("بيانات CRO غير مضبوطة للمزامنة التلقائية.");
+  }
+
+  const login = await loginToCro(requestConfig);
+  return exportWithSession(requestConfig, login.cookie, body);
+};
+
 export default async (req: Request) => {
   const session = await validateSession(req);
   if (!session) return json({ error: "Unauthorized" }, 401);
@@ -408,11 +448,7 @@ export default async (req: Request) => {
     return json({ error: "نطاق التاريخ غير صالح. اختر تاريخ بداية ونهاية صحيحين." }, 400);
   }
 
-  const requestConfig = {
-    ...config,
-    username: body.username?.trim() || config.username,
-    password: body.password || config.password,
-  };
+  const requestConfig = requestConfigFor(body);
 
   if (!requestConfig.username || !requestConfig.password) {
     return json({ error: "أدخل بيانات CRO أو اضبطها في Netlify environment variables." }, 412);
@@ -444,16 +480,7 @@ export default async (req: Request) => {
       });
     }
 
-    const exported = requestConfig.exportUrl
-      ? await (async () => {
-        const url = new URL(requestConfig.exportUrl);
-        if (body.from) url.searchParams.set("from", body.from);
-        if (body.to) url.searchParams.set("to", body.to);
-        const result = await fetchCro(url.toString(), { method: "GET" }, login.cookie);
-        if (!isDownloadResponse(result.response)) throw new Error("رابط التصدير المباشر لم يُرجع ملفًا صالحًا.");
-        return checkedDownload(result.response, body.from, body.to);
-      })()
-      : await exportViaDashboardFlow(requestConfig, login.cookie, body);
+    const exported = await exportWithSession(requestConfig, login.cookie, body);
 
     const payload = await exported.arrayBuffer();
     if (payload.byteLength === 0) throw new Error("أعاد CRO ملفًا فارغًا؛ لم يتم اعتماد العملية كتصدير ناجح.");
