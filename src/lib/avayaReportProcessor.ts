@@ -45,6 +45,10 @@ type DurationEntry = {
   events: number;
 };
 
+type ParsedAvayaSource =
+  | { kind: "inbound"; rangeStart: string; rangeEnd: string; entries: InboundEntry[] }
+  | { kind: "dnd" | "timecard"; rangeStart: string; rangeEnd: string; entries: DurationEntry[] };
+
 const REPORT_TITLES: Record<AvayaFileKind, string> = {
   inbound: "User Inbound Summary",
   dnd: "Agent Realtime Feature Trace new",
@@ -100,6 +104,24 @@ const loadWorkbook = async (file: File) => {
   const totalRows = workbook.worksheets.reduce((total, worksheet) => total + worksheet.rowCount, 0);
   if (workbook.worksheets.length > 100 || totalRows > 100_000) throw new Error("ملف Avaya أكبر من حدود المعالجة الآمنة.");
   return workbook;
+};
+
+const parseWorkbookFile = async (file: File): Promise<ParsedAvayaSource> => {
+  const workbook = await loadWorkbook(file);
+  const kind = classifyAvayaWorkbook(workbook);
+  if (!kind) throw new Error(`الملف ${file.name} ليس من تقارير Avaya المدعومة.`);
+  if (kind === "inbound") return { kind, ...parseInbound(workbook) };
+  return { kind, ...parseDurationWorkbook(workbook, kind) };
+};
+
+const parseAvayaFile = async (file: File): Promise<ParsedAvayaSource> => {
+  const extension = file.name.toLocaleLowerCase("en").split(".").pop();
+  if (extension === "xlsx") return parseWorkbookFile(file);
+  if (extension === "pdf") {
+    const { loadAndParseAvayaPdf } = await import("./avayaPdfParser");
+    return loadAndParseAvayaPdf(file, { employeeIdentity, durationToSeconds }) as Promise<ParsedAvayaSource>;
+  }
+  throw new Error(`الملف ${file.name} غير مدعوم. استخدم PDF أو XLSX.`);
 };
 
 const parseInbound = (workbook: ExcelJS.Workbook) => {
@@ -189,19 +211,20 @@ export const mergeAvayaEntries = (
 
 export const analyzeAvayaFiles = async (files: File[]): Promise<AvayaReportResult> => {
   if (files.length !== 3) throw new Error("اختر تقارير Avaya الثلاثة المطلوبة.");
-  const parsed = await Promise.all(files.map(async (file) => ({ file, workbook: await loadWorkbook(file) })));
-  const byKind = new Map<AvayaFileKind, { file: File; workbook: ExcelJS.Workbook }>();
+  const parsed: Array<{ file: File; source: ParsedAvayaSource }> = [];
+  // PDF.js can consume considerable memory on mobile, so the three reports are intentionally read in sequence.
+  for (const file of files) parsed.push({ file, source: await parseAvayaFile(file) });
+  const byKind = new Map<AvayaFileKind, { file: File; source: ParsedAvayaSource }>();
   parsed.forEach((item) => {
-    const kind = classifyAvayaWorkbook(item.workbook);
-    if (!kind) throw new Error(`الملف ${item.file.name} ليس من تقارير Avaya المدعومة.`);
+    const kind = item.source.kind;
     if (byKind.has(kind)) throw new Error(`تم اختيار تقرير ${REPORT_TITLES[kind]} أكثر من مرة.`);
     byKind.set(kind, item);
   });
   if (byKind.size !== 3) throw new Error("يجب اختيار User Inbound وFeature Trace وTime Card.");
 
-  const inbound = parseInbound(byKind.get("inbound")!.workbook);
-  const dnd = parseDurationWorkbook(byKind.get("dnd")!.workbook, "dnd");
-  const timecard = parseDurationWorkbook(byKind.get("timecard")!.workbook, "timecard");
+  const inbound = byKind.get("inbound")!.source as Extract<ParsedAvayaSource, { kind: "inbound" }>;
+  const dnd = byKind.get("dnd")!.source as Extract<ParsedAvayaSource, { kind: "dnd" | "timecard" }>;
+  const timecard = byKind.get("timecard")!.source as Extract<ParsedAvayaSource, { kind: "dnd" | "timecard" }>;
   const ranges = [inbound, dnd, timecard].map((source) => `${source.rangeStart}|${source.rangeEnd}`);
   const warnings: string[] = [];
   if (new Set(ranges).size > 1) warnings.push("الفترات الزمنية بين الملفات غير متطابقة؛ راجع تواريخ التصدير قبل الاعتماد.");
