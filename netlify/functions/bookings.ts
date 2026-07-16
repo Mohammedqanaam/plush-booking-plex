@@ -1,146 +1,7 @@
 import { getStore } from "@netlify/blobs";
 import { json, validateSession } from "./_shared/security";
 import { buildPublicBookingReport } from "./_shared/bookingReport";
-
-const normalizeKey = (value: string) =>
-  value
-    .replace(/^\uFEFF/, "")
-    .toLowerCase()
-    .replace(/[\u064B-\u0652]/g, "")
-    .replace(/[أإآ]/g, "ا")
-    .replace(/ة/g, "ه")
-    .replace(/ى/g, "ي")
-    .replace(/[\s_\-/]+/g, "")
-    .trim();
-
-function parseCSV(text: string): Record<string, string>[] {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim());
-  if (lines.length < 2) return [];
-
-  const parseRow = (line: string): string[] => {
-    const fields: string[] = [];
-    let current = "";
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === "," && !inQuotes) {
-        fields.push(current.trim());
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-    fields.push(current.trim());
-    return fields;
-  };
-
-  const headers = parseRow(lines[0]).map((header) => header.replace(/^\uFEFF/, "").trim());
-
-  return lines
-    .slice(1)
-    .filter((line) => line.trim())
-    .map((line) => {
-      const values = parseRow(line);
-      const record: Record<string, string> = {};
-      headers.forEach((header, index) => {
-        record[header] = values[index] || "";
-      });
-      return record;
-    });
-}
-
-function getRecordValue(record: Record<string, string>, keys: string[]): string {
-  for (const key of keys) {
-    if (record[key] && String(record[key]).trim()) return String(record[key]);
-  }
-
-  const normalizedTargets = keys.map(normalizeKey);
-  for (const [rawKey, rawValue] of Object.entries(record)) {
-    if (!String(rawValue).trim()) continue;
-    const normalized = normalizeKey(rawKey);
-
-    if (normalizedTargets.includes(normalized)) return String(rawValue);
-
-    if (
-      normalizedTargets.some(
-        (target) => normalized.includes(target) || target.includes(normalized),
-      )
-    ) {
-      return String(rawValue);
-    }
-  }
-
-  return "";
-}
-
-function classifyStatus(status: string): "confirmed" | "cancelled" | "not_confirmed" {
-  const s = status.trim().toLowerCase();
-  if (!s) return "not_confirmed";
-
-  if (
-    s === "c" ||
-    s === "ns" ||
-    s.includes("cancel") ||
-    s.includes("ملغي") ||
-    s.includes("إلغاء") ||
-    s.includes("الغاء")
-  ) {
-    return "cancelled";
-  }
-
-  if (
-    s === "n" ||
-    s === "m" ||
-    s.includes("conf") ||
-    s.includes("confirmed") ||
-    s.includes("مؤكد")
-  ) {
-    return "confirmed";
-  }
-
-  return "not_confirmed";
-}
-
-function getBookingStatus(record: Record<string, string>): string {
-  return getRecordValue(record, [
-    "All stute",
-    "All Stute",
-    "all stute",
-    "Status",
-    "status",
-    "Booking Status",
-    "BookingStatus",
-    "حالة الحجز",
-    "الحالة",
-  ]);
-}
-
-function calculateStats(bookings: Record<string, string>[]) {
-  let confirmed = 0;
-  let cancelled = 0;
-
-  bookings.forEach((booking) => {
-    const category = classifyStatus(getBookingStatus(booking));
-    if (category === "confirmed") confirmed++;
-    else if (category === "cancelled") cancelled++;
-  });
-
-  const total = bookings.length;
-  return {
-    total,
-    confirmed,
-    cancelled,
-    cancelRate: total ? parseFloat(((cancelled / total) * 100).toFixed(1)) : 0,
-  };
-}
+import { BookingCsvError, saveBookingCsv } from "./_shared/bookingCsv";
 
 export default async (req: Request) => {
   const method = req.method;
@@ -205,19 +66,13 @@ export default async (req: Request) => {
       return json({ error: "CSV exceeds the 5 MB limit" }, 413);
     }
 
-    const bookings = parseCSV(csvText);
-    if (bookings.length === 0) {
-      return json({ error: "No valid data found in CSV" }, 400);
+    try {
+      const stats = await saveBookingCsv(csvText);
+      return json({ ok: true, stats });
+    } catch (error) {
+      if (error instanceof BookingCsvError) return json({ error: error.message }, error.status);
+      return json({ error: "Unable to save booking data" }, 500);
     }
-    if (bookings.length > 50_000) {
-      return json({ error: "CSV exceeds the 50,000 row limit" }, 413);
-    }
-
-    const stats = { ...calculateStats(bookings), updatedAt: new Date().toISOString() };
-    await store.setJSON("data", bookings);
-    await store.setJSON("stats", stats);
-
-    return json({ ok: true, stats });
   }
 
   return json({ error: "Method not allowed" }, 405);
