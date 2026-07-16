@@ -28,6 +28,7 @@ const AdminComplaints = lazy(() => import("./pages/AdminComplaints"));
 const AdminWarnings = lazy(() => import("./pages/AdminWarnings"));
 const AdminAvayaReports = lazy(() => import("./pages/AdminAvayaReports"));
 const AdminGhost = lazy(() => import("./pages/AdminGhost"));
+const AdminCroExport = lazy(() => import("./pages/AdminCroExport"));
 const BoudlPrototype = lazy(() => import("./pages/BoudlPrototype"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/admin/complaints" element={<ProtectedRoute><AdminComplaints /></ProtectedRoute>} />
             <Route path="/admin/warnings" element={<ProtectedRoute><AdminWarnings /></ProtectedRoute>} />
             <Route path="/admin/avaya-reports" element={<ProtectedRoute><AdminAvayaReports /></ProtectedRoute>} />
+            <Route path="/admin/cro-export" element={<ProtectedRoute><AdminCroExport /></ProtectedRoute>} />
             <Route path="/admin/ghost" element={<ProtectedRoute><AdminGhost /></ProtectedRoute>} />
             <Route path="/admin/discounts" element={<ProtectedRoute><AdminDiscounts /></ProtectedRoute>} />
             <Route path="/admin/enterprise-control" element={<ProtectedRoute><AdminEnterpriseControl /></ProtectedRoute>} />
