@@ -7,10 +7,11 @@ import {
   setCroSyncStatus,
   validCroDateRange,
 } from "./_shared/croSync";
+import { croEnvironmentValue } from "./_shared/croEnvironment";
 
 export default async (req: Request, context: Context) => {
   const automation = automaticCroConfig();
-  const secret = Netlify.env.get("CRO_SYNC_SECRET") || "";
+  const secret = croEnvironmentValue("CRO_SYNC_SECRET");
   if (!automation.configured || !secret || !validCroDateRange(automation.from, automation.to)) {
     return new Response(null, { status: 204 });
   }

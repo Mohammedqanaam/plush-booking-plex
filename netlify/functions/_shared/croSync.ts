@@ -1,4 +1,5 @@
 import { getStore } from "@netlify/blobs";
+import { croEnvironmentReady, croEnvironmentValue } from "./croEnvironment";
 
 export const DEFAULT_AUTO_FROM = "2026-07-01";
 export const DEFAULT_AUTO_TO = "2026-07-31";
@@ -52,11 +53,12 @@ export const validCroDateRange = (from?: string, to?: string) => Boolean(
 
 export const automaticCroConfig = () => ({
   configured: Boolean(
-    Netlify.env.get("CRO_USERNAME")
-    && Netlify.env.get("CRO_PASSWORD")
-    && Netlify.env.get("CRO_SYNC_SECRET"),
+    croEnvironmentValue("CRO_USERNAME")
+    && croEnvironmentValue("CRO_PASSWORD")
+    && croEnvironmentValue("CRO_SYNC_SECRET"),
   ),
-  from: Netlify.env.get("CRO_AUTO_FROM") || DEFAULT_AUTO_FROM,
-  to: Netlify.env.get("CRO_AUTO_TO") || DEFAULT_AUTO_TO,
+  environmentReady: croEnvironmentReady(),
+  from: croEnvironmentValue("CRO_AUTO_FROM") || DEFAULT_AUTO_FROM,
+  to: croEnvironmentValue("CRO_AUTO_TO") || DEFAULT_AUTO_TO,
   schedule: "@hourly",
 });

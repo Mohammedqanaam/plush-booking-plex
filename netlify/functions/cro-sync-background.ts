@@ -6,6 +6,7 @@ import {
   validCroDateRange,
 } from "./_shared/croSync";
 import { validateSession } from "./_shared/security";
+import { croEnvironmentValue } from "./_shared/croEnvironment";
 import { downloadCroBookings, type CroRequest } from "./cro-export";
 
 type BackgroundRequest = CroRequest & {
@@ -32,7 +33,7 @@ export default async (req: Request) => {
 
   const session = await validateSession(req);
   const providedSecret = req.headers.get("x-cro-sync-secret") || "";
-  const expectedSecret = Netlify.env.get("CRO_SYNC_SECRET") || "";
+  const expectedSecret = croEnvironmentValue("CRO_SYNC_SECRET");
   if ((!session || !canSync(session.role)) && !secretsMatch(providedSecret, expectedSecret)) {
     return new Response(null, { status: 401 });
   }

@@ -1,5 +1,6 @@
 import { json, validateSession } from "./_shared/security";
 import { primaryCroFormHtml } from "./_shared/croForms";
+import { croEnvironmentValue } from "./_shared/croEnvironment";
 
 const DEFAULT_CRO_LOGIN_URL = "https://res.windsurfercrs.com/cromh/login/signin.aspx?croID=51";
 const DEFAULT_CRO_DASHBOARD_URL = "https://res.windsurfercrs.com/cromh/dashboards.aspx";
@@ -17,18 +18,18 @@ export type CroRequest = {
 const canExport = (role: string) => ["superadmin", "admin", "editor"].includes(role);
 
 const readConfig = () => ({
-  loginUrl: Netlify.env.get("CRO_LOGIN_URL") || DEFAULT_CRO_LOGIN_URL,
-  dashboardUrl: Netlify.env.get("CRO_DASHBOARD_URL") || DEFAULT_CRO_DASHBOARD_URL,
-  exportUrl: Netlify.env.get("CRO_EXPORT_URL") || "",
-  checkoutFromField: Netlify.env.get("CRO_CHECKOUT_FROM_FIELD") || "",
-  checkoutToField: Netlify.env.get("CRO_CHECKOUT_TO_FIELD") || "",
-  dateFilterField: Netlify.env.get("CRO_DATE_FILTER_FIELD") || "",
-  dateFilterValue: Netlify.env.get("CRO_DATE_FILTER_VALUE") || "CheckOutDate",
-  reservationsButton: Netlify.env.get("CRO_RESERVATIONS_BUTTON") || "",
-  exportButton: Netlify.env.get("CRO_EXPORT_BUTTON") || "",
-  dateFormat: Netlify.env.get("CRO_DATE_FORMAT") || "yyyy/MM/dd",
-  username: Netlify.env.get("CRO_USERNAME") || "",
-  password: Netlify.env.get("CRO_PASSWORD") || "",
+  loginUrl: croEnvironmentValue("CRO_LOGIN_URL") || DEFAULT_CRO_LOGIN_URL,
+  dashboardUrl: croEnvironmentValue("CRO_DASHBOARD_URL") || DEFAULT_CRO_DASHBOARD_URL,
+  exportUrl: croEnvironmentValue("CRO_EXPORT_URL"),
+  checkoutFromField: croEnvironmentValue("CRO_CHECKOUT_FROM_FIELD"),
+  checkoutToField: croEnvironmentValue("CRO_CHECKOUT_TO_FIELD"),
+  dateFilterField: croEnvironmentValue("CRO_DATE_FILTER_FIELD"),
+  dateFilterValue: croEnvironmentValue("CRO_DATE_FILTER_VALUE") || "CheckOutDate",
+  reservationsButton: croEnvironmentValue("CRO_RESERVATIONS_BUTTON"),
+  exportButton: croEnvironmentValue("CRO_EXPORT_BUTTON"),
+  dateFormat: croEnvironmentValue("CRO_DATE_FORMAT") || "yyyy/MM/dd",
+  username: croEnvironmentValue("CRO_USERNAME"),
+  password: croEnvironmentValue("CRO_PASSWORD"),
 });
 
 const decodeHtmlAttribute = (value: string) => value
