@@ -6,6 +6,7 @@ import {
   Clock3,
   Download,
   FileSpreadsheet,
+  FileText,
   Loader2,
   PhoneIncoming,
   PhoneMissed,
@@ -74,8 +75,8 @@ const AdminAvayaReports = () => {
 
   const chooseFile = (kind: AvayaFileKind, file?: File) => {
     if (!file) return;
-    if (!file.name.toLocaleLowerCase("en").endsWith(".xlsx")) {
-      setError("يقبل مركز Avaya ملفات XLSX فقط.");
+    if (!/\.(?:pdf|xlsx)$/i.test(file.name)) {
+      setError("يقبل مركز Avaya ملفات PDF أو XLSX فقط.");
       return;
     }
     if (file.size > 15 * 1024 * 1024) {
@@ -116,13 +117,13 @@ const AdminAvayaReports = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="تقارير Avaya" subtitle="ارفع التقارير الثلاثة لتحويلها إلى نتيجة موحدة قابلة للمراجعة والتصدير." icon={FileSpreadsheet} onBack={() => navigate("/admin")} />
+      <PageHeader title="تقارير Avaya" subtitle="ارفع التقارير بصيغة PDF أو XLSX لتحويلها إلى نتيجة موحدة قابلة للمراجعة والتنزيل." icon={FileSpreadsheet} onBack={() => navigate("/admin")} />
 
       <section className="page-surface space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="section-title">ملفات التقرير اليومي</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">تتم المعالجة داخل جهازك ولا تُرفع ملفات الموظفين إلى الخادم. يجب أن تكون الملفات الثلاثة للفترة الزمنية نفسها.</p>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">تتم المعالجة داخل جهازك ولا تُرفع ملفات الموظفين إلى الخادم. اختر PDF الأصلي من Avaya أو XLSX، وتأكد أن التقارير الثلاثة للفترة نفسها.</p>
           </div>
           {Object.keys(files).length ? <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/50 px-3 text-xs font-bold" onClick={reset}><RefreshCcw className="h-4 w-4" /> مسح الملفات</button> : null}
         </div>
@@ -130,12 +131,13 @@ const AdminAvayaReports = () => {
         <div className="grid gap-3 lg:grid-cols-3">
           {FILE_SLOTS.map((slot, index) => {
             const file = files[slot.kind];
+            const isPdf = file?.name.toLocaleLowerCase("en").endsWith(".pdf");
             return (
               <button key={slot.kind} type="button" className={`group min-h-36 rounded-2xl border p-4 text-right transition ${file ? "border-emerald-500/35 bg-emerald-500/5" : "border-dashed border-primary/25 bg-secondary/15 hover:border-primary/55 hover:bg-primary/5"}`} onClick={() => inputs.current[slot.kind]?.click()}>
-                <input ref={(element) => { inputs.current[slot.kind] = element; }} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={(event) => chooseFile(slot.kind, event.target.files?.[0])} />
+                <input ref={(element) => { inputs.current[slot.kind] = element; }} type="file" accept=".pdf,.xlsx,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={(event) => chooseFile(slot.kind, event.target.files?.[0])} />
                 <div className="flex items-start justify-between gap-3">
-                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${file ? "bg-emerald-500/12 text-emerald-600" : "bg-primary/10 text-primary"}`}>{file ? <CheckCircle2 className="h-5 w-5" /> : <UploadCloud className="h-5 w-5" />}</span>
-                  <span className="rounded-full bg-secondary/60 px-2 py-1 text-[10px] font-black text-muted-foreground">{index + 1}</span>
+                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${file ? "bg-emerald-500/12 text-emerald-600" : "bg-primary/10 text-primary"}`}>{file ? (isPdf ? <FileText className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />) : <UploadCloud className="h-5 w-5" />}</span>
+                  <span className="rounded-full bg-secondary/60 px-2 py-1 text-[10px] font-black text-muted-foreground">{file ? (isPdf ? "PDF" : "XLSX") : index + 1}</span>
                 </div>
                 <strong className="mt-3 block text-sm">{slot.title}</strong>
                 <small className="mt-1 block text-xs text-muted-foreground">{file ? file.name : slot.hint}</small>
@@ -170,7 +172,7 @@ const AdminAvayaReports = () => {
           <section className="page-surface space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div><h2 className="section-title">نتائج الموظفين</h2><p className="mt-1 text-xs text-muted-foreground" dir="ltr">{report.rangeStart} — {report.rangeEnd}</p></div>
-              <button className="inline-flex h-11 items-center gap-2 rounded-xl gold-gradient px-4 text-sm font-black text-primary-foreground" onClick={() => void exportAvayaReport(report)}><Download className="h-4 w-4" /> تصدير Excel</button>
+              <button className="inline-flex h-11 items-center gap-2 rounded-xl gold-gradient px-4 text-sm font-black text-primary-foreground" onClick={() => void exportAvayaReport(report)}><Download className="h-4 w-4" /> تنزيل Excel</button>
             </div>
 
             <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
