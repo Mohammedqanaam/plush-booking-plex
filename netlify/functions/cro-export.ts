@@ -1,6 +1,7 @@
 import { json, validateSession } from "./_shared/security";
 
 const DEFAULT_CRO_LOGIN_URL = "https://res.windsurfercrs.com/cromh/login/signin.aspx?croID=51";
+const DEFAULT_CRO_DASHBOARD_URL = "https://res.windsurfercrs.com/cromh/dashboards.aspx";
 
 type CroRequest = {
   from?: string;
@@ -12,6 +13,7 @@ const canExport = (role: string) => ["superadmin", "admin", "editor"].includes(r
 
 const readConfig = () => ({
   loginUrl: process.env.CRO_LOGIN_URL || DEFAULT_CRO_LOGIN_URL,
+  dashboardUrl: process.env.CRO_DASHBOARD_URL || DEFAULT_CRO_DASHBOARD_URL,
   exportUrl: process.env.CRO_EXPORT_URL || "",
   username: process.env.CRO_USERNAME || "",
   password: process.env.CRO_PASSWORD || "",
@@ -69,9 +71,20 @@ const loginToCro = async (config: ReturnType<typeof readConfig>) => {
     body: fields.toString(),
   });
   const loginCookie = [cookie, cookieHeader(login.headers.get("set-cookie"))].filter(Boolean).join("; ");
-  const ok = (login.status >= 300 && login.status < 400) || login.ok;
+  const ok = login.status >= 300 && login.status < 400 || login.ok;
   if (!ok) throw new Error("فشل تسجيل الدخول في CRO. تحقق من بيانات الحساب أو حماية الجلسة.");
   return { cookie: loginCookie };
+};
+
+const verifyDashboardAccess = async (config: ReturnType<typeof readConfig>, cookie: string) => {
+  const response = await fetch(config.dashboardUrl, {
+    redirect: "manual",
+    headers: {
+      "Cookie": cookie,
+      "User-Agent": "RES-Dashboard-CRO-Connector/1.0",
+    },
+  });
+  return response.ok || (response.status >= 300 && response.status < 400);
 };
 
 export default async (req: Request) => {
@@ -83,9 +96,11 @@ export default async (req: Request) => {
   if (req.method === "GET") {
     return json({
       loginUrl: config.loginUrl,
+      dashboardUrl: config.dashboardUrl,
       configured: Boolean(config.username && config.password),
       exportConfigured: Boolean(config.exportUrl),
       requiredEnv: ["CRO_USERNAME", "CRO_PASSWORD", "CRO_EXPORT_URL"],
+      optionalEnv: ["CRO_LOGIN_URL", "CRO_DASHBOARD_URL"],
     });
   }
 
@@ -103,14 +118,16 @@ export default async (req: Request) => {
 
   try {
     const login = await loginToCro(config);
+    const dashboardChecked = await verifyDashboardAccess(config, login.cookie).catch(() => false);
     if (body.dryRun || !config.exportUrl) {
       return json({
         ok: true,
         loginChecked: true,
+        dashboardChecked,
         exportReady: Boolean(config.exportUrl),
         message: config.exportUrl
-          ? "تم اختبار تسجيل الدخول. يمكن تشغيل التصدير."
-          : "تم تسجيل الدخول، لكن رابط التصدير الداخلي CRO_EXPORT_URL غير مضبوط.",
+          ? "تم اختبار تسجيل الدخول والوصول للوحة CRO. يمكن تشغيل التصدير."
+          : "تم تسجيل الدخول والوصول للوحة CRO، لكن رابط التصدير الداخلي CRO_EXPORT_URL غير مضبوط.",
       });
     }
 

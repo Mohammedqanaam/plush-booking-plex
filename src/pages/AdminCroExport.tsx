@@ -1,25 +1,9 @@
 import { useEffect, useState } from "react";
 import { CalendarDays, Download, ExternalLink, Loader2, ShieldCheck, Wifi } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import { api, type CroExportStatus } from "@/lib/api";
 
-type CroExportStatus = {
-  loginUrl: string;
-  configured: boolean;
-  exportConfigured: boolean;
-  requiredEnv: string[];
-};
-
-const API_BASE = "/.netlify/functions";
 const today = new Date().toISOString().slice(0, 10);
-const authHeaders = (): Record<string, string> => {
-  const token = typeof window === "undefined" ? null : sessionStorage.getItem("admin_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
-const readError = async (response: Response, fallback: string) => {
-  const data = await response.json().catch(() => ({}));
-  return data.error || fallback;
-};
 
 const AdminCroExport = () => {
   const [status, setStatus] = useState<CroExportStatus | null>(null);
@@ -29,11 +13,7 @@ const AdminCroExport = () => {
   const [loading, setLoading] = useState<"status" | "test" | "export" | "">("status");
 
   useEffect(() => {
-    fetch(`${API_BASE}/cro-export`, { headers: authHeaders() })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(await readError(response, "تعذر تحميل حالة CRO"));
-        return response.json() as Promise<CroExportStatus>;
-      })
+    api.getCroExportStatus()
       .then(setStatus)
       .catch((error) => setMessage(error instanceof Error ? error.message : "تعذر تحميل حالة CRO"))
       .finally(() => setLoading(""));
@@ -43,15 +23,9 @@ const AdminCroExport = () => {
     setLoading("test");
     setMessage("");
     try {
-      const response = await fetch(`${API_BASE}/cro-export`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ dryRun: true }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "تعذر اختبار تسجيل الدخول في CRO");
-      setMessage(data.message || "تم اختبار الاتصال.");
-      setStatus((current) => current ? { ...current, exportConfigured: Boolean(data.exportReady) } : current);
+      const result = await api.testCroLogin();
+      setMessage(result.message || "تم اختبار الاتصال.");
+      setStatus((current) => current ? { ...current, exportConfigured: result.exportReady } : current);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "تعذر اختبار الاتصال.");
     } finally {
@@ -63,13 +37,7 @@ const AdminCroExport = () => {
     setLoading("export");
     setMessage("");
     try {
-      const response = await fetch(`${API_BASE}/cro-export`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ from, to }),
-      });
-      if (!response.ok) throw new Error(await readError(response, "تعذر تصدير الحجوزات من CRO"));
-      const blob = await response.blob();
+      const blob = await api.exportCroBookings(from, to);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -102,7 +70,9 @@ const AdminCroExport = () => {
           <span dir="ltr" className="mx-1 font-mono">CRO_USERNAME</span>
           و
           <span dir="ltr" className="mx-1 font-mono">CRO_PASSWORD</span>
-          ثم اضبط
+          و
+          <span dir="ltr" className="mx-1 font-mono">CRO_DASHBOARD_URL</span>
+          للتحقق من الدخول. ثم اضبط
           <span dir="ltr" className="mx-1 font-mono">CRO_EXPORT_URL</span>
           بعد معرفة رابط تقرير الحجوزات الداخلي من CRO.
         </div>
@@ -128,6 +98,11 @@ const AdminCroExport = () => {
           {status?.loginUrl ? (
             <a className="inline-flex h-11 items-center gap-2 rounded-xl border border-border/35 px-4 text-sm font-bold" href={status.loginUrl} target="_blank" rel="noreferrer">
               فتح CRO <ExternalLink className="h-4 w-4" />
+            </a>
+          ) : null}
+          {status?.dashboardUrl ? (
+            <a className="inline-flex h-11 items-center gap-2 rounded-xl border border-border/35 px-4 text-sm font-bold" href={status.dashboardUrl} target="_blank" rel="noreferrer">
+              لوحة CRO <ExternalLink className="h-4 w-4" />
             </a>
           ) : null}
         </div>
