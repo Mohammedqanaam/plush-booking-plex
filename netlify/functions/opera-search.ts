@@ -68,9 +68,10 @@ const requestOAuthToken = async (config: OperaConfig, forceRefresh = false) => {
   }
 
   const expiresIn = Number(payload.expires_in || 3_600);
+  const tokenLifetimeSeconds = Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 3_600;
   tokenCache.set(cacheKey, {
     token,
-    expiresAt: Date.now() + Math.max(300, Number.isFinite(expiresIn) ? expiresIn : 3_600) * 1_000,
+    expiresAt: Date.now() + tokenLifetimeSeconds * 1_000,
   });
   return token;
 };
