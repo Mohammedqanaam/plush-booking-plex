@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, CalendarDays, LockKeyhole, Search } from "lucide-react";
+import { BarChart3, CalendarDays, Loader2, LockKeyhole, RefreshCw, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
-import { api, type PublicBookingReport } from "@/lib/api";
+import { api, type PublicBookingReport, type PublicCroSyncStatus } from "@/lib/api";
 
 type ReportSection = "summary" | "employees";
 type SortKey = "confirmed" | "total" | "rate" | "name";
@@ -19,6 +19,9 @@ const BookingReports = () => {
   const [sortBy, setSortBy] = useState<SortKey>("confirmed");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [syncStatus, setSyncStatus] = useState<PublicCroSyncStatus | null>(null);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
 
   const section: ReportSection = searchParams.get("section") === "employees" ? "employees" : "summary";
 
@@ -30,7 +33,34 @@ const BookingReports = () => {
       })
       .catch(() => setError("تعذر تحميل التقرير حاليًا."))
       .finally(() => setLoading(false));
+
+    api.getPublicCroSyncStatus()
+      .then((status) => {
+        setSyncStatus(status);
+        setSyncMessage(status.message);
+      })
+      .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    if (!syncStatus?.active) return undefined;
+
+    const timer = window.setInterval(() => {
+      api.getPublicCroSyncStatus()
+        .then(async (status) => {
+          setSyncStatus(status);
+          setSyncMessage(status.message);
+          if (!status.active && status.state === "success") {
+            const nextReport = await api.getPublicBookingReport();
+            setReport(nextReport);
+            setError("");
+          }
+        })
+        .catch(() => setSyncMessage("تعذر التحقق من حالة التحديث الآن."));
+    }, 5_000);
+
+    return () => window.clearInterval(timer);
+  }, [syncStatus?.active]);
 
   const employees = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("ar");
@@ -47,6 +77,27 @@ const BookingReports = () => {
     setSearchParams(next === "employees" ? { section: "employees" } : {}, { replace: true });
   };
 
+  const requestSync = async () => {
+    setSyncBusy(true);
+    setSyncMessage("جاري إرسال طلب التحديث…");
+    try {
+      const status = await api.requestPublicCroSync();
+      setSyncStatus(status);
+      setSyncMessage(status.message);
+      if (status.state === "success") {
+        const nextReport = await api.getPublicBookingReport();
+        setReport(nextReport);
+      }
+    } catch {
+      setSyncMessage("تعذر إرسال طلب التحديث الآن.");
+    } finally {
+      setSyncBusy(false);
+    }
+  };
+
+  const syncInProgress = syncBusy || Boolean(syncStatus?.active);
+  const syncUnavailable = syncStatus?.available === false;
+
   return (
     <div className="page-wrap">
       <PageHeader title="تقارير الحجوزات" subtitle="ملخص الحجوزات ونتائج الموظفين." icon={BarChart3} />
@@ -60,6 +111,31 @@ const BookingReports = () => {
         <LockKeyhole className="h-[18px] w-[18px]" strokeWidth={1.8} />
         <span>عرض فقط دون بيانات الضيوف أو أدوات تعديل.</span>
       </div>
+
+      <section className="page-surface flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <RefreshCw className={`h-5 w-5 ${syncStatus?.active ? "animate-spin" : ""}`} strokeWidth={1.8} />
+          </span>
+          <div className="min-w-0">
+            <h2 className="section-title">تحديث بيانات الحجوزات</h2>
+            <p className="mt-1 text-xs leading-6 text-muted-foreground">يعمل CRO في الخلفية دون إظهار بيانات الدخول أو منح الزائر صلاحيات إدارية.</p>
+            <p className={`mt-1 text-xs font-semibold ${syncUnavailable ? "text-destructive" : "text-primary"}`} aria-live="polite">
+              {syncMessage || "يمكن طلب تحديث التقرير عند الحاجة."}
+              {syncStatus?.nextAllowedAt ? ` يتاح الطلب التالي بعد ${formatDate(syncStatus.nextAllowedAt)}.` : ""}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl gold-gradient px-5 text-sm font-black text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => void requestSync()}
+          disabled={syncInProgress || syncUnavailable}
+        >
+          {syncInProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          {syncInProgress ? "جاري التحديث" : syncUnavailable ? "التحديث غير جاهز" : "مزامنة الحجوزات"}
+        </button>
+      </section>
 
       {loading ? <div className="page-surface text-sm text-muted-foreground">جاري تحميل التقرير…</div> : null}
       {error ? <div className="rounded-2xl border border-destructive/25 bg-destructive/5 p-4 text-sm text-destructive">{error}</div> : null}
