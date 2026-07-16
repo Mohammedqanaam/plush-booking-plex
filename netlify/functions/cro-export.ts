@@ -28,14 +28,6 @@ const readConfig = () => ({
   password: process.env.CRO_PASSWORD || "",
 });
 
-const readAttrs = (tag: string) => {
-  const attrs: Record<string, string> = {};
-  const attrPattern = /([\w:-]+)\s*=\s*(["'])(.*?)\2/gi;
-  let attr: RegExpExecArray | null;
-  while ((attr = attrPattern.exec(tag))) attrs[attr[1].toLowerCase()] = attr[3];
-  return attrs;
-};
-
 const collectFormInputs = (html: string) => {
   const fields = new URLSearchParams();
   const inputPattern = /<(input|textarea)\b[^>]*>/gi;
@@ -93,6 +85,14 @@ const findFieldNearText = (html: string, text: RegExp) => {
   return field?.[2] || "";
 };
 
+const readAttrs = (tag: string) => {
+  const attrs: Record<string, string> = {};
+  const attrPattern = /([\w:-]+)\s*=\s*(["'])(.*?)\2/gi;
+  let attr: RegExpExecArray | null;
+  while ((attr = attrPattern.exec(tag))) attrs[attr[1].toLowerCase()] = attr[3];
+  return attrs;
+};
+
 const findSubmit = (html: string, explicit: string, labels: RegExp[]) => {
   if (explicit) return { name: explicit, value: "" };
   const inputs = html.match(/<input\b[^>]*>/gi) || [];
@@ -133,6 +133,54 @@ const absoluteUrl = (base: string, target: string) => new URL(target, base).toSt
 
 const cookieHeader = (value: string | null) => value?.split(",").map((part) => part.split(";")[0]).join("; ") || "";
 
+const mergeCookies = (...cookies: Array<string | null | undefined>) => {
+  const jar = new Map<string, string>();
+  for (const cookie of cookies) {
+    for (const part of (cookie || "").split(";").map((item) => item.trim()).filter(Boolean)) {
+      const [name, ...rest] = part.split("=");
+      if (name && rest.length) jar.set(name, `${name}=${rest.join("=")}`);
+    }
+  }
+  return Array.from(jar.values()).join("; ");
+};
+
+const fetchCro = async (
+  url: string,
+  init: RequestInit,
+  cookie: string,
+  maxRedirects = 6,
+): Promise<{ response: Response; cookie: string; url: string }> => {
+  let currentUrl = url;
+  let currentCookie = cookie;
+  let response = await fetch(currentUrl, {
+    ...init,
+    redirect: "manual",
+    headers: {
+      ...(init.headers || {}),
+      "Cookie": currentCookie,
+      "User-Agent": "RES-Dashboard-CRO-Connector/1.0",
+    },
+  });
+
+  for (let index = 0; index < maxRedirects && response.status >= 300 && response.status < 400; index += 1) {
+    currentCookie = mergeCookies(currentCookie, cookieHeader(response.headers.get("set-cookie")));
+    const location = response.headers.get("location");
+    if (!location) break;
+    currentUrl = absoluteUrl(currentUrl, location);
+    response = await fetch(currentUrl, {
+      method: "GET",
+      redirect: "manual",
+      headers: {
+        "Cookie": currentCookie,
+        "User-Agent": "RES-Dashboard-CRO-Connector/1.0",
+      },
+    });
+  }
+
+  currentCookie = mergeCookies(currentCookie, cookieHeader(response.headers.get("set-cookie")));
+  return { response, cookie: currentCookie, url: currentUrl };
+};
+
 const formatCroDate = (date: string, format: string) => {
   const [year, month, day] = date.split("-");
   if (!year || !month || !day) return date;
@@ -170,21 +218,15 @@ const loginToCro = async (config: ReturnType<typeof readConfig>) => {
     },
     body: fields.toString(),
   });
-  const loginCookie = [cookie, cookieHeader(login.headers.get("set-cookie"))].filter(Boolean).join("; ");
+  const loginCookie = mergeCookies(cookie, cookieHeader(login.headers.get("set-cookie")));
   const ok = login.status >= 300 && login.status < 400 || login.ok;
   if (!ok) throw new Error("فشل تسجيل الدخول في CRO. تحقق من بيانات الحساب أو حماية الجلسة.");
   return { cookie: loginCookie };
 };
 
 const verifyDashboardAccess = async (config: ReturnType<typeof readConfig>, cookie: string) => {
-  const response = await fetch(config.dashboardUrl, {
-    redirect: "manual",
-    headers: {
-      "Cookie": cookie,
-      "User-Agent": "RES-Dashboard-CRO-Connector/1.0",
-    },
-  });
-  return response.ok || (response.status >= 300 && response.status < 400);
+  const { response, url } = await fetchCro(config.dashboardUrl, { method: "GET" }, cookie);
+  return response.ok && !/signin|login/i.test(url);
 };
 
 const isDownloadResponse = (response: Response) => {
@@ -193,28 +235,27 @@ const isDownloadResponse = (response: Response) => {
   return /attachment/i.test(disposition) || !/text\/html/i.test(type);
 };
 
-const postDashboardForm = async (url: string, cookie: string, html: string, fields: URLSearchParams) => fetch(firstFormAction(html, url), {
-  method: "POST",
-  redirect: "manual",
-  headers: {
-    "Content-Type": "application/x-www-form-urlencoded",
-    "Cookie": cookie,
-    "User-Agent": "RES-Dashboard-CRO-Connector/1.0",
+const postDashboardForm = async (url: string, cookie: string, html: string, fields: URLSearchParams) => fetchCro(
+  firstFormAction(html, url),
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: fields.toString(),
   },
-  body: fields.toString(),
-});
+  cookie,
+);
 
 const exportViaDashboardFlow = async (
   config: ReturnType<typeof readConfig>,
   cookie: string,
   body: CroRequest,
 ) => {
-  const dashboard = await fetch(config.dashboardUrl, {
-    redirect: "manual",
-    headers: { "Cookie": cookie, "User-Agent": "RES-Dashboard-CRO-Connector/1.0" },
-  });
-  if (!dashboard.ok) throw new Error("تم تسجيل الدخول لكن تعذر فتح لوحة CRO.");
-  const dashboardHtml = await dashboard.text();
+  const dashboardResult = await fetchCro(config.dashboardUrl, { method: "GET" }, cookie);
+  if (!dashboardResult.response.ok || /signin|login/i.test(dashboardResult.url)) {
+    throw new Error("تم تسجيل الدخول لكن تعذر فتح لوحة CRO. قد تكون جلسة CRO محمية من اتصال السيرفر أو تحتاج تحقق إضافي.");
+  }
+  const dashboardHtml = await dashboardResult.response.text();
+  const dashboardCookie = dashboardResult.cookie;
   const fields = collectFormInputs(dashboardHtml);
   const fromField = config.checkoutFromField
     || findField(dashboardHtml, [/checkout.*from/i, /from.*checkout/i, /date.*from/i, /from.*date/i, /start/i])
@@ -235,24 +276,22 @@ const exportViaDashboardFlow = async (
 
   const reservationsButton = findSubmit(dashboardHtml, config.reservationsButton, [/الحجوزات/i, /reservations?/i, /bookings?/i]);
   if (reservationsButton) fields.set(reservationsButton.name, reservationsButton.value);
-  const reservations = await postDashboardForm(config.dashboardUrl, cookie, dashboardHtml, fields);
-  const reservationCookie = [cookie, cookieHeader(reservations.headers.get("set-cookie"))].filter(Boolean).join("; ");
-  const reservationsHtml = await reservations.text();
+  const reservations = await postDashboardForm(config.dashboardUrl, dashboardCookie, dashboardHtml, fields);
+  const reservationCookie = reservations.cookie;
+  const reservationsHtml = await reservations.response.text();
 
   const exportFields = collectFormInputs(reservationsHtml);
   const exportButton = findSubmit(reservationsHtml, config.exportButton, [/تصدير/i, /export/i, /excel/i, /xlsx/i, /csv/i]);
   if (exportButton) {
     exportFields.set(exportButton.name, exportButton.value);
     const exported = await postDashboardForm(config.dashboardUrl, reservationCookie, reservationsHtml, exportFields);
-    if (isDownloadResponse(exported)) return exported;
+    if (isDownloadResponse(exported.response)) return exported.response;
   }
 
   const exportHref = findAnchor(reservationsHtml, [/تصدير/i, /export/i, /excel/i, /xlsx/i, /csv/i]);
   if (exportHref) {
-    const exported = await fetch(absoluteUrl(config.dashboardUrl, exportHref), {
-      headers: { "Cookie": reservationCookie, "User-Agent": "RES-Dashboard-CRO-Connector/1.0" },
-    });
-    if (isDownloadResponse(exported)) return exported;
+    const exported = await fetchCro(absoluteUrl(config.dashboardUrl, exportHref), { method: "GET" }, reservationCookie);
+    if (isDownloadResponse(exported.response)) return exported.response;
   }
 
   throw new Error("تم فتح الحجوزات لكن لم أستطع تحديد زر التصدير. اضبط CRO_EXPORT_BUTTON حسب اسم زر التصدير في صفحة CRO.");
@@ -309,6 +348,16 @@ export default async (req: Request) => {
     const login = await loginToCro(requestConfig);
     const dashboardChecked = await verifyDashboardAccess(requestConfig, login.cookie).catch(() => false);
     if (body.dryRun) {
+      if (!dashboardChecked) {
+        return json({
+          ok: false,
+          loginChecked: true,
+          dashboardChecked: false,
+          exportReady: false,
+          exportMode: requestConfig.exportUrl ? "direct-url" : "dashboard-flow",
+          error: "تم تسجيل الدخول، لكن لم يتم فتح لوحة CRO من السيرفر. جرّب زر التصدير مباشرة أو يلزم ضبط/السماح لاتصال Netlify من نظام CRO.",
+        }, 502);
+      }
       return json({
         ok: true,
         loginChecked: true,
@@ -327,10 +376,10 @@ export default async (req: Request) => {
         if (body.from) url.searchParams.set("from", body.from);
         if (body.to) url.searchParams.set("to", body.to);
         return fetch(url.toString(), {
-          headers: {
-            "Cookie": login.cookie,
-            "User-Agent": "RES-Dashboard-CRO-Connector/1.0",
-          },
+        headers: {
+          "Cookie": login.cookie,
+          "User-Agent": "RES-Dashboard-CRO-Connector/1.0",
+        },
         });
       })()
       : await exportViaDashboardFlow(requestConfig, login.cookie, body);
