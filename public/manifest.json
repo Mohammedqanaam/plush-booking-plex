@@ -1,7 +1,7 @@
 {
-  "name": "Res Central Reservation Platform",
-  "short_name": "Res",
-  "description": "منصة الحجز المركزي",
+  "name": "داش بورد الحجز المركزي",
+  "short_name": "الحجز المركزي",
+  "description": "منصة تقارير الحجز المركزي لمجموعة بودل للضيافة",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0A0514",
@@ -11,9 +11,10 @@
   "lang": "ar",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64",
-      "type": "image/x-icon"
+      "src": "/bhg-hospitality-group.jpg",
+      "sizes": "640x640",
+      "type": "image/jpeg",
+      "purpose": "any"
     }
   ]
 }
