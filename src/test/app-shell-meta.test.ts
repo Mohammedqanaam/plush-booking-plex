@@ -10,6 +10,12 @@ describe("app shell and web app metadata", () => {
     expect(html).toContain('name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"');
     expect(html).toContain('<link rel="manifest" href="/manifest.json">');
     expect(html).toContain('name="apple-mobile-web-app-capable" content="yes"');
+    expect(html).toContain('<title>داش بورد الحجز المركزي</title>');
+    expect(html).toContain('property="og:title" content="داش بورد الحجز المركزي"');
+    expect(html).toContain('property="og:site_name" content="مجموعة بودل للضيافة"');
+    expect(html).toContain('property="og:image" content="https://www.res-dashbord.com/bhg-hospitality-group.jpg?v=20260716"');
+    expect(html).not.toContain("Worm-AI");
+    expect(html).not.toContain("Lovable");
   });
 
   it("defines safe-area and app-shell utilities", () => {
