@@ -2,6 +2,8 @@ import { json, validateSession } from "./_shared/security";
 
 const DEFAULT_CRO_LOGIN_URL = "https://res.windsurfercrs.com/cromh/login/signin.aspx?croID=51";
 const DEFAULT_CRO_DASHBOARD_URL = "https://res.windsurfercrs.com/cromh/dashboards.aspx";
+const BROWSER_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36";
+const HTML_ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
 
 type CroRequest = {
   from?: string;
@@ -20,38 +22,82 @@ const readConfig = () => ({
   checkoutFromField: process.env.CRO_CHECKOUT_FROM_FIELD || "",
   checkoutToField: process.env.CRO_CHECKOUT_TO_FIELD || "",
   dateFilterField: process.env.CRO_DATE_FILTER_FIELD || "",
-  dateFilterValue: process.env.CRO_DATE_FILTER_VALUE || "Check Out",
+  dateFilterValue: process.env.CRO_DATE_FILTER_VALUE || "CheckOutDate",
   reservationsButton: process.env.CRO_RESERVATIONS_BUTTON || "",
   exportButton: process.env.CRO_EXPORT_BUTTON || "",
-  dateFormat: process.env.CRO_DATE_FORMAT || "dd/MM/yyyy",
+  dateFormat: process.env.CRO_DATE_FORMAT || "yyyy/MM/dd",
   username: process.env.CRO_USERNAME || "",
   password: process.env.CRO_PASSWORD || "",
 });
 
-const collectFormInputs = (html: string) => {
-  const fields = new URLSearchParams();
-  const inputPattern = /<(input|textarea)\b[^>]*>/gi;
+const decodeHtmlAttribute = (value: string) => value
+  .replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)))
+  .replace(/&#x([\da-f]+);/gi, (_, code: string) => String.fromCharCode(Number.parseInt(code, 16)))
+  .replace(/&quot;/gi, '"')
+  .replace(/&#39;|&apos;/gi, "'")
+  .replace(/&lt;/gi, "<")
+  .replace(/&gt;/gi, ">")
+  .replace(/&amp;/gi, "&");
+
+const readAttrs = (tag: string) => {
+  const attrs: Record<string, string> = {};
   const attrPattern = /([\w:-]+)\s*=\s*(["'])(.*?)\2/gi;
-  for (const input of html.match(inputPattern) || []) {
-    const attrs: Record<string, string> = {};
-    let attr: RegExpExecArray | null;
-    while ((attr = attrPattern.exec(input))) attrs[attr[1].toLowerCase()] = attr[3];
-    if (attrs.name) fields.set(attrs.name, attrs.value || "");
-  }
-  return fields;
+  let attr: RegExpExecArray | null;
+  while ((attr = attrPattern.exec(tag))) attrs[attr[1].toLowerCase()] = decodeHtmlAttribute(attr[3]);
+  return attrs;
 };
 
-const optionLabel = (option: string) => option.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+const hasBooleanAttr = (tag: string, name: string) => new RegExp(`\\s${name}(?:\\s|=|>|/)`, "i").test(tag);
+
+const optionLabel = (option: string) => decodeHtmlAttribute(option.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+
+const collectFormInputs = (html: string) => {
+  const fields = new URLSearchParams();
+
+  for (const input of html.match(/<input\b[^>]*>/gi) || []) {
+    const attrs = readAttrs(input);
+    const type = (attrs.type || "text").toLowerCase();
+    if (!attrs.name || hasBooleanAttr(input, "disabled")) continue;
+    if (["submit", "button", "image", "reset", "file"].includes(type)) continue;
+    if (["checkbox", "radio"].includes(type) && !hasBooleanAttr(input, "checked")) continue;
+    fields.append(attrs.name, attrs.value || "");
+  }
+
+  for (const textarea of html.match(/<textarea\b[\s\S]*?<\/textarea>/gi) || []) {
+    const openingTag = textarea.match(/^<textarea\b[^>]*>/i)?.[0] || textarea;
+    const attrs = readAttrs(openingTag);
+    if (!attrs.name || hasBooleanAttr(openingTag, "disabled")) continue;
+    const value = textarea.replace(/^<textarea\b[^>]*>/i, "").replace(/<\/textarea>$/i, "");
+    fields.append(attrs.name, decodeHtmlAttribute(value));
+  }
+
+  for (const select of html.match(/<select\b[\s\S]*?<\/select>/gi) || []) {
+    const openingTag = select.match(/^<select\b[^>]*>/i)?.[0] || select;
+    const attrs = readAttrs(openingTag);
+    if (!attrs.name || hasBooleanAttr(openingTag, "disabled")) continue;
+    const options = select.match(/<option\b[\s\S]*?<\/option>/gi) || [];
+    const selected = options.filter((option) => hasBooleanAttr(option.match(/^<option\b[^>]*>/i)?.[0] || option, "selected"));
+    const successful = selected.length ? selected : options.slice(0, 1);
+    for (const option of successful) {
+      const optionAttrs = readAttrs(option.match(/^<option\b[^>]*>/i)?.[0] || option);
+      fields.append(attrs.name, optionAttrs.value ?? optionLabel(option));
+      if (!hasBooleanAttr(openingTag, "multiple")) break;
+    }
+  }
+
+  return fields;
+};
 
 const collectSelectValues = (html: string) => {
   const values: Array<{ name: string; value: string; label: string; selectLabel: string }> = [];
   const selects = html.match(/<select\b[\s\S]*?<\/select>/gi) || [];
   for (const select of selects) {
-    const selectAttrs = readAttrs(select);
+    const openingTag = select.match(/^<select\b[^>]*>/i)?.[0] || select;
+    const selectAttrs = readAttrs(openingTag);
     if (!selectAttrs.name) continue;
-    const selectLabel = `${selectAttrs.name || ""} ${selectAttrs.id || ""}`;
+    const selectLabel = `${selectAttrs.name} ${selectAttrs.id || ""}`;
     for (const option of select.match(/<option\b[\s\S]*?<\/option>/gi) || []) {
-      const attrs = readAttrs(option);
+      const attrs = readAttrs(option.match(/^<option\b[^>]*>/i)?.[0] || option);
       values.push({
         name: selectAttrs.name,
         value: attrs.value ?? optionLabel(option),
@@ -72,7 +118,9 @@ const setSelectByOptionText = (fields: URLSearchParams, html: string, optionText
 };
 
 const findField = (html: string, candidates: RegExp[]) => {
-  const names = [...html.matchAll(/\bname\s*=\s*(["'])(.*?)\1/gi)].map((match) => match[2]);
+  const names = (html.match(/<(?:input|textarea)\b[^>]*>/gi) || [])
+    .map((tag) => readAttrs(tag).name)
+    .filter(Boolean);
   return names.find((name) => candidates.some((pattern) => pattern.test(name))) || "";
 };
 
@@ -81,22 +129,13 @@ const findFieldNearText = (html: string, text: RegExp) => {
   const match = text.exec(normalized);
   if (!match || typeof match.index !== "number") return "";
   const window = normalized.slice(match.index, match.index + 900);
-  const field = window.match(/\bname\s*=\s*(["'])(.*?)\1/i);
+  const field = window.match(/<(?:input|textarea)\b[^>]*\bname\s*=\s*(["'])(.*?)\1/i);
   return field?.[2] || "";
-};
-
-const readAttrs = (tag: string) => {
-  const attrs: Record<string, string> = {};
-  const attrPattern = /([\w:-]+)\s*=\s*(["'])(.*?)\2/gi;
-  let attr: RegExpExecArray | null;
-  while ((attr = attrPattern.exec(tag))) attrs[attr[1].toLowerCase()] = attr[3];
-  return attrs;
 };
 
 const findSubmit = (html: string, explicit: string, labels: RegExp[]) => {
   if (explicit) return { name: explicit, value: "" };
-  const inputs = html.match(/<input\b[^>]*>/gi) || [];
-  for (const input of inputs) {
+  for (const input of html.match(/<input\b[^>]*>/gi) || []) {
     const attrs = readAttrs(input);
     const type = (attrs.type || "").toLowerCase();
     const label = `${attrs.value || ""} ${attrs.name || ""} ${attrs.id || ""}`;
@@ -104,34 +143,41 @@ const findSubmit = (html: string, explicit: string, labels: RegExp[]) => {
       return { name: attrs.name, value: attrs.value || "" };
     }
   }
-  const buttons = html.match(/<button\b[\s\S]*?<\/button>/gi) || [];
-  for (const button of buttons) {
-    const attrs = readAttrs(button);
-    const text = button.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  for (const button of html.match(/<button\b[\s\S]*?<\/button>/gi) || []) {
+    const openingTag = button.match(/^<button\b[^>]*>/i)?.[0] || button;
+    const attrs = readAttrs(openingTag);
+    const text = optionLabel(button);
     const label = `${text} ${attrs.value || ""} ${attrs.name || ""} ${attrs.id || ""}`;
-    if (attrs.name && labels.some((pattern) => pattern.test(label))) return { name: attrs.name, value: attrs.value || text.trim() };
+    if (attrs.name && labels.some((pattern) => pattern.test(label))) return { name: attrs.name, value: attrs.value || text };
   }
   return null;
 };
 
 const findAnchor = (html: string, labels: RegExp[]) => {
-  const anchors = html.match(/<a\b[\s\S]*?<\/a>/gi) || [];
-  for (const anchor of anchors) {
-    const attrs = readAttrs(anchor);
-    const text = anchor.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  for (const anchor of html.match(/<a\b[\s\S]*?<\/a>/gi) || []) {
+    const openingTag = anchor.match(/^<a\b[^>]*>/i)?.[0] || anchor;
+    const attrs = readAttrs(openingTag);
+    const text = optionLabel(anchor);
     if (attrs.href && labels.some((pattern) => pattern.test(`${text} ${attrs.href}`))) return attrs.href;
   }
   return "";
 };
 
-const firstFormAction = (html: string, fallback: string) => {
-  const actionMatch = html.match(/<form\b[^>]*\baction\s*=\s*(["'])(.*?)\1/i);
-  return absoluteUrl(fallback, actionMatch?.[2] || fallback);
-};
-
 const absoluteUrl = (base: string, target: string) => new URL(target, base).toString();
 
-const cookieHeader = (value: string | null) => value?.split(",").map((part) => part.split(";")[0]).join("; ") || "";
+const firstFormAction = (html: string, fallback: string) => {
+  const form = html.match(/<form\b[^>]*>/i)?.[0] || "";
+  return absoluteUrl(fallback, readAttrs(form).action || fallback);
+};
+
+const responseCookies = (response: Response) => {
+  const headers = response.headers as Headers & { getSetCookie?: () => string[] };
+  const combined = headers.get("set-cookie");
+  const values = typeof headers.getSetCookie === "function"
+    ? headers.getSetCookie()
+    : combined?.split(/,(?=\s*[^;,=\s]+=)/g) || [];
+  return values.map((value) => value.split(";")[0].trim()).filter(Boolean).join("; ");
+};
 
 const mergeCookies = (...cookies: Array<string | null | undefined>) => {
   const jar = new Map<string, string>();
@@ -152,32 +198,31 @@ const fetchCro = async (
 ): Promise<{ response: Response; cookie: string; url: string }> => {
   let currentUrl = url;
   let currentCookie = cookie;
-  let response = await fetch(currentUrl, {
-    ...init,
-    redirect: "manual",
-    headers: {
-      ...(init.headers || {}),
-      "Cookie": currentCookie,
-      "User-Agent": "RES-Dashboard-CRO-Connector/1.0",
-    },
-  });
+  const initialHeaders = new Headers(init.headers);
+  initialHeaders.set("Accept", initialHeaders.get("Accept") || HTML_ACCEPT);
+  initialHeaders.set("User-Agent", BROWSER_USER_AGENT);
+  if (currentCookie) initialHeaders.set("Cookie", currentCookie);
+  let response = await fetch(currentUrl, { ...init, redirect: "manual", headers: initialHeaders });
 
   for (let index = 0; index < maxRedirects && response.status >= 300 && response.status < 400; index += 1) {
-    currentCookie = mergeCookies(currentCookie, cookieHeader(response.headers.get("set-cookie")));
+    currentCookie = mergeCookies(currentCookie, responseCookies(response));
     const location = response.headers.get("location");
     if (!location) break;
+    const previousUrl = currentUrl;
     currentUrl = absoluteUrl(currentUrl, location);
     response = await fetch(currentUrl, {
       method: "GET",
       redirect: "manual",
       headers: {
+        "Accept": HTML_ACCEPT,
         "Cookie": currentCookie,
-        "User-Agent": "RES-Dashboard-CRO-Connector/1.0",
+        "Referer": previousUrl,
+        "User-Agent": BROWSER_USER_AGENT,
       },
     });
   }
 
-  currentCookie = mergeCookies(currentCookie, cookieHeader(response.headers.get("set-cookie")));
+  currentCookie = mergeCookies(currentCookie, responseCookies(response));
   return { response, cookie: currentCookie, url: currentUrl };
 };
 
@@ -185,61 +230,81 @@ const formatCroDate = (date: string, format: string) => {
   const [year, month, day] = date.split("-");
   if (!year || !month || !day) return date;
   if (format === "MM/dd/yyyy") return `${month}/${day}/${year}`;
+  if (format === "dd/MM/yyyy") return `${day}/${month}/${year}`;
   if (format === "yyyy-MM-dd") return date;
-  return `${day}/${month}/${year}`;
+  return `${year}/${month}/${day}`;
 };
 
 const loginToCro = async (config: ReturnType<typeof readConfig>) => {
-  const first = await fetch(config.loginUrl, {
-    redirect: "manual",
-    headers: { "User-Agent": "RES-Dashboard-CRO-Connector/1.0" },
-  });
-  const html = await first.text();
-  const cookie = cookieHeader(first.headers.get("set-cookie"));
+  const first = await fetchCro(config.loginUrl, { method: "GET" }, "");
+  const html = await first.response.text();
   const fields = collectFormInputs(html);
-  const usernameField = findField(html, [/user/i, /login/i, /email/i, /txt.*name/i]);
-  const passwordField = findField(html, [/pass/i, /pwd/i]);
-  if (!usernameField || !passwordField) {
-    throw new Error("تعذر تحديد حقول تسجيل الدخول في صفحة CRO.");
+  const usernameField = findField(html, [/^txUsn$/i, /usn/i, /user/i, /login/i, /email/i, /txt.*name/i]);
+  const passwordField = findField(html, [/^txPwd$/i, /pass/i, /pwd/i]);
+  const loginButton = findSubmit(html, "", [/^login\b/i, /sign[\s-]?in/i]);
+  if (!usernameField || !passwordField || !loginButton) {
+    throw new Error("تعذر تحديد حقول تسجيل الدخول أو زر الدخول في صفحة CRO.");
   }
 
   fields.set(usernameField, config.username);
   fields.set(passwordField, config.password);
+  fields.set(loginButton.name, loginButton.value);
 
-  const actionMatch = html.match(/<form\b[^>]*\baction\s*=\s*(["'])(.*?)\1/i);
-  const loginPostUrl = absoluteUrl(config.loginUrl, actionMatch?.[2] || config.loginUrl);
-  const login = await fetch(loginPostUrl, {
+  const loginPostUrl = firstFormAction(html, config.loginUrl);
+  const login = await fetchCro(loginPostUrl, {
     method: "POST",
-    redirect: "manual",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "Cookie": cookie,
-      "User-Agent": "RES-Dashboard-CRO-Connector/1.0",
+      "Origin": new URL(config.loginUrl).origin,
+      "Referer": config.loginUrl,
     },
     body: fields.toString(),
-  });
-  const loginCookie = mergeCookies(cookie, cookieHeader(login.headers.get("set-cookie")));
-  const ok = login.status >= 300 && login.status < 400 || login.ok;
-  if (!ok) throw new Error("فشل تسجيل الدخول في CRO. تحقق من بيانات الحساب أو حماية الجلسة.");
-  return { cookie: loginCookie };
+  }, first.cookie);
+  const loginHtml = await login.response.text();
+  const loginPath = new URL(login.url).pathname;
+  const stillOnLogin = /signin|login/i.test(loginPath) || /\bid\s*=\s*["']txPwd["']/i.test(loginHtml);
+  if (!login.response.ok || stillOnLogin) {
+    throw new Error("رفض CRO تسجيل الدخول. تحقق من بيانات الحساب أو حالة الحساب.");
+  }
+  return { cookie: login.cookie };
 };
 
 const verifyDashboardAccess = async (config: ReturnType<typeof readConfig>, cookie: string) => {
   const { response, url } = await fetchCro(config.dashboardUrl, { method: "GET" }, cookie);
-  return response.ok && !/signin|login/i.test(url);
+  const html = await response.text();
+  return response.ok && !/signin|login/i.test(new URL(url).pathname) && !/\bid\s*=\s*["']txPwd["']/i.test(html);
 };
 
 const isDownloadResponse = (response: Response) => {
   const type = response.headers.get("content-type") || "";
   const disposition = response.headers.get("content-disposition") || "";
-  return /attachment/i.test(disposition) || !/text\/html/i.test(type);
+  return /attachment/i.test(disposition) || /csv|excel|spreadsheet|octet-stream|application\/zip/i.test(type);
+};
+
+const checkedDownload = async (response: Response, from?: string, to?: string) => {
+  if (!response.ok) throw new Error("تعذر تنزيل ملف الحجوزات من CRO.");
+  const payload = await response.arrayBuffer();
+  if (payload.byteLength === 0) {
+    throw new Error(`لم يُرجع CRO حجوزات قابلة للتصدير للفترة ${from || "المحددة"} إلى ${to || "المحددة"}. تحقق من وجود سجلات Check-Out في هذه المدة.`);
+  }
+  return new Response(payload, {
+    status: 200,
+    headers: {
+      "Content-Type": response.headers.get("content-type") || "text/csv; charset=utf-8",
+      "Content-Disposition": response.headers.get("content-disposition") || "attachment",
+    },
+  });
 };
 
 const postDashboardForm = async (url: string, cookie: string, html: string, fields: URLSearchParams) => fetchCro(
   firstFormAction(html, url),
   {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Origin": new URL(url).origin,
+      "Referer": url,
+    },
     body: fields.toString(),
   },
   cookie,
@@ -251,51 +316,56 @@ const exportViaDashboardFlow = async (
   body: CroRequest,
 ) => {
   const dashboardResult = await fetchCro(config.dashboardUrl, { method: "GET" }, cookie);
-  if (!dashboardResult.response.ok || /signin|login/i.test(dashboardResult.url)) {
-    throw new Error("تم تسجيل الدخول لكن تعذر فتح لوحة CRO. قد تكون جلسة CRO محمية من اتصال السيرفر أو تحتاج تحقق إضافي.");
+  if (!dashboardResult.response.ok || /signin|login/i.test(new URL(dashboardResult.url).pathname)) {
+    throw new Error("تم تسجيل الدخول لكن تعذر فتح لوحة CRO من اتصال السيرفر.");
   }
   const dashboardHtml = await dashboardResult.response.text();
-  const dashboardCookie = dashboardResult.cookie;
   const fields = collectFormInputs(dashboardHtml);
   const fromField = config.checkoutFromField
-    || findField(dashboardHtml, [/checkout.*from/i, /from.*checkout/i, /date.*from/i, /from.*date/i, /start/i])
+    || findField(dashboardHtml, [/\$dt1$/i, /checkout.*from/i, /from.*checkout/i, /date.*from/i, /from.*date/i, /start/i])
     || findFieldNearText(dashboardHtml, /date\s*from/i);
   const toField = config.checkoutToField
-    || findField(dashboardHtml, [/checkout.*to/i, /to.*checkout/i, /date.*to/i, /to.*date/i, /end/i])
+    || findField(dashboardHtml, [/\$dt2$/i, /checkout.*to/i, /to.*checkout/i, /date.*to/i, /to.*date/i, /end/i])
     || findFieldNearText(dashboardHtml, /date\s*to/i);
   if (!fromField || !toField) {
-    throw new Error("لم أستطع تحديد حقول تاريخ Check Out في CRO. اضبط CRO_CHECKOUT_FROM_FIELD و CRO_CHECKOUT_TO_FIELD من أسماء الحقول في الصفحة.");
+    throw new Error("تعذر تحديد حقلي تاريخ Check-Out في لوحة CRO.");
   }
+
   if (body.from) fields.set(fromField, formatCroDate(body.from, config.dateFormat));
   if (body.to) fields.set(toField, formatCroDate(body.to, config.dateFormat));
-  if (config.dateFilterField) {
-    fields.set(config.dateFilterField, config.dateFilterValue);
-  } else {
-    setSelectByOptionText(fields, dashboardHtml, /check\s*out/i, /report|date|run/i);
-  }
+  const dateFilterField = config.dateFilterField
+    || setSelectByOptionText(fields, dashboardHtml, /check[\s-]*out/i, /report|date|run|ddlDateType/i);
+  if (!dateFilterField) throw new Error("تعذر تحديد خيار Check-Out Date في لوحة CRO.");
+  fields.set(dateFilterField, config.dateFilterValue === "Check Out" ? "CheckOutDate" : config.dateFilterValue);
 
   const reservationsButton = findSubmit(dashboardHtml, config.reservationsButton, [/الحجوزات/i, /reservations?/i, /bookings?/i]);
-  if (reservationsButton) fields.set(reservationsButton.name, reservationsButton.value);
-  const reservations = await postDashboardForm(config.dashboardUrl, dashboardCookie, dashboardHtml, fields);
-  const reservationCookie = reservations.cookie;
-  const reservationsHtml = await reservations.response.text();
+  if (!reservationsButton) throw new Error("تعذر تحديد زر Reservation في لوحة CRO.");
+  fields.set(reservationsButton.name, reservationsButton.value);
 
+  const reservations = await postDashboardForm(config.dashboardUrl, dashboardResult.cookie, dashboardHtml, fields);
+  if (isDownloadResponse(reservations.response)) {
+    return checkedDownload(reservations.response, body.from, body.to);
+  }
+
+  const reservationsHtml = await reservations.response.text();
   const exportFields = collectFormInputs(reservationsHtml);
   const exportButton = findSubmit(reservationsHtml, config.exportButton, [/تصدير/i, /export/i, /excel/i, /xlsx/i, /csv/i]);
   if (exportButton) {
     exportFields.set(exportButton.name, exportButton.value);
-    const exported = await postDashboardForm(config.dashboardUrl, reservationCookie, reservationsHtml, exportFields);
-    if (isDownloadResponse(exported.response)) return exported.response;
+    const exported = await postDashboardForm(config.dashboardUrl, reservations.cookie, reservationsHtml, exportFields);
+    if (isDownloadResponse(exported.response)) return checkedDownload(exported.response, body.from, body.to);
   }
 
   const exportHref = findAnchor(reservationsHtml, [/تصدير/i, /export/i, /excel/i, /xlsx/i, /csv/i]);
   if (exportHref) {
-    const exported = await fetchCro(absoluteUrl(config.dashboardUrl, exportHref), { method: "GET" }, reservationCookie);
-    if (isDownloadResponse(exported.response)) return exported.response;
+    const exported = await fetchCro(absoluteUrl(config.dashboardUrl, exportHref), { method: "GET" }, reservations.cookie);
+    if (isDownloadResponse(exported.response)) return checkedDownload(exported.response, body.from, body.to);
   }
 
-  throw new Error("تم فتح الحجوزات لكن لم أستطع تحديد زر التصدير. اضبط CRO_EXPORT_BUTTON حسب اسم زر التصدير في صفحة CRO.");
+  throw new Error("تم تنفيذ تقرير الحجوزات، لكن لم يظهر ملف أو زر تصدير صالح من CRO.");
 };
+
+const validIsoDate = (value?: string) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
 
 export default async (req: Request) => {
   const session = await validateSession(req);
@@ -334,6 +404,10 @@ export default async (req: Request) => {
     body = {};
   }
 
+  if (!validIsoDate(body.from) || !validIsoDate(body.to) || (body.from && body.to && body.from > body.to)) {
+    return json({ error: "نطاق التاريخ غير صالح. اختر تاريخ بداية ونهاية صحيحين." }, 400);
+  }
+
   const requestConfig = {
     ...config,
     username: body.username?.trim() || config.username,
@@ -355,39 +429,40 @@ export default async (req: Request) => {
           dashboardChecked: false,
           exportReady: false,
           exportMode: requestConfig.exportUrl ? "direct-url" : "dashboard-flow",
-          error: "تم تسجيل الدخول، لكن لم يتم فتح لوحة CRO من السيرفر. جرّب زر التصدير مباشرة أو يلزم ضبط/السماح لاتصال Netlify من نظام CRO.",
+          error: "تم تسجيل الدخول، لكن تعذر فتح لوحة CRO من اتصال Netlify.",
         }, 502);
       }
       return json({
         ok: true,
         loginChecked: true,
-        dashboardChecked,
+        dashboardChecked: true,
         exportReady: true,
         exportMode: requestConfig.exportUrl ? "direct-url" : "dashboard-flow",
         message: requestConfig.exportUrl
-          ? "تم اختبار تسجيل الدخول والوصول للوحة CRO. سيتم التصدير عبر رابط مباشر."
-          : "تم اختبار تسجيل الدخول والوصول للوحة CRO. سيتم التصدير عبر تدفق Dashboard: Check Out ثم الحجوزات ثم تصدير.",
+          ? "تم التحقق من تسجيل الدخول والوصول إلى CRO."
+          : "تم التحقق من الدخول إلى CRO، وسيستخدم التصدير Check-Out Date ثم Reservation ثم Export.",
       });
     }
 
     const exported = requestConfig.exportUrl
-      ? await (() => {
+      ? await (async () => {
         const url = new URL(requestConfig.exportUrl);
         if (body.from) url.searchParams.set("from", body.from);
         if (body.to) url.searchParams.set("to", body.to);
-        return fetch(url.toString(), {
-        headers: {
-          "Cookie": login.cookie,
-          "User-Agent": "RES-Dashboard-CRO-Connector/1.0",
-        },
-        });
+        const result = await fetchCro(url.toString(), { method: "GET" }, login.cookie);
+        if (!isDownloadResponse(result.response)) throw new Error("رابط التصدير المباشر لم يُرجع ملفًا صالحًا.");
+        return checkedDownload(result.response, body.from, body.to);
       })()
       : await exportViaDashboardFlow(requestConfig, login.cookie, body);
-    if (!exported.ok) throw new Error("تعذر تنزيل ملف الحجوزات من CRO.");
 
+    const payload = await exported.arrayBuffer();
+    if (payload.byteLength === 0) throw new Error("أعاد CRO ملفًا فارغًا؛ لم يتم اعتماد العملية كتصدير ناجح.");
     const contentType = exported.headers.get("content-type") || "text/csv; charset=utf-8";
-    const extension = contentType.includes("spreadsheet") || contentType.includes("excel") ? "xlsx" : "csv";
-    return new Response(await exported.arrayBuffer(), {
+    const sourceName = exported.headers.get("content-disposition") || "";
+    const extension = /xlsx|spreadsheet/i.test(`${contentType} ${sourceName}`)
+      ? "xlsx"
+      : /\.xls\b|application\/vnd\.ms-excel/i.test(`${contentType} ${sourceName}`) ? "xls" : "csv";
+    return new Response(payload, {
       status: 200,
       headers: {
         "Content-Type": contentType,
