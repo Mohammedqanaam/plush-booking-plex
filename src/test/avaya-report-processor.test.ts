@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
 import {
   analyzeAvayaFiles,
+  createAvayaExportWorkbook,
   durationToSeconds,
   employeeIdentity,
   employeeRiskLevel,
@@ -75,5 +76,26 @@ describe("Avaya report processor", () => {
       loginSessions: 1,
     });
     expect(employeeRiskLevel(result.employees[0])).toBe("review");
+  });
+
+  it("exports a branded left-to-right central reservation call report", async () => {
+    const workbook = await createAvayaExportWorkbook({
+      rangeStart: "Start",
+      rangeEnd: "End",
+      warnings: [],
+      sourceCounts: { inbound: 1, dnd: 1, timecard: 1 },
+      employees: [{
+        key: "id:9999", employeeId: "9999", name: "Sample Agent(9999)", avgRingingSeconds: 10,
+        answeredCalls: 40, missedCalls: 12, inboundDurationSeconds: 7800, dndDurationSeconds: 1800,
+        loggedInDurationSeconds: 29700, dndEvents: 2, loginSessions: 1, hasInbound: true, hasDnd: true, hasTimecard: true,
+      }],
+    }, new Uint8Array([0xff, 0xd8, 0xff, 0xd9]));
+    const sheet = workbook.getWorksheet("تقرير المكالمات")!;
+
+    expect(sheet.views[0].rightToLeft).toBe(false);
+    expect(sheet.getCell("A6").value).toBe("تقرير مكالمات الحجز المركزي");
+    expect(sheet.getRow(8).getCell(1).value).toBe("User");
+    expect(sheet.getImages()).toHaveLength(1);
+    expect((await workbook.xlsx.writeBuffer()).byteLength).toBeGreaterThan(0);
   });
 });

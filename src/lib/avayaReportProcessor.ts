@@ -228,17 +228,22 @@ const riskLevel = (employee: AvayaEmployeeResult) => {
 
 export const employeeRiskLevel = riskLevel;
 
-export const exportAvayaReport = async (report: AvayaReportResult) => {
+export const createAvayaExportWorkbook = async (report: AvayaReportResult, logoBytes?: Uint8Array) => {
   const { default: ExcelRuntime } = await import("exceljs");
   const workbook = new ExcelRuntime.Workbook();
   workbook.creator = "RES Dashboard";
   workbook.created = new Date();
-  const sheet = workbook.addWorksheet("تقرير Avaya", { views: [{ state: "frozen", ySplit: 3, rightToLeft: true }] });
-  sheet.mergeCells("A1:F1");
-  sheet.getCell("A1").value = "تقرير أداء موظفي الحجز — Avaya";
-  sheet.mergeCells("A2:F2");
-  sheet.getCell("A2").value = `${report.rangeStart} — ${report.rangeEnd}`;
-  sheet.getRow(3).values = ["User", "Avg Ringing Duration", "Answered Calls", "Missed Calls", "DND Total Duration", "Logged In Duration"];
+  const sheet = workbook.addWorksheet("تقرير المكالمات", { views: [{ state: "frozen", ySplit: 8, rightToLeft: false }] });
+  sheet.mergeCells("A1:F5");
+  if (logoBytes?.byteLength) {
+    const logoId = workbook.addImage({ buffer: logoBytes as never, extension: "jpeg" });
+    sheet.addImage(logoId, { tl: { col: 2.45, row: 0.1 }, ext: { width: 105, height: 105 } });
+  }
+  sheet.mergeCells("A6:F6");
+  sheet.getCell("A6").value = "تقرير مكالمات الحجز المركزي";
+  sheet.mergeCells("A7:F7");
+  sheet.getCell("A7").value = `${report.rangeStart} — ${report.rangeEnd}`;
+  sheet.getRow(8).values = ["User", "Avg Ringing Duration", "Answered Calls", "Missed Calls", "DND Total Duration", "Logged In Duration"];
   report.employees.forEach((employee) => {
     sheet.addRow([
       employee.name,
@@ -251,24 +256,28 @@ export const exportAvayaReport = async (report: AvayaReportResult) => {
   });
 
   sheet.columns = [{ width: 30 }, { width: 22 }, { width: 18 }, { width: 16 }, { width: 22 }, { width: 22 }];
-  sheet.getRow(1).height = 32;
-  sheet.getRow(2).height = 24;
-  sheet.getRow(3).height = 28;
-  sheet.getCell("A1").font = { bold: true, size: 16, color: { argb: "FFFFFFFF" } };
-  sheet.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF064E3B" } };
-  sheet.getCell("A2").font = { size: 10, color: { argb: "FF5F6F69" } };
-  sheet.getCell("A2").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F1E7" } };
-  sheet.getRow(3).eachCell((cell) => {
+  for (let rowNumber = 1; rowNumber <= 5; rowNumber += 1) sheet.getRow(rowNumber).height = 20;
+  sheet.getRow(6).height = 32;
+  sheet.getRow(7).height = 24;
+  sheet.getRow(8).height = 28;
+  sheet.getCell("A6").font = { bold: true, size: 16, color: { argb: "FFFFFFFF" } };
+  sheet.getCell("A6").alignment = { horizontal: "center", vertical: "middle", readingOrder: "rtl" };
+  sheet.getCell("A6").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF064E3B" } };
+  sheet.getCell("A7").font = { size: 10, color: { argb: "FF5F6F69" } };
+  sheet.getCell("A7").alignment = { horizontal: "center", vertical: "middle" };
+  sheet.getCell("A7").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F1E7" } };
+  sheet.getRow(8).eachCell((cell) => {
     cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F2937" } };
+    cell.alignment = { horizontal: "left", vertical: "middle" };
   });
 
-  for (let rowNumber = 4; rowNumber <= sheet.rowCount; rowNumber += 1) {
-    const employee = report.employees[rowNumber - 4];
+  for (let rowNumber = 9; rowNumber <= sheet.rowCount; rowNumber += 1) {
+    const employee = report.employees[rowNumber - 9];
     const row = sheet.getRow(rowNumber);
     row.height = 23;
     row.eachCell((cell) => {
-      cell.alignment = { vertical: "middle", horizontal: cell.col === 1 ? "right" : "center" };
+      cell.alignment = { vertical: "middle", horizontal: cell.col === 1 ? "left" : "center" };
       cell.border = { bottom: { style: "thin", color: { argb: "FFD7DDD9" } } };
     });
     sheet.getCell(rowNumber, 1).font = { bold: true, color: { argb: "FF064E3B" } };
@@ -277,16 +286,28 @@ export const exportAvayaReport = async (report: AvayaReportResult) => {
     if (employee.dndDurationSeconds > 3600) sheet.getCell(rowNumber, 5).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFE9C2" } };
     if (employee.loggedInDurationSeconds < 7 * 3600) sheet.getCell(rowNumber, 6).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFD9DE" } };
   }
-  sheet.autoFilter = { from: "A3", to: `F${sheet.rowCount}` };
+  sheet.autoFilter = { from: "A8", to: `F${sheet.rowCount}` };
   sheet.pageSetup = { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9, margins: { left: 0.25, right: 0.25, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } };
   sheet.headerFooter.oddFooter = "مجموعة بودل للضيافة — تقرير داخلي";
+  return workbook;
+};
+
+export const exportAvayaReport = async (report: AvayaReportResult) => {
+  let logoBytes: Uint8Array | undefined;
+  try {
+    const response = await fetch("/bhg-hospitality-group.jpg");
+    if (response.ok) logoBytes = new Uint8Array(await response.arrayBuffer());
+  } catch {
+    // The report still exports if the logo asset is temporarily unavailable.
+  }
+  const workbook = await createAvayaExportWorkbook(report, logoBytes);
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer as BlobPart], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `Avaya_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  anchor.download = `Central_Reservation_Call_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
   anchor.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
