@@ -17,6 +17,7 @@ describe("Avaya admin upload center", () => {
     expect(screen.getByText("User Inbound Summary")).toBeInTheDocument();
     expect(screen.getByText("Feature Trace")).toBeInTheDocument();
     expect(screen.getByText("Agent Time Card")).toBeInTheDocument();
+    expect(screen.getByText(/PDF أو XLSX/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /إنشاء التقرير الموحد/ })).toBeDisabled();
     expect(screen.getByText(/لا تُرفع ملفات الموظفين إلى الخادم/)).toBeInTheDocument();
   });
