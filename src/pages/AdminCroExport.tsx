@@ -1,19 +1,42 @@
 import { useEffect, useState } from "react";
 import { CalendarDays, Download, ExternalLink, Loader2, ShieldCheck, Wifi } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
-import { api, type CroExportStatus } from "@/lib/api";
+
+type CroExportStatus = {
+  loginUrl: string;
+  dashboardUrl?: string;
+  configured: boolean;
+  exportConfigured: boolean;
+  requiredEnv: string[];
+};
 
 const today = new Date().toISOString().slice(0, 10);
+const API_BASE = "/.netlify/functions";
+const authHeaders = (): Record<string, string> => {
+  const token = typeof window === "undefined" ? null : sessionStorage.getItem("admin_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+const readError = async (response: Response, fallback: string) => {
+  const data = await response.json().catch(() => ({}));
+  return data.error || fallback;
+};
 
 const AdminCroExport = () => {
   const [status, setStatus] = useState<CroExportStatus | null>(null);
   const [from, setFrom] = useState(today);
   const [to, setTo] = useState(today);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState<"status" | "test" | "export" | "">("status");
 
   useEffect(() => {
-    api.getCroExportStatus()
+    fetch(`${API_BASE}/cro-export`, { headers: authHeaders() })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(await readError(response, "تعذر تحميل حالة CRO"));
+        return response.json() as Promise<CroExportStatus>;
+      })
       .then(setStatus)
       .catch((error) => setMessage(error instanceof Error ? error.message : "تعذر تحميل حالة CRO"))
       .finally(() => setLoading(""));
@@ -23,9 +46,15 @@ const AdminCroExport = () => {
     setLoading("test");
     setMessage("");
     try {
-      const result = await api.testCroLogin();
+      const response = await fetch(`${API_BASE}/cro-export`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ dryRun: true, username, password }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "تعذر اختبار تسجيل الدخول في CRO");
       setMessage(result.message || "تم اختبار الاتصال.");
-      setStatus((current) => current ? { ...current, exportConfigured: result.exportReady } : current);
+      setStatus((current) => current ? { ...current, exportConfigured: Boolean(result.exportReady) } : current);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "تعذر اختبار الاتصال.");
     } finally {
@@ -37,7 +66,13 @@ const AdminCroExport = () => {
     setLoading("export");
     setMessage("");
     try {
-      const blob = await api.exportCroBookings(from, to);
+      const response = await fetch(`${API_BASE}/cro-export`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ from, to, username, password }),
+      });
+      if (!response.ok) throw new Error(await readError(response, "تعذر تصدير الحجوزات من CRO"));
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -66,7 +101,7 @@ const AdminCroExport = () => {
         </div>
 
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/8 p-3 text-xs leading-6 text-muted-foreground">
-          لا يتم حفظ اسم المستخدم أو كلمة المرور داخل الكود أو المتصفح. اضبطها في Netlify كمتغيرات سرية:
+          يمكن استخدام بيانات الدخول المحفوظة في Netlify، أو إدخالها هنا مؤقتًا لهذه العملية فقط. لا يتم حفظ البيانات اليدوية في GitHub أو Netlify.
           <span dir="ltr" className="mx-1 font-mono">CRO_USERNAME</span>
           و
           <span dir="ltr" className="mx-1 font-mono">CRO_PASSWORD</span>
@@ -75,6 +110,32 @@ const AdminCroExport = () => {
           للتحقق من الدخول. ثم اضبط
           <span dir="ltr" className="mx-1 font-mono">CRO_EXPORT_URL</span>
           بعد معرفة رابط تقرير الحجوزات الداخلي من CRO.
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-xs">
+            <span className="mb-1 block text-muted-foreground">يوزر CRO — اختياري</span>
+            <input
+              dir="ltr"
+              className="h-11 w-full rounded-xl border bg-secondary/65 px-3"
+              placeholder="M.ALDOSARI"
+              value={username}
+              autoComplete="username"
+              onChange={(event) => setUsername(event.target.value)}
+            />
+          </label>
+          <label className="text-xs">
+            <span className="mb-1 block text-muted-foreground">كلمة مرور CRO — اختياري</span>
+            <input
+              dir="ltr"
+              type="password"
+              className="h-11 w-full rounded-xl border bg-secondary/65 px-3"
+              placeholder="••••••••"
+              value={password}
+              autoComplete="current-password"
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">

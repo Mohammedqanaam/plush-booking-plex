@@ -7,6 +7,8 @@ type CroRequest = {
   from?: string;
   to?: string;
   dryRun?: boolean;
+  username?: string;
+  password?: string;
 };
 
 const canExport = (role: string) => ["superadmin", "admin", "editor"].includes(role);
@@ -238,9 +240,6 @@ export default async (req: Request) => {
   }
 
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  if (!config.username || !config.password) {
-    return json({ error: "CRO credentials are not configured in Netlify environment variables." }, 412);
-  }
 
   let body: CroRequest = {};
   try {
@@ -249,25 +248,35 @@ export default async (req: Request) => {
     body = {};
   }
 
+  const requestConfig = {
+    ...config,
+    username: body.username?.trim() || config.username,
+    password: body.password || config.password,
+  };
+
+  if (!requestConfig.username || !requestConfig.password) {
+    return json({ error: "أدخل بيانات CRO أو اضبطها في Netlify environment variables." }, 412);
+  }
+
   try {
-    const login = await loginToCro(config);
-    const dashboardChecked = await verifyDashboardAccess(config, login.cookie).catch(() => false);
+    const login = await loginToCro(requestConfig);
+    const dashboardChecked = await verifyDashboardAccess(requestConfig, login.cookie).catch(() => false);
     if (body.dryRun) {
       return json({
         ok: true,
         loginChecked: true,
         dashboardChecked,
         exportReady: true,
-        exportMode: config.exportUrl ? "direct-url" : "dashboard-flow",
-        message: config.exportUrl
+        exportMode: requestConfig.exportUrl ? "direct-url" : "dashboard-flow",
+        message: requestConfig.exportUrl
           ? "تم اختبار تسجيل الدخول والوصول للوحة CRO. سيتم التصدير عبر رابط مباشر."
           : "تم اختبار تسجيل الدخول والوصول للوحة CRO. سيتم التصدير عبر تدفق Dashboard: Check Out ثم الحجوزات ثم تصدير.",
       });
     }
 
-    const exported = config.exportUrl
+    const exported = requestConfig.exportUrl
       ? await (() => {
-        const url = new URL(config.exportUrl);
+        const url = new URL(requestConfig.exportUrl);
         if (body.from) url.searchParams.set("from", body.from);
         if (body.to) url.searchParams.set("to", body.to);
         return fetch(url.toString(), {
@@ -277,7 +286,7 @@ export default async (req: Request) => {
           },
         });
       })()
-      : await exportViaDashboardFlow(config, login.cookie, body);
+      : await exportViaDashboardFlow(requestConfig, login.cookie, body);
     if (!exported.ok) throw new Error("تعذر تنزيل ملف الحجوزات من CRO.");
 
     const contentType = exported.headers.get("content-type") || "text/csv; charset=utf-8";
