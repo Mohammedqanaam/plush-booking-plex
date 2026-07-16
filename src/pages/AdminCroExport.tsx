@@ -10,7 +10,10 @@ type CroExportStatus = {
   requiredEnv: string[];
 };
 
-const today = new Date().toISOString().slice(0, 10);
+const isoDate = (date: Date) => date.toISOString().slice(0, 10);
+const now = new Date();
+const defaultFrom = isoDate(new Date(now.getFullYear(), now.getMonth(), 1));
+const defaultTo = isoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 const API_BASE = "/.netlify/functions";
 const authHeaders = (): Record<string, string> => {
   const token = typeof window === "undefined" ? null : sessionStorage.getItem("admin_token");
@@ -24,8 +27,8 @@ const readError = async (response: Response, fallback: string) => {
 
 const AdminCroExport = () => {
   const [status, setStatus] = useState<CroExportStatus | null>(null);
-  const [from, setFrom] = useState(today);
-  const [to, setTo] = useState(today);
+  const [from, setFrom] = useState(defaultFrom);
+  const [to, setTo] = useState(defaultTo);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
