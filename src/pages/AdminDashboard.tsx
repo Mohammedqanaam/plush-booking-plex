@@ -7,6 +7,7 @@ import {
   Eye,
   EyeOff,
   FileText,
+  FileSpreadsheet,
   FileWarning,
   Gauge,
   LogOut,
@@ -242,6 +243,7 @@ const AdminDashboard = () => {
               <h2 className="section-title">اختصارات الإدارة</h2>
               <div className="grid gap-2 sm:grid-cols-2">
                 {can("upload") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => setTab("bookings")}><Upload className="h-5 w-5 text-primary" /><span><strong className="block">بيانات الحجوزات</strong><small className="text-muted-foreground">رفع الملف ومراجعة الملخص</small></span></button> : null}
+                {can("upload") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/avaya-reports")}><FileSpreadsheet className="h-5 w-5 text-primary" /><span><strong className="block">تقارير Avaya</strong><small className="text-muted-foreground">دمج التقارير وتحليل أداء الموظفين</small></span></button> : null}
                 {can("manage_employees") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => setTab("employees")}><UsersRound className="h-5 w-5 text-primary" /><span><strong className="block">إدارة الموظفين</strong><small className="text-muted-foreground">الأسماء والظهور والتعديلات</small></span></button> : null}
                 {can("manage_employees") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/warnings")}><FileWarning className="h-5 w-5 text-primary" /><span><strong className="block">إنذارات الموظفين</strong><small className="text-muted-foreground">إنشاء الإنذار وتصديره وأرشفته</small></span></button> : null}
                 {can("manage_knowledge") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/branches")}><Building2 className="h-5 w-5 text-primary" /><span><strong className="block">إدارة الفروع</strong><small className="text-muted-foreground">معلومات الفروع والخدمات</small></span></button> : null}

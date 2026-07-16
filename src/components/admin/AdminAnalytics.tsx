@@ -13,6 +13,7 @@ const pageNames: Record<string, string> = {
   "/booking-reports": "تقارير الحجوزات",
   "/admin": "لوحة المشرف",
   "/admin/login": "دخول المشرف",
+  "/admin/avaya-reports": "تقارير Avaya",
 };
 
 const sortedEntries = (values: Record<string, number>) =>
