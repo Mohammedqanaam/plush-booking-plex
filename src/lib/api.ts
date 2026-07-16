@@ -162,6 +162,15 @@ export type GhostAnalyticsSummary = AnalyticsSummary & {
   privacy: { ipMode: "masked"; preciseLocation: false; fingerprinting: false };
 };
 
+export type CroExportStatus = {
+  loginUrl: string;
+  dashboardUrl?: string;
+  configured: boolean;
+  exportConfigured: boolean;
+  requiredEnv: string[];
+  optionalEnv?: string[];
+};
+
 const API_BASE = "/.netlify/functions";
 
 const getToken = (): string | null => (typeof window === "undefined" ? null : sessionStorage.getItem("admin_token"));
@@ -245,6 +254,33 @@ export const api = {
     const res = await fetch(`${API_BASE}/analytics?days=${days}&detail=ghost`, { headers: authHeaders() });
     if (!res.ok) throw new Error("تعذر تحميل سجل الزوار المحمي");
     return res.json() as Promise<GhostAnalyticsSummary>;
+  },
+
+  async getCroExportStatus() {
+    const res = await fetch(`${API_BASE}/cro-export`, { headers: authHeaders() });
+    if (!res.ok) throw new Error("تعذر تحميل حالة ربط CRO");
+    return res.json() as Promise<CroExportStatus>;
+  },
+
+  async testCroLogin() {
+    const res = await fetch(`${API_BASE}/cro-export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ dryRun: true }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "تعذر اختبار تسجيل الدخول في CRO");
+    return data as Promise<{ ok: boolean; message: string; exportReady: boolean; dashboardChecked?: boolean }>;
+  },
+
+  async exportCroBookings(from: string, to: string) {
+    const res = await fetch(`${API_BASE}/cro-export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ from, to }),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "تعذر تصدير الحجوزات من CRO");
+    return res.blob();
   },
 
   async uploadBookings(csvText: string) {
