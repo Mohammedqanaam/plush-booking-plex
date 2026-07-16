@@ -5,7 +5,7 @@ export const DEFAULT_AUTO_FROM = "2026-07-01";
 export const DEFAULT_AUTO_TO = "2026-07-31";
 
 export type CroSyncState = "idle" | "queued" | "running" | "success" | "error";
-export type CroSyncSource = "manual" | "automatic";
+export type CroSyncSource = "manual" | "automatic" | "public";
 
 export type CroSyncStatus = {
   state: CroSyncState;

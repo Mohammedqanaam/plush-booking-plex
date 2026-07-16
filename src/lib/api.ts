@@ -171,6 +171,26 @@ export type CroExportStatus = {
   optionalEnv?: string[];
 };
 
+export type PublicCroSyncStatus = {
+  ok?: boolean;
+  available: boolean;
+  state: "idle" | "queued" | "running" | "success" | "error";
+  active: boolean;
+  message: string;
+  from: string;
+  to: string;
+  updatedAt: string | null;
+  nextAllowedAt: string | null;
+  alreadyRunning?: boolean;
+  cooldown?: boolean;
+  stats: {
+    total: number;
+    confirmed: number;
+    cancelled: number;
+    cancelRate: number;
+  } | null;
+};
+
 const API_BASE = "/.netlify/functions";
 
 const getToken = (): string | null => (typeof window === "undefined" ? null : sessionStorage.getItem("admin_token"));
@@ -309,6 +329,20 @@ export const api = {
     const res = await fetch(`${API_BASE}/bookings?view=summary`);
     if (!res.ok) throw new Error("تعذر تحميل التقرير");
     return res.json() as Promise<PublicBookingReport>;
+  },
+
+  async getPublicCroSyncStatus() {
+    const res = await fetch(`${API_BASE}/cro-public-sync`);
+    if (!res.ok) throw new Error("تعذر تحميل حالة التحديث");
+    return res.json() as Promise<PublicCroSyncStatus>;
+  },
+
+  async requestPublicCroSync() {
+    const res = await fetch(`${API_BASE}/cro-public-sync`, { method: "POST" });
+    const data = await res.json().catch(() => null) as PublicCroSyncStatus | null;
+    if (!data) throw new Error("تعذر إرسال طلب التحديث");
+    if (!res.ok && ![429, 502, 503].includes(res.status)) throw new Error(data.message || "تعذر إرسال طلب التحديث");
+    return data;
   },
 
   async createContactRequest(payload: { brand: string; branchName: string; guestName: string; guestPhone: string; reason: string }) {
