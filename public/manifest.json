@@ -1,0 +1,20 @@
+{
+  "name": "داش بورد الحجز المركزي",
+  "short_name": "الحجز المركزي",
+  "description": "منصة تقارير الحجز المركزي لمجموعة بودل للضيافة",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0514",
+  "theme_color": "#0A0514",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "/bhg-hospitality-group.jpg",
+      "sizes": "640x640",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
