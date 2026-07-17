@@ -11,6 +11,7 @@ export type CroRequest = {
   from?: string;
   to?: string;
   dryRun?: boolean;
+  archiveOnly?: boolean;
   username?: string;
   password?: string;
 };

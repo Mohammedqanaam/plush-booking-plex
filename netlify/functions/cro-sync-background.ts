@@ -54,7 +54,9 @@ export default async (req: Request) => {
     ...current,
     state: "running",
     startedAt,
-    message: "جاري جلب حجوزات Check-Out من CRO وتحديث التقارير.",
+    message: body.archiveOnly
+      ? "جاري جلب الفترة السابقة من CRO وإضافتها إلى أرشيف البحث."
+      : "جاري جلب حجوزات Check-Out من CRO وتحديث التقارير.",
   });
 
   try {
@@ -65,14 +67,18 @@ export default async (req: Request) => {
       throw new Error("ملف CRO المستلم ليس بصيغة CSV صالحة للتحديث التلقائي.");
     }
 
-    const stats = await saveBookingCsv(csvText);
+    const stats = await saveBookingCsv(csvText, { updateCurrent: !body.archiveOnly, archivePeriod: { from: body.from!, to: body.to! } });
+    if (body.archiveOnly && !stats.archive?.configured) throw new Error("أرشيف البحث بالجوال غير مهيأ على السيرفر.");
+    if (body.archiveOnly && stats.archive?.latestPeriodPhoneColumnCount === 0) throw new Error("تم تنزيل الفترة، لكن تقرير CRO لا يحتوي عمود رقم الجوال؛ لم تُضف نتائج قابلة للبحث.");
     const latest = await getCroSyncStatus();
     if (latest.attemptId === body.attemptId) {
       await setCroSyncStatus({
         ...latest,
         state: "success",
         finishedAt: new Date().toISOString(),
-        message: "تم تحديث تقارير الحجوزات مباشرة من CRO.",
+        message: body.archiveOnly
+          ? "تمت أرشفة الفترة السابقة وأصبحت حجوزاتها متاحة للبحث برقم الجوال."
+          : stats.archive?.searchAvailable ? "تم تحديث تقارير الحجوزات وإضافتها إلى أرشيف البحث." : "تم تحديث التقارير، لكن ملف CRO لا يحتوي بيانات جوال قابلة للأرشفة.",
         stats,
       });
     }

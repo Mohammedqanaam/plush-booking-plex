@@ -1,33 +1,49 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Building2,
-  CalendarDays,
+  Archive,
+  CalendarRange,
+  Database,
   ExternalLink,
-  KeyRound,
+  History,
   Loader2,
+  Phone,
   Search,
   ShieldCheck,
 } from "lucide-react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { api, type OperaReservationSummary, type OperaSearchStatus } from "@/lib/api";
 import { getAdminSession } from "@/lib/adminAuth";
 
-type OperaEnvironmentId = "legacy" | "new";
+const OPERA_LINKS = [
+  {
+    label: "OPERA السعودية / القديم",
+    url: "https://mtce11.oraclehospitality.eu-frankfurt-1.ocs.oraclecloud.com/BHG/operacloud",
+  },
+  {
+    label: "OPERA الجديد",
+    url: "https://mtce2.oraclehospitality.eu-frankfurt-1.ocs.oraclecloud.com/BHG/operacloud/faces/adf.task-flow?adf.tfId=opera-cloud-index&adf.tfDoc=/WEB-INF/taskflows/opera-cloud-index.xml",
+  },
+];
+
+const formatDate = (value: string | null | undefined) => {
+  if (!value) return "—";
+  const date = new Date(value.length === 10 ? `${value}T12:00:00Z` : value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("ar-SA", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "Asia/Riyadh",
+  }).format(date);
+};
 
 const AdminOperaSearch = () => {
   const session = getAdminSession();
   const allowed = session?.role === "superadmin" || session?.role === "admin";
   const [status, setStatus] = useState<OperaSearchStatus | null>(null);
-  const [environment, setEnvironment] = useState<OperaEnvironmentId>("legacy");
-  const [hotelId, setHotelId] = useState("");
-  const [query, setQuery] = useState("");
-  const [arrivalStartDate, setArrivalStartDate] = useState("");
-  const [arrivalEndDate, setArrivalEndDate] = useState("");
-  const [departureStartDate, setDepartureStartDate] = useState("");
-  const [departureEndDate, setDepartureEndDate] = useState("");
+  const [mobile, setMobile] = useState("");
   const [results, setResults] = useState<OperaReservationSummary[]>([]);
-  const [totalResults, setTotalResults] = useState(0);
   const [searched, setSearched] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [searching, setSearching] = useState(false);
@@ -36,58 +52,23 @@ const AdminOperaSearch = () => {
   useEffect(() => {
     if (!allowed) return;
     api.getOperaSearchStatus()
-      .then((data) => {
-        setStatus(data);
-        const preferred = data.environments.find((item) => item.configured) || data.environments[0];
-        if (preferred) {
-          setEnvironment(preferred.id);
-          setHotelId(preferred.hotels[0]?.id || "");
-        }
-      })
-      .catch((error) => setMessage(error instanceof Error ? error.message : "تعذر تحميل حالة ربط OPERA."))
+      .then(setStatus)
+      .catch((error) => setMessage(error instanceof Error ? error.message : "تعذر تحميل حالة الأرشيف."))
       .finally(() => setLoadingStatus(false));
   }, [allowed]);
 
-  const selectedEnvironment = useMemo(
-    () => status?.environments.find((item) => item.id === environment) || null,
-    [environment, status],
-  );
-
-  const changeEnvironment = (value: OperaEnvironmentId) => {
-    setEnvironment(value);
-    const next = status?.environments.find((item) => item.id === value);
-    setHotelId(next?.hotels[0]?.id || "");
-    setResults([]);
-    setTotalResults(0);
-    setSearched(false);
-    setMessage(null);
-  };
-
   const submitSearch = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedEnvironment?.configured) {
-      setMessage("هذه البيئة غير مهيأة بعد بمفاتيح OHIP وأكواد الفنادق.");
-      return;
-    }
     setSearching(true);
     setMessage(null);
     setSearched(false);
     try {
-      const data = await api.searchOperaReservations({
-        environment,
-        hotelId,
-        query,
-        arrivalStartDate,
-        arrivalEndDate,
-        departureStartDate,
-        departureEndDate,
-      });
+      const data = await api.searchOperaReservations({ mobile });
       setResults(data.reservations);
-      setTotalResults(data.totalResults);
+      setStatus((current) => current ? { ...current, archive: data.archive } : current);
       setSearched(true);
     } catch (error) {
       setResults([]);
-      setTotalResults(0);
       setMessage(error instanceof Error ? error.message : "تعذر إكمال البحث.");
     } finally {
       setSearching(false);
@@ -96,172 +77,112 @@ const AdminOperaSearch = () => {
 
   if (!allowed) return <Navigate to="/admin" replace />;
 
+  const archive = status?.archive;
+  const searchReady = Boolean(archive?.searchAvailable);
+
   return (
     <div className="page-wrap">
       <PageHeader
-        title="البحث في حجوزات OPERA"
-        subtitle="بحث آمن للقراءة فقط من داخل لوحة الإدارة."
+        title="البحث عن حجز برقم الجوال"
+        subtitle="بحث آمن في الحجوزات الحالية والسابقة المؤرشفة من CRO."
         icon={Search}
       />
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        <div className="compact-card">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs text-muted-foreground">الصلاحية</span>
-            <ShieldCheck className="h-4 w-4 text-emerald-500" />
-          </div>
-          <p className="mt-2 font-bold">مشرف فقط</p>
-        </div>
-        <div className="compact-card">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs text-muted-foreground">طريقة الربط</span>
-            <KeyRound className="h-4 w-4 text-primary" />
-          </div>
-          <p className="mt-2 font-bold">OHIP خادمي</p>
-        </div>
-        <div className="compact-card">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs text-muted-foreground">نطاق البيانات</span>
-            <Building2 className="h-4 w-4 text-primary" />
-          </div>
-          <p className="mt-2 font-bold">الفروع المصرح بها</p>
-        </div>
-      </section>
-
-      <section className="page-surface space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <section className="relative overflow-hidden rounded-[1.75rem] border border-primary/15 bg-gradient-to-br from-primary/12 via-background to-secondary/45 p-5 shadow-sm sm:p-6">
+        <div className="pointer-events-none absolute -left-16 -top-16 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
+        <div className="relative grid items-center gap-5 lg:grid-cols-[1fr_auto]">
           <div>
-            <h2 className="section-title">بيئة OPERA</h2>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              لا تُرسل بيانات OPERA إلى المتصفح، ولا يعرض البحث بيانات الدفع أو وسائل التواصل.
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/75 px-3 py-1.5 text-xs font-bold text-primary shadow-sm backdrop-blur">
+              <ShieldCheck className="h-4 w-4" /> مشرف فقط · قراءة فقط
+            </div>
+            <h2 className="text-xl font-black tracking-tight sm:text-2xl">أرشيف حجوزات موحّد</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
+              يعتمد البحث على تقارير CRO المتزامنة مع OPERA، ويشمل كل فترة تمت أرشفتها. رقم الجوال يُحوّل داخل السيرفر إلى مفتاح بحث مشفّر ولا يظهر في النتائج.
             </p>
           </div>
-          {selectedEnvironment?.uiUrl ? (
-            <a
-              href={selectedEnvironment.uiUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-primary/20 px-3 text-xs font-bold interactive"
-            >
-              <ExternalLink className="h-4 w-4" /> فتح OPERA
-            </a>
-          ) : null}
+          <Link
+            to="/admin/cro-export"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-background/80 px-4 text-sm font-bold shadow-sm interactive"
+          >
+            <Archive className="h-4 w-4 text-primary" /> أرشفة فترة سابقة
+          </Link>
         </div>
-
-        {loadingStatus ? (
-          <div className="flex min-h-24 items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> جاري التحقق من الربط…
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {status?.environments.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => changeEnvironment(item.id)}
-                className={"compact-card text-right interactive " + (environment === item.id ? "border-primary/50 bg-primary/10" : "")}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <strong>{item.label}</strong>
-                  <span className={"rounded-full px-2 py-1 text-[11px] font-bold " + (item.configured ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-700")}>
-                    {item.configured ? "جاهز" : "يحتاج إعداد"}
-                  </span>
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {item.configured ? item.hotels.length + " فرعًا مفعّلًا" : "يلزم إضافة مفاتيح OHIP وأكواد الفنادق في Netlify."}
-                </p>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {selectedEnvironment && !selectedEnvironment.configured ? (
-          <div className="rounded-2xl border border-amber-500/25 bg-amber-500/8 p-4 text-sm leading-7 text-amber-800">
-            الواجهة جاهزة، لكن البحث الفعلي لن يعمل قبل إضافة إعدادات OHIP الرسمية لهذه البيئة. بيانات دخول واجهة OPERA العادية لا تكفي للربط البرمجي.
-          </div>
-        ) : null}
       </section>
 
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="compact-card">
+          <div className="flex items-center justify-between gap-2"><span className="text-xs text-muted-foreground">الفترات</span><CalendarRange className="h-4 w-4 text-primary" /></div>
+          <p className="mt-2 text-xl font-black">{loadingStatus ? "…" : (archive?.periodCount || 0).toLocaleString("ar-SA")}</p>
+        </div>
+        <div className="compact-card">
+          <div className="flex items-center justify-between gap-2"><span className="text-xs text-muted-foreground">الحجوزات المفهرسة</span><Database className="h-4 w-4 text-primary" /></div>
+          <p className="mt-2 text-xl font-black">{loadingStatus ? "…" : (archive?.indexedReservations || 0).toLocaleString("ar-SA")}</p>
+        </div>
+        <div className="compact-card">
+          <div className="flex items-center justify-between gap-2"><span className="text-xs text-muted-foreground">بداية الأرشيف</span><History className="h-4 w-4 text-primary" /></div>
+          <p className="mt-2 text-sm font-black">{loadingStatus ? "…" : formatDate(archive?.earliestFrom)}</p>
+        </div>
+        <div className="compact-card">
+          <div className="flex items-center justify-between gap-2"><span className="text-xs text-muted-foreground">نهاية الأرشيف</span><CalendarRange className="h-4 w-4 text-primary" /></div>
+          <p className="mt-2 text-sm font-black">{loadingStatus ? "…" : formatDate(archive?.latestTo)}</p>
+        </div>
+      </section>
+
+      {!loadingStatus && !archive?.configured ? (
+        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/8 p-4 text-sm leading-7 text-amber-800">
+          مفتاح الأرشيف الآمن غير مهيأ على السيرفر. يلزم تفعيل سر مزامنة CRO قبل استخدام البحث.
+        </div>
+      ) : null}
+      {!loadingStatus && archive?.configured && !archive.periodCount ? (
+        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/8 p-4 text-sm leading-7 text-amber-800">
+          لا توجد فترة مؤرشفة بعد. انتقل إلى مزامنة CRO واختر فترة سابقة ثم اضغط «أرشفة فترة سابقة».
+        </div>
+      ) : null}
+      {!loadingStatus && archive?.periodCount > 0 && archive.latestPeriodPhoneColumnCount === 0 ? (
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-sm leading-7 text-red-700">
+          آخر تقرير مؤرشف لا يحتوي عمود رقم الجوال. يلزم أن يتضمن تصدير CRO حقل الجوال حتى يعمل البحث.
+        </div>
+      ) : null}
+
       <form className="page-surface space-y-5" onSubmit={submitSearch}>
-        <div>
-          <h2 className="section-title">بيانات البحث</h2>
-          <p className="mt-1 text-xs text-muted-foreground">ابحث برقم التأكيد أو اسم الضيف، ويمكن تضييق النتائج بالتواريخ.</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="section-title">رقم جوال الضيف</h2>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">يُقبل الرقم السعودي مع الصفر أو بدونه، ويشمل البحث الحجوزات الماضية ضمن الفترات المؤرشفة.</p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">
+            <ShieldCheck className="h-3.5 w-3.5" /> لا يعرض بيانات الدفع
+          </span>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-sm font-bold">الفندق</span>
-            <select
-              className="h-12 w-full rounded-xl border bg-secondary/50 px-3"
-              value={hotelId}
-              onChange={(event) => setHotelId(event.target.value)}
-              disabled={!selectedEnvironment?.configured}
+        <label className="block max-w-xl space-y-2">
+          <span className="text-sm font-bold">رقم الجوال</span>
+          <div className="relative">
+            <Phone className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" />
+            <input
+              dir="ltr"
+              inputMode="tel"
+              autoComplete="off"
+              className="h-14 w-full rounded-2xl border bg-secondary/45 px-12 text-left text-lg font-bold tracking-wide outline-none transition focus:border-primary/60 focus:ring-4 focus:ring-primary/10"
+              value={mobile}
+              onChange={(event) => setMobile(event.target.value)}
+              placeholder="5xxxxxxxx أو 05xxxxxxxx"
+              minLength={9}
+              maxLength={20}
               required
-            >
-              <option value="">اختر الفندق</option>
-              {selectedEnvironment?.hotels.map((hotel) => (
-                <option key={hotel.id} value={hotel.id}>{hotel.name} · {hotel.id}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-sm font-bold">رقم التأكيد أو اسم الضيف</span>
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                className="h-12 w-full rounded-xl border bg-secondary/50 px-10"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="مثال: 123456 أو اسم الضيف"
-                minLength={2}
-                maxLength={80}
-                autoComplete="off"
-                required
-              />
-            </div>
-          </label>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <fieldset className="compact-card space-y-3">
-            <legend className="px-2 text-sm font-bold">تاريخ الوصول — اختياري</legend>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="space-y-2 text-xs text-muted-foreground">
-                <span>من</span>
-                <input className="h-11 w-full rounded-xl border bg-background px-3" type="date" value={arrivalStartDate} onChange={(event) => setArrivalStartDate(event.target.value)} />
-              </label>
-              <label className="space-y-2 text-xs text-muted-foreground">
-                <span>إلى</span>
-                <input className="h-11 w-full rounded-xl border bg-background px-3" type="date" value={arrivalEndDate} onChange={(event) => setArrivalEndDate(event.target.value)} />
-              </label>
-            </div>
-          </fieldset>
-
-          <fieldset className="compact-card space-y-3">
-            <legend className="px-2 text-sm font-bold">تاريخ المغادرة — اختياري</legend>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="space-y-2 text-xs text-muted-foreground">
-                <span>من</span>
-                <input className="h-11 w-full rounded-xl border bg-background px-3" type="date" value={departureStartDate} onChange={(event) => setDepartureStartDate(event.target.value)} />
-              </label>
-              <label className="space-y-2 text-xs text-muted-foreground">
-                <span>إلى</span>
-                <input className="h-11 w-full rounded-xl border bg-background px-3" type="date" value={departureEndDate} onChange={(event) => setDepartureEndDate(event.target.value)} />
-              </label>
-            </div>
-          </fieldset>
-        </div>
+            />
+          </div>
+        </label>
 
         {message ? <div aria-live="polite" className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">{message}</div> : null}
 
         <button
           type="submit"
-          disabled={searching || !selectedEnvironment?.configured}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl gold-gradient px-5 font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          disabled={searching || !searchReady}
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl gold-gradient px-5 font-bold text-primary-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          {searching ? "جاري البحث…" : "بحث في الحجوزات"}
+          {searching ? "جاري البحث…" : "بحث في كامل الأرشيف"}
         </button>
       </form>
 
@@ -270,7 +191,7 @@ const AdminOperaSearch = () => {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="section-title">نتائج البحث</h2>
-              <p className="mt-1 text-xs text-muted-foreground">عُثر على {totalResults.toLocaleString("ar-SA")} نتيجة.</p>
+              <p className="mt-1 text-xs text-muted-foreground">عُثر على {results.length.toLocaleString("ar-SA")} حجز مطابق.</p>
             </div>
             <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">قراءة فقط</span>
           </div>
@@ -278,39 +199,49 @@ const AdminOperaSearch = () => {
           {results.length ? (
             <div className="grid gap-3 lg:grid-cols-2">
               {results.map((reservation, index) => (
-                <article key={(reservation.confirmationNumber || reservation.reservationId || "reservation") + "-" + index} className="compact-card space-y-3">
+                <article key={(reservation.confirmationNumber || reservation.reservationId || "reservation") + "-" + index} className="compact-card space-y-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs text-muted-foreground">رقم التأكيد</p>
-                      <p className="mt-1 text-lg font-black" dir="ltr">{reservation.confirmationNumber || "—"}</p>
+                      <p className="text-xs text-muted-foreground">رقم الحجز / التأكيد</p>
+                      <p className="mt-1 text-lg font-black" dir="ltr">{reservation.confirmationNumber || reservation.reservationId || "—"}</p>
                     </div>
                     <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">{reservation.status || "غير محدد"}</span>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">الضيف</p>
-                    <p className="mt-1 font-bold">{reservation.guestName || "غير متاح"}</p>
-                  </div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div><p className="text-xs text-muted-foreground">الوصول</p><p className="mt-1 font-semibold" dir="ltr">{reservation.arrivalDate || "—"}</p></div>
-                    <div><p className="text-xs text-muted-foreground">المغادرة</p><p className="mt-1 font-semibold" dir="ltr">{reservation.departureDate || "—"}</p></div>
+                    <div className="col-span-2"><p className="text-xs text-muted-foreground">الضيف</p><p className="mt-1 font-bold">{reservation.guestName || "غير متاح"}</p></div>
+                    <div className="col-span-2"><p className="text-xs text-muted-foreground">الفندق</p><p className="mt-1 font-semibold">{reservation.hotelName || reservation.hotelId || "—"}</p></div>
+                    <div><p className="text-xs text-muted-foreground">الوصول</p><p className="mt-1 font-semibold">{formatDate(reservation.arrivalDate)}</p></div>
+                    <div><p className="text-xs text-muted-foreground">المغادرة</p><p className="mt-1 font-semibold">{formatDate(reservation.departureDate)}</p></div>
                     <div><p className="text-xs text-muted-foreground">نوع الغرفة</p><p className="mt-1 font-semibold">{reservation.roomType || "—"}</p></div>
                     <div><p className="text-xs text-muted-foreground">رقم الغرفة</p><p className="mt-1 font-semibold">{reservation.roomNumber || "غير معيّنة"}</p></div>
+                  </div>
+                  <div className="rounded-xl bg-secondary/45 px-3 py-2 text-xs text-muted-foreground">
+                    مصدر النتيجة: أرشيف {formatDate(reservation.archivedFrom)} — {formatDate(reservation.archivedTo)}
                   </div>
                 </article>
               ))}
             </div>
           ) : (
-            <div className="grid min-h-36 place-items-center rounded-2xl border border-dashed text-sm text-muted-foreground">
-              لا توجد حجوزات مطابقة لهذه البيانات.
+            <div className="grid min-h-36 place-items-center rounded-2xl border border-dashed px-4 text-center text-sm leading-7 text-muted-foreground">
+              لا توجد حجوزات مطابقة داخل الفترات المؤرشفة. يمكن أرشفة فترة أقدم ثم إعادة البحث.
             </div>
           )}
         </section>
       ) : null}
 
-      <div className="flex items-center gap-2 rounded-2xl border border-primary/12 bg-secondary/20 px-4 py-3 text-xs leading-5 text-muted-foreground">
-        <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
-        نطاقات التاريخ محدودة إلى 31 يومًا لتقليل الحمل وتكاليف استدعاءات OHIP.
-      </div>
+      <section className="page-surface space-y-3">
+        <div>
+          <h2 className="section-title">الدخول الرسمي إلى OPERA</h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">هذه الروابط تفتح النظام الرسمي يدويًا، ولا تُحفظ بيانات الدخول داخل الموقع.</p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {OPERA_LINKS.map((item) => (
+            <a key={item.label} href={item.url} target="_blank" rel="noreferrer noopener" className="compact-card flex items-center justify-between gap-3 text-sm font-bold interactive">
+              <span>{item.label}</span><ExternalLink className="h-4 w-4 shrink-0 text-primary" />
+            </a>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };

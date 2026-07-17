@@ -60,5 +60,5 @@ export const automaticCroConfig = () => ({
   environmentReady: croEnvironmentReady(),
   from: croEnvironmentValue("CRO_AUTO_FROM") || DEFAULT_AUTO_FROM,
   to: croEnvironmentValue("CRO_AUTO_TO") || DEFAULT_AUTO_TO,
-  schedule: "@hourly",
+  schedule: "*/30 * * * *",
 });

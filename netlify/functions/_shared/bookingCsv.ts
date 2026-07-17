@@ -1,4 +1,5 @@
 import { getStore } from "@netlify/blobs";
+import { updateBookingPhoneArchive, type PhoneArchiveStatus } from "./bookingPhoneArchive";
 
 export type BookingRecord = Record<string, string>;
 
@@ -9,6 +10,8 @@ export type BookingStats = {
   cancelRate: number;
   updatedAt: string;
 };
+export type BookingSaveResult = BookingStats & { archive?: PhoneArchiveStatus };
+export type BookingSaveOptions = { updateCurrent?: boolean; archivePeriod?: { from: string; to: string } };
 
 export class BookingCsvError extends Error {
   status: number;
@@ -135,7 +138,7 @@ export const calculateBookingStats = (bookings: BookingRecord[]) => {
   };
 };
 
-export const saveBookingCsv = async (csvText: string): Promise<BookingStats> => {
+export const saveBookingCsv = async (csvText: string, options: BookingSaveOptions = {}): Promise<BookingSaveResult> => {
   if (!csvText.trim()) throw new BookingCsvError("ملف الحجوزات فارغ.", 400);
   if (new TextEncoder().encode(csvText).byteLength > MAX_CSV_BYTES) {
     throw new BookingCsvError("حجم ملف الحجوزات يتجاوز 5 MB.", 413);
@@ -151,8 +154,9 @@ export const saveBookingCsv = async (csvText: string): Promise<BookingStats> => 
     ...calculateBookingStats(bookings),
     updatedAt: new Date().toISOString(),
   };
-  const store = getStore("bookings");
-  await store.setJSON("data", bookings);
-  await store.setJSON("stats", stats);
-  return stats;
+  const archive = options.archivePeriod ? await updateBookingPhoneArchive(bookings, options.archivePeriod.from, options.archivePeriod.to) : undefined;
+  if (options.updateCurrent !== false) {
+    const store = getStore("bookings"); await store.setJSON("data", bookings); await store.setJSON("stats", stats);
+  }
+  return { ...stats, ...(archive ? { archive } : {}) };
 };
