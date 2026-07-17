@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Activity,
+  Archive,
   CalendarDays,
+  Clock3,
   DatabaseZap,
   Download,
   ExternalLink,
   Loader2,
+  LockKeyhole,
   RefreshCw,
   ShieldCheck,
   Wifi,
@@ -63,11 +67,11 @@ const readError = async (response: Response, fallback: string) => {
 };
 
 const syncStateLabel: Record<CroSyncStatus["state"], string> = {
-  idle: "لم يبدأ",
+  idle: "جاهز للمزامنة",
   queued: "بانتظار التنفيذ",
-  running: "جاري التحديث",
-  success: "محدّث",
-  error: "تعذر التحديث",
+  running: "جاري تحديث الحجوزات",
+  success: "تمت المزامنة بنجاح",
+  error: "تحتاج المزامنة مراجعة",
 };
 
 const formatTimestamp = (value?: string) => {
@@ -81,6 +85,21 @@ const formatTimestamp = (value?: string) => {
   }).format(date);
 };
 
+const nextHalfHour = () => {
+  const date = new Date();
+  date.setSeconds(0, 0);
+  if (date.getMinutes() < 30) date.setMinutes(30);
+  else {
+    date.setHours(date.getHours() + 1);
+    date.setMinutes(0);
+  }
+  return new Intl.DateTimeFormat("ar-SA", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "Asia/Riyadh",
+  }).format(date);
+};
+
 const AdminCroExport = () => {
   const [status, setStatus] = useState<CroExportStatus | null>(null);
   const [sync, setSync] = useState<CroSyncResponse | null>(null);
@@ -89,7 +108,7 @@ const AdminCroExport = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState<"status" | "test" | "export" | "sync" | "">("status");
+  const [loading, setLoading] = useState<"status" | "test" | "export" | "sync" | "archive" | "">("status");
 
   const credentialsReady = Boolean(status?.configured || (username.trim() && password));
   const syncIsActive = sync?.status.state === "queued" || sync?.status.state === "running";
@@ -98,7 +117,7 @@ const AdminCroExport = () => {
     if (sync?.status.state === "success") return "text-emerald-700";
     if (sync?.status.state === "error") return "text-red-700";
     if (syncIsActive) return "text-amber-700";
-    return "text-muted-foreground";
+    return "text-foreground";
   }, [sync?.status.state, syncIsActive]);
 
   const loadSyncStatus = useCallback(async () => {
@@ -163,22 +182,22 @@ const AdminCroExport = () => {
     }
   };
 
-  const syncBookings = async () => {
-    setLoading("sync");
+  const startSync = async (archiveOnly: boolean) => {
+    setLoading(archiveOnly ? "archive" : "sync");
     setMessage("");
     try {
       const response = await fetch(`${API_BASE}/cro-sync`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ from, to, username, password }),
+        body: JSON.stringify({ from, to, username, password, archiveOnly }),
       });
       const result = await response.json().catch(() => ({})) as CroSyncResponse & { error?: string };
-      if (!response.ok) throw new Error(result.error || "تعذر بدء تحديث تقارير الحجوزات");
+      if (!response.ok) throw new Error(result.error || "تعذر بدء مزامنة الحجوزات");
       setSync(result);
-      setMessage(result.status.message || "بدأ تحديث التقارير في الخلفية.");
+      setMessage(result.status.message || (archiveOnly ? "بدأت أرشفة الفترة في الخلفية." : "بدأ تحديث التقرير في الخلفية."));
     } catch (error) {
       setLoading("");
-      setMessage(error instanceof Error ? error.message : "تعذر بدء تحديث التقارير.");
+      setMessage(error instanceof Error ? error.message : "تعذر بدء المزامنة.");
     }
   };
 
@@ -209,83 +228,106 @@ const AdminCroExport = () => {
 
   return (
     <div className="page-wrap-narrow">
-      <PageHeader title="تحديث حجوزات CRO" subtitle="تحديث فوري وآلي لتقارير الحجز المركزي." icon={ShieldCheck} />
+      <PageHeader title="مزامنة الحجوزات" subtitle="تحديث آمن وفوري لتقارير الحجز المركزي من CRO." icon={RefreshCw} />
 
-      {message ? <div className="rounded-xl border border-primary/20 bg-primary/8 p-3 text-sm">{message}</div> : null}
+      {message ? <div aria-live="polite" className="rounded-2xl border border-primary/20 bg-primary/8 p-4 text-sm leading-7">{message}</div> : null}
 
-      <section className="page-surface space-y-4">
-        <div className="grid gap-3 sm:grid-cols-4">
-          <div className="compact-card"><p className="text-xs text-muted-foreground">بيانات الدخول</p><strong className={status?.configured ? "text-emerald-600" : "text-amber-700"}>{status?.configured ? "مضبوطة" : "إدخال مؤقت"}</strong></div>
-          <div className="compact-card"><p className="text-xs text-muted-foreground">تصدير CRO</p><strong className={status?.exportConfigured ? "text-emerald-600" : "text-amber-700"}>{status?.exportConfigured ? "جاهز" : "ينقصه ضبط"}</strong></div>
-          <div className="compact-card"><p className="text-xs text-muted-foreground">التحديث الآلي</p><strong className={sync?.automation.configured ? "text-emerald-600" : "text-amber-700"}>{sync?.automation.configured ? "كل ساعة" : "غير مفعّل"}</strong></div>
-          <div className="compact-card"><p className="text-xs text-muted-foreground">الحماية</p><strong>سيرفر فقط</strong></div>
-        </div>
-
-        <div className="rounded-xl border border-primary/15 bg-primary/5 p-3 text-xs leading-6 text-muted-foreground">
-          زر التحديث يجلب تقرير <span dir="ltr" className="font-semibold">Check-Out</span> من CRO ثم يحدّث تقارير الحجوزات داخل الموقع تلقائيًا. لا يُستبدل التقرير الحالي إذا فشل CRO أو أعاد ملفًا فارغًا، ولا تُحفظ بيانات الدخول المكتوبة هنا.
-        </div>
-
-        <div className="rounded-xl border border-border/45 bg-secondary/25 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              {syncIsActive ? <Loader2 className="h-4 w-4 animate-spin text-amber-700" /> : <DatabaseZap className="h-4 w-4 text-primary" />}
-              <strong className={syncTone}>{syncStateLabel[sync?.status.state || "idle"]}</strong>
+      <section className="relative overflow-hidden rounded-[1.75rem] border border-primary/15 bg-gradient-to-br from-primary/15 via-background to-secondary/55 p-5 shadow-sm sm:p-6">
+        <div className="pointer-events-none absolute -left-20 -top-20 h-52 w-52 rounded-full bg-primary/15 blur-3xl" />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div role="img" aria-label="أيقونة مزامنة الحجوزات" className="relative grid h-16 w-16 shrink-0 place-items-center rounded-2xl border border-primary/20 bg-background/85 shadow-sm backdrop-blur">
+              <RefreshCw className={`h-7 w-7 text-primary ${syncIsActive ? "animate-spin" : ""}`} aria-hidden="true" />
+              {sync?.automation.configured ? <span className="absolute -left-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-background bg-emerald-500" /> : null}
             </div>
-            <span className="text-xs text-muted-foreground">
-              آخر تحديث: {formatTimestamp(sync?.status.stats?.updatedAt || sync?.status.finishedAt)}
-            </span>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-black">المزامنة التلقائية</h2>
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${sync?.automation.configured ? "bg-emerald-500/10 text-emerald-700" : "bg-amber-500/10 text-amber-700"}`}>
+                  {sync?.automation.configured ? "مفعّلة · كل 30 دقيقة" : "تحتاج إعداد"}
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">تعمل خلف الكواليس وتحدّث تقرير الحجوزات دون إبقاء الصفحة مفتوحة.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:min-w-64">
+            <div className="rounded-2xl border border-border/40 bg-background/70 p-3 text-center backdrop-blur">
+              <Clock3 className="mx-auto h-4 w-4 text-primary" />
+              <span className="mt-1 block text-[11px] text-muted-foreground">المزامنة القادمة</span>
+              <strong className="text-sm">{sync?.automation.configured ? nextHalfHour() : "—"}</strong>
+            </div>
+            <div className="rounded-2xl border border-border/40 bg-background/70 p-3 text-center backdrop-blur">
+              <Activity className="mx-auto h-4 w-4 text-primary" />
+              <span className="mt-1 block text-[11px] text-muted-foreground">الحالة</span>
+              <strong className={`text-sm ${syncTone}`}>{syncStateLabel[sync?.status.state || "idle"]}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative mt-5 border-t border-border/35 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="text-muted-foreground">آخر تحديث: <strong className="text-foreground">{formatTimestamp(sync?.status.stats?.updatedAt || sync?.status.finishedAt)}</strong></span>
+            <span className="text-muted-foreground">الفترة الآلية: <strong className="text-foreground" dir="ltr">{sync?.automation.from || "—"} — {sync?.automation.to || "—"}</strong></span>
           </div>
           {sync?.status.message ? <p className="mt-2 text-xs leading-6 text-muted-foreground">{sync.status.message}</p> : null}
-          {sync?.status.stats ? (
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="rounded-lg bg-background/80 p-2"><span className="block text-muted-foreground">الإجمالي</span><strong>{sync.status.stats.total.toLocaleString("ar-SA")}</strong></div>
-              <div className="rounded-lg bg-background/80 p-2"><span className="block text-muted-foreground">المؤكدة</span><strong className="text-emerald-700">{sync.status.stats.confirmed.toLocaleString("ar-SA")}</strong></div>
-              <div className="rounded-lg bg-background/80 p-2"><span className="block text-muted-foreground">الملغاة/عدم الحضور</span><strong className="text-red-700">{sync.status.stats.cancelled.toLocaleString("ar-SA")}</strong></div>
-            </div>
-          ) : null}
+        </div>
+      </section>
+
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="compact-card"><p className="text-xs text-muted-foreground">بيانات الدخول</p><strong className={status?.configured ? "text-emerald-600" : "text-amber-700"}>{status?.configured ? "محفوظة بأمان" : "إدخال مؤقت"}</strong></div>
+        <div className="compact-card"><p className="text-xs text-muted-foreground">تصدير CRO</p><strong className={status?.exportConfigured ? "text-emerald-600" : "text-amber-700"}>{status?.exportConfigured ? "جاهز" : "ينقصه ضبط"}</strong></div>
+        <div className="compact-card"><p className="text-xs text-muted-foreground">التكرار</p><strong>{sync?.automation.configured ? "كل 30 دقيقة" : "غير مفعّل"}</strong></div>
+        <div className="compact-card"><p className="text-xs text-muted-foreground">الحماية</p><strong className="inline-flex items-center gap-1.5"><LockKeyhole className="h-3.5 w-3.5 text-primary" /> سيرفر فقط</strong></div>
+      </section>
+
+      {sync?.status.stats ? (
+        <section className="grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="compact-card"><span className="block text-muted-foreground">الإجمالي</span><strong className="mt-1 block text-lg">{sync.status.stats.total.toLocaleString("ar-SA")}</strong></div>
+          <div className="compact-card"><span className="block text-muted-foreground">المؤكدة</span><strong className="mt-1 block text-lg text-emerald-700">{sync.status.stats.confirmed.toLocaleString("ar-SA")}</strong></div>
+          <div className="compact-card"><span className="block text-muted-foreground">الملغاة/عدم الحضور</span><strong className="mt-1 block text-lg text-red-700">{sync.status.stats.cancelled.toLocaleString("ar-SA")}</strong></div>
+        </section>
+      ) : null}
+
+      <section className="page-surface space-y-5">
+        <div>
+          <h2 className="section-title">مزامنة يدوية أو أرشفة</h2>
+          <p className="mt-1 text-xs leading-6 text-muted-foreground">
+            «تحديث التقرير الحالي» يحدّث لوحة الموظفين. «أرشفة فترة سابقة» تضيفها إلى البحث برقم الجوال دون استبدال التقرير الحالي.
+          </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs">
-            <span className="mb-1 block text-muted-foreground">يوزر CRO — يُستخدم لهذه العملية فقط</span>
-            <input
-              dir="ltr"
-              className="h-11 w-full rounded-xl border bg-secondary/65 px-3"
-              placeholder="اسم المستخدم"
-              value={username}
-              autoComplete="username"
-              onChange={(event) => setUsername(event.target.value)}
-            />
+            <span className="mb-1.5 block text-muted-foreground">يوزر CRO — يُستخدم لهذه العملية فقط</span>
+            <input dir="ltr" className="h-12 w-full rounded-2xl border bg-secondary/50 px-4 outline-none focus:border-primary/60 focus:ring-4 focus:ring-primary/10" placeholder="اسم المستخدم" value={username} autoComplete="username" onChange={(event) => setUsername(event.target.value)} />
           </label>
           <label className="text-xs">
-            <span className="mb-1 block text-muted-foreground">كلمة مرور CRO — تُستخدم لهذه العملية فقط</span>
-            <input
-              dir="ltr"
-              type="password"
-              className="h-11 w-full rounded-xl border bg-secondary/65 px-3"
-              placeholder="••••••••"
-              value={password}
-              autoComplete="current-password"
-              onChange={(event) => setPassword(event.target.value)}
-            />
+            <span className="mb-1.5 block text-muted-foreground">كلمة مرور CRO — تُستخدم لهذه العملية فقط</span>
+            <input dir="ltr" type="password" className="h-12 w-full rounded-2xl border bg-secondary/50 px-4 outline-none focus:border-primary/60 focus:ring-4 focus:ring-primary/10" placeholder="••••••••" value={password} autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} />
           </label>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs">
-            <span className="mb-1 flex items-center gap-1 text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" /> من تاريخ Check-Out</span>
-            <input type="date" className="h-11 w-full rounded-xl border bg-secondary/65 px-3" value={from} onChange={(event) => setFrom(event.target.value)} />
+            <span className="mb-1.5 flex items-center gap-1 text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" /> من تاريخ Check-Out</span>
+            <input type="date" className="h-12 w-full rounded-2xl border bg-secondary/50 px-4 outline-none focus:border-primary/60" value={from} onChange={(event) => setFrom(event.target.value)} />
           </label>
           <label className="text-xs">
-            <span className="mb-1 flex items-center gap-1 text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" /> إلى تاريخ Check-Out</span>
-            <input type="date" className="h-11 w-full rounded-xl border bg-secondary/65 px-3" value={to} onChange={(event) => setTo(event.target.value)} />
+            <span className="mb-1.5 flex items-center gap-1 text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" /> إلى تاريخ Check-Out</span>
+            <input type="date" className="h-12 w-full rounded-2xl border bg-secondary/50 px-4 outline-none focus:border-primary/60" value={to} onChange={(event) => setTo(event.target.value)} />
           </label>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button className="inline-flex h-11 items-center gap-2 rounded-xl gold-gradient px-4 text-sm font-bold text-primary-foreground" onClick={() => void syncBookings()} disabled={busy || !credentialsReady || !status?.exportConfigured}>
-            {loading === "sync" || syncIsActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} تحديث التقارير الآن
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl gold-gradient px-4 text-sm font-bold text-primary-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-50" onClick={() => void startSync(false)} disabled={busy || !credentialsReady || !status?.exportConfigured}>
+            {loading === "sync" || syncIsActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <DatabaseZap className="h-4 w-4" />} تحديث التقرير الحالي
           </button>
+          <button className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/5 px-4 text-sm font-bold text-primary disabled:cursor-not-allowed disabled:opacity-50" onClick={() => void startSync(true)} disabled={busy || !credentialsReady || !status?.exportConfigured}>
+            {loading === "archive" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />} أرشفة فترة سابقة
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2 border-t border-border/35 pt-4">
           <button className="inline-flex h-11 items-center gap-2 rounded-xl border border-primary/25 px-4 text-sm font-bold" onClick={() => void testLogin()} disabled={busy || !credentialsReady}>
             {loading === "test" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wifi className="h-4 w-4" />} اختبار الدخول
           </button>
@@ -293,10 +335,14 @@ const AdminCroExport = () => {
             {loading === "export" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} تنزيل CSV فقط
           </button>
           {status?.dashboardUrl ? (
-            <a className="inline-flex h-11 items-center gap-2 rounded-xl border border-border/35 px-4 text-sm font-bold" href={status.dashboardUrl} target="_blank" rel="noreferrer">
+            <a className="inline-flex h-11 items-center gap-2 rounded-xl border border-border/35 px-4 text-sm font-bold" href={status.dashboardUrl} target="_blank" rel="noreferrer noopener">
               فتح CRO <ExternalLink className="h-4 w-4" />
             </a>
           ) : null}
+        </div>
+
+        <div className="rounded-2xl border border-primary/15 bg-primary/5 p-3 text-xs leading-6 text-muted-foreground">
+          تجلب المزامنة تقرير <span dir="ltr" className="font-semibold">Check-Out</span> عبر السيرفر. لا يُستبدل التقرير الحالي إذا فشل CRO أو أعاد ملفًا فارغًا، ولا تُحفظ بيانات الدخول التي تكتبها في هذه الصفحة.
         </div>
       </section>
     </div>

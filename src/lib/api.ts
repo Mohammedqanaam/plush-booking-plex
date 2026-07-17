@@ -171,19 +171,23 @@ export type CroExportStatus = {
   optionalEnv?: string[];
 };
 
-export type OperaEnvironmentStatus = {
-  id: "legacy" | "new";
-  label: string;
-  uiUrl: string;
+export type BookingPhoneArchiveStatus = {
   configured: boolean;
-  authScheme: "client_credentials" | "resource_owner";
-  hotels: Array<{ id: string; name: string }>;
-  missing: string[];
+  searchAvailable: boolean;
+  periodCount: number;
+  indexedReservations: number;
+  indexedMobiles: number;
+  earliestFrom: string | null;
+  latestTo: string | null;
+  updatedAt: string | null;
+  latestPeriodPhoneColumnCount: number;
 };
 
 export type OperaSearchStatus = {
-  environments: OperaEnvironmentStatus[];
+  source: "cro-archive";
+  linkedSystem: "OPERA";
   readOnly: true;
+  archive: BookingPhoneArchiveStatus;
 };
 
 export type OperaReservationSummary = {
@@ -191,6 +195,7 @@ export type OperaReservationSummary = {
   reservationId: string;
   guestName: string;
   status: string;
+  bookedDate: string;
   arrivalDate: string;
   departureDate: string;
   hotelId: string;
@@ -198,25 +203,23 @@ export type OperaReservationSummary = {
   roomType: string;
   roomNumber: string;
   numberOfRooms: number | null;
+  archivedFrom: string;
+  archivedTo: string;
 };
 
 export type OperaSearchRequest = {
-  environment: "legacy" | "new";
-  hotelId: string;
-  query: string;
-  arrivalStartDate?: string;
-  arrivalEndDate?: string;
-  departureStartDate?: string;
-  departureEndDate?: string;
+  mobile: string;
 };
 
 export type OperaSearchResponse = {
+  source: "cro-archive";
+  linkedSystem: "OPERA";
   reservations: OperaReservationSummary[];
   totalResults: number;
-  hasMore: boolean;
   requestId: string;
   searchedAt: string;
   readOnly: true;
+  archive: BookingPhoneArchiveStatus;
 };
 
 const API_BASE = "/.netlify/functions";
@@ -335,7 +338,7 @@ export const api = {
   async getOperaSearchStatus() {
     const res = await fetch(OPERA_SEARCH_API, { headers: authHeaders() });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || "تعذر تحميل حالة ربط OPERA");
+    if (!res.ok) throw new Error(data.error || "تعذر تحميل حالة أرشيف الحجوزات");
     return data as OperaSearchStatus;
   },
 
@@ -346,7 +349,7 @@ export const api = {
       body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || "تعذر البحث في حجوزات OPERA");
+    if (!res.ok) throw new Error(data.error || "تعذر البحث في الحجوزات");
     return data as OperaSearchResponse;
   },
 

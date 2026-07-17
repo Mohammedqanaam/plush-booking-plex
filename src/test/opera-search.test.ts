@@ -1,100 +1,62 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  normalizeOperaReservations,
-  validateOperaSearchInput,
-} from "../../netlify/functions/_shared/opera";
+  buildPeriodPhoneEntries,
+  extractSaudiMobiles,
+  findPhoneColumns,
+  mobileLookupKey,
+  normalizeSaudiMobile,
+} from "../../netlify/functions/_shared/croPhoneSearch";
 import operaSearch from "../../netlify/functions/opera-search";
 
-describe("OPERA reservation search", () => {
-  it("accepts a narrow read-only reservation lookup", () => {
-    const result = validateOperaSearchInput({
-      environment: "legacy",
-      hotelId: "RUH01",
-      query: "123456",
-      arrivalStartDate: "2026-07-01",
-      arrivalEndDate: "2026-07-05",
-    });
-
-    expect(result.ok).toBe(true);
+describe("CRO historical reservation phone search", () => {
+  it("accepts a Saudi mobile with or without the leading zero", () => {
+    expect(normalizeSaudiMobile("566000111")).toBe("966566000111");
+    expect(normalizeSaudiMobile("0566000111")).toBe("966566000111");
+    expect(normalizeSaudiMobile("+966 56 600 0111")).toBe("966566000111");
+    expect(normalizeSaudiMobile("٥٦٦٠٠٠١١١")).toBe("966566000111");
   });
 
-  it("rejects broad date ranges and incomplete date pairs", () => {
-    expect(validateOperaSearchInput({
-      environment: "new",
-      hotelId: "RUH01",
-      query: "Aldosari",
-      arrivalStartDate: "2026-01-01",
-      arrivalEndDate: "2026-03-01",
-    }).ok).toBe(false);
-
-    expect(validateOperaSearchInput({
-      environment: "new",
-      hotelId: "RUH01",
-      query: "Aldosari",
-      departureStartDate: "2026-07-01",
-    }).ok).toBe(false);
+  it("produces the same private lookup key for local and international formats", () => {
+    const secret = "unit-test-search-secret";
+    expect(mobileLookupKey("566000111", secret)).toBe(mobileLookupKey("+966566000111", secret));
+    expect(mobileLookupKey("566000111", secret)).not.toContain("566000111");
   });
 
-  it("returns only the operational reservation summary", () => {
-    const normalized = normalizeOperaReservations({
-      reservations: {
-        reservationInfo: [{
-          reservationIdList: [
-            { type: "Reservation", id: "9988" },
-            { type: "Confirmation", id: "ABC123" },
-          ],
-          reservationGuest: {
-            givenName: "Sara",
-            surname: "Guest",
-            phoneNumber: "0500000000",
-            email: "guest@example.com",
-          },
-          roomStay: {
-            arrivalDate: "2026-07-01",
-            departureDate: "2026-07-03",
-            roomType: "DLX",
-            roomNumber: "310",
-            numberOfRooms: "1",
-          },
-          reservationStatus: "Reserved",
-          hotelId: "RUH01",
-          hotelName: "Riyadh",
-          reservationPaymentMethod: {
-            cardNumber: "4111111111111111",
-          },
-        }],
-        totalResults: 1,
-      },
-    });
+  it("indexes only deliberate phone fields and never leaks the raw mobile", () => {
+    const records = [{
+      Hotel: "Braira Test",
+      Mobile: "0566000111",
+      "Confirmation Number": "CONF-100",
+      "Guest Name": "Test Guest",
+      "Check In": "2026-07-01",
+      "Check Out": "2026-07-03",
+    }];
 
-    expect(normalized.reservations[0]).toEqual({
-      confirmationNumber: "ABC123",
-      reservationId: "9988",
-      guestName: "Sara Guest",
-      status: "Reserved",
-      arrivalDate: "2026-07-01",
-      departureDate: "2026-07-03",
-      hotelId: "RUH01",
-      hotelName: "Riyadh",
-      roomType: "DLX",
-      roomNumber: "310",
-      numberOfRooms: 1,
-    });
-    expect(JSON.stringify(normalized)).not.toContain("0500000000");
-    expect(JSON.stringify(normalized)).not.toContain("4111111111111111");
+    expect(findPhoneColumns(records)).toEqual(["Mobile"]);
+    expect(extractSaudiMobiles(records[0].Mobile)).toEqual(["966566000111"]);
+
+    const built = buildPeriodPhoneEntries(records, {
+      key: "2026-07-01_2026-07-05",
+      from: "2026-07-01",
+      to: "2026-07-05",
+    }, "unit-test-search-secret");
+
+    expect(built.indexedReservations).toBe(1);
+    expect(Object.keys(built.entries)).toHaveLength(1);
+    expect(JSON.stringify(built)).not.toContain("566000111");
+    expect(JSON.stringify(built)).not.toContain("0566000111");
   });
 
-  it("enforces an authenticated admin session in the server function", () => {
+  it("keeps the endpoint admin-only and free from stored OPERA credentials", () => {
     const source = readFileSync("netlify/functions/opera-search.ts", "utf8");
     expect(source).toContain("validateSession(req)");
     expect(source).toContain('role === "superadmin" || role === "admin"');
     expect(source).toContain('path: "/api/admin/opera-search"');
-    expect(source).not.toContain("MD.ALDOSARI");
-    expect(source).not.toMatch(/MAq\$/);
+    expect(source).not.toContain("integrationPassword");
   });
 
-  it("rejects an anonymous request before reading OPERA configuration", async () => {
+  it("rejects an anonymous request before opening the archive", async () => {
     const response = await operaSearch(new Request("https://example.com/api/admin/opera-search"));
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toMatchObject({ error: "الجلسة غير صالحة." });

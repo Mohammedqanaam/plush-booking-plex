@@ -12,6 +12,7 @@ import { json, validateSession } from "./_shared/security";
 type SyncRequest = {
   from?: string;
   to?: string;
+  archiveOnly?: boolean;
   username?: string;
   password?: string;
 };
@@ -51,7 +52,7 @@ export default async (req: Request, context: Context) => {
     from: body.from,
     to: body.to,
     queuedAt,
-    message: "تمت إضافة التحديث إلى قائمة التنفيذ.",
+    message: body.archiveOnly ? "تمت إضافة أرشفة الفترة السابقة إلى قائمة التنفيذ." : "تمت إضافة التحديث إلى قائمة التنفيذ.",
   });
 
   const authorization = req.headers.get("authorization") || "";
@@ -67,6 +68,7 @@ export default async (req: Request, context: Context) => {
         attemptId,
         from: body.from,
         to: body.to,
+        archiveOnly: Boolean(body.archiveOnly),
         username: body.username,
         password: body.password,
       }),
