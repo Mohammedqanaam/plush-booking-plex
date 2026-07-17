@@ -41,7 +41,7 @@ $ApiKey | ConvertFrom-SecureString | Set-Content -LiteralPath $secretPath -Encod
 } | ConvertTo-Json | Set-Content -LiteralPath $configPath -Encoding UTF8
 
 $powerShell = Join-Path $PSHOME "powershell.exe"
-$action = New-ScheduledTaskAction -Execute $powerShell -Argument "-NoProfile -NonInteractive -File `"$installedScript`" -ConfigPath `"$configPath`""
+$action = New-ScheduledTaskAction -Execute $powerShell -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$installedScript`" -ConfigPath `"$configPath`""
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
     -RepetitionInterval (New-TimeSpan -Minutes $IntervalMinutes) `
     -RepetitionDuration (New-TimeSpan -Days 3650)
