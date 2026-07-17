@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Navigate } from "react-router-dom";
 import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
+  CloudDownload,
   Download,
   FileSpreadsheet,
   FileText,
@@ -14,9 +15,11 @@ import {
   Search,
   ShieldCheck,
   UploadCloud,
+  type LucideIcon,
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { getAdminSession, hasPermission } from "@/lib/adminAuth";
+import { api } from "@/lib/api";
 import {
   analyzeAvayaFiles,
   employeeRiskLevel,
@@ -40,10 +43,10 @@ const STATUS_LABELS = {
 } as const;
 
 type Filter = "all" | keyof typeof STATUS_LABELS;
+type ReportOrigin = "automatic" | "manual" | null;
 
 const AdminAvayaReports = () => {
   const session = getAdminSession();
-  const navigate = useNavigate();
   const inputs = useRef<Partial<Record<AvayaFileKind, HTMLInputElement | null>>>({});
   const [files, setFiles] = useState<Partial<Record<AvayaFileKind, File>>>({});
   const [report, setReport] = useState<AvayaReportResult | null>(null);
@@ -51,6 +54,33 @@ const AdminAvayaReports = () => {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [reportOrigin, setReportOrigin] = useState<ReportOrigin>(null);
+  const [syncLoading, setSyncLoading] = useState(true);
+  const [syncError, setSyncError] = useState("");
+  const [syncConfigured, setSyncConfigured] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+
+  const loadLatest = useCallback(async () => {
+    setSyncLoading(true);
+    setSyncError("");
+    try {
+      const data = await api.getLatestAvayaReport();
+      setSyncConfigured(data.sync.configured);
+      setLastSyncedAt(data.sync.updatedAt);
+      if (data.report) {
+        setReport(data.report);
+        setReportOrigin("automatic");
+      }
+    } catch (cause) {
+      setSyncError(cause instanceof Error ? cause.message : "تعذر تحميل آخر مزامنة من Avaya.");
+    } finally {
+      setSyncLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadLatest();
+  }, [loadLatest]);
 
   const visibleEmployees = useMemo(() => {
     if (!report) return [];
@@ -71,6 +101,14 @@ const AdminAvayaReports = () => {
     };
   }, [report]);
 
+  const metrics: Array<{ label: string; value: number | string; icon: LucideIcon; valueClass: string }> = [
+    { label: "الموظفون", value: report?.employees.length || 0, icon: FileSpreadsheet, valueClass: "" },
+    { label: "المكالمات المجابة", value: summary.answered, icon: PhoneIncoming, valueClass: "" },
+    { label: "المكالمات الفائتة", value: summary.missed, icon: PhoneMissed, valueClass: "" },
+    { label: "إجمالي DND", value: formatDuration(summary.dnd), icon: Clock3, valueClass: "" },
+    { label: "أولوية مراجعة", value: summary.risks, icon: AlertTriangle, valueClass: "text-red-600 dark:text-red-300" },
+  ];
+
   if (!session || !hasPermission(session.role, "upload")) return <Navigate to="/admin" replace />;
 
   const chooseFile = (kind: AvayaFileKind, file?: File) => {
@@ -85,6 +123,7 @@ const AdminAvayaReports = () => {
     }
     setFiles((current) => ({ ...current, [kind]: file }));
     setReport(null);
+    setReportOrigin(null);
     setError("");
   };
 
@@ -98,6 +137,7 @@ const AdminAvayaReports = () => {
     setError("");
     try {
       setReport(await analyzeAvayaFiles(selected));
+      setReportOrigin("manual");
     } catch (cause) {
       setReport(null);
       setError(cause instanceof Error ? cause.message : "تعذر تحليل الملفات.");
@@ -117,7 +157,27 @@ const AdminAvayaReports = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="تقارير Avaya" subtitle="ارفع التقارير بصيغة PDF أو XLSX لتحويلها إلى نتيجة موحدة قابلة للمراجعة والتنزيل." icon={FileSpreadsheet} onBack={() => navigate("/admin")} />
+      <PageHeader title="تقارير Avaya" subtitle="ارفع التقارير بصيغة PDF أو XLSX لتحويلها إلى نتيجة موحدة قابلة للمراجعة والتنزيل." icon={FileSpreadsheet} />
+
+      <section className="page-surface mb-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className={`grid h-10 w-10 place-items-center rounded-xl ${syncConfigured ? "bg-emerald-500/12 text-emerald-600" : "bg-amber-500/12 text-amber-700"}`}>
+              <CloudDownload className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="section-title">المزامنة التلقائية</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {lastSyncedAt ? `آخر تحديث: ${new Date(lastSyncedAt).toLocaleString("ar-SA")}` : syncConfigured ? "بانتظار أول مجموعة تقارير مكتملة." : "مفتاح المزامنة غير مهيأ."}
+              </p>
+            </div>
+          </div>
+          <button type="button" disabled={syncLoading} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/50 px-3 text-xs font-bold disabled:opacity-50" onClick={() => void loadLatest()}>
+            <RefreshCcw className={`h-4 w-4 ${syncLoading ? "animate-spin" : ""}`} /> تحديث
+          </button>
+        </div>
+        {syncError ? <div role="alert" className="flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/8 p-3 text-sm text-amber-800 dark:text-amber-300"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {syncError}</div> : null}
+      </section>
 
       <section className="page-surface space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -155,23 +215,20 @@ const AdminAvayaReports = () => {
           {report.warnings.map((warning) => <div key={warning} className="flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/8 p-3 text-sm text-amber-800 dark:text-amber-300"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {warning}</div>)}
 
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            {[
-              ["الموظفون", report.employees.length, FileSpreadsheet, ""],
-              ["المكالمات المجابة", summary.answered, PhoneIncoming, ""],
-              ["المكالمات الفائتة", summary.missed, PhoneMissed, ""],
-              ["إجمالي DND", formatDuration(summary.dnd), Clock3, ""],
-              ["أولوية مراجعة", summary.risks, AlertTriangle, "text-red-600 dark:text-red-300"],
-            ].map(([label, value, Icon, valueClass]) => (
-              <article key={String(label)} className="compact-card">
-                <div className="flex items-center justify-between gap-2"><p className="text-xs text-muted-foreground">{String(label)}</p><Icon className="h-4 w-4 text-primary" /></div>
-                <p className={`mt-2 text-2xl font-black ${String(valueClass)}`}>{typeof value === "number" ? value.toLocaleString("ar-SA") : String(value)}</p>
+            {metrics.map(({ label, value, icon: Icon, valueClass }) => (
+              <article key={label} className="compact-card">
+                <div className="flex items-center justify-between gap-2"><p className="text-xs text-muted-foreground">{label}</p><Icon className="h-4 w-4 text-primary" /></div>
+                <p className={`mt-2 text-2xl font-black ${valueClass}`}>{typeof value === "number" ? value.toLocaleString("ar-SA") : value}</p>
               </article>
             ))}
           </section>
 
           <section className="page-surface space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div><h2 className="section-title">نتائج الموظفين</h2><p className="mt-1 text-xs text-muted-foreground" dir="ltr">{report.rangeStart} — {report.rangeEnd}</p></div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2"><h2 className="section-title">نتائج الموظفين</h2>{reportOrigin === "automatic" ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-[10px] font-black text-emerald-700 dark:text-emerald-300"><CloudDownload className="h-3 w-3" /> مزامن تلقائياً</span> : null}</div>
+                <p className="mt-1 text-xs text-muted-foreground" dir="ltr">{report.rangeStart} — {report.rangeEnd}</p>
+              </div>
               <button className="inline-flex h-11 items-center gap-2 rounded-xl gold-gradient px-4 text-sm font-black text-primary-foreground" onClick={() => void exportAvayaReport(report)}><Download className="h-4 w-4" /> تنزيل Excel</button>
             </div>
 

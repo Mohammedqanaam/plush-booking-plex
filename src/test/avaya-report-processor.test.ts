@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
 import {
   analyzeAvayaFiles,
+  analyzeAvayaWorkbookInputs,
   createAvayaExportWorkbook,
   durationToSeconds,
   employeeIdentity,
@@ -61,6 +62,11 @@ describe("Avaya report processor", () => {
       await workbookFile(inbound, "User_Inbound_Summary.xlsx"),
       await workbookFile(dnd, "Agent_Realtime_Feature_Trace_new.xlsx"),
     ]);
+    const automatedResult = await analyzeAvayaWorkbookInputs([
+      { name: "Agent_Time_Card.xlsx", bytes: new Uint8Array(await timecard.xlsx.writeBuffer()) },
+      { name: "User_Inbound_Summary.xlsx", bytes: new Uint8Array(await inbound.xlsx.writeBuffer()) },
+      { name: "Agent_Realtime_Feature_Trace_new.xlsx", bytes: new Uint8Array(await dnd.xlsx.writeBuffer()) },
+    ]);
 
     expect(result.warnings).toEqual([]);
     expect(result.sourceCounts).toEqual({ inbound: 1, dnd: 1, timecard: 1 });
@@ -75,6 +81,7 @@ describe("Avaya report processor", () => {
       dndEvents: 2,
       loginSessions: 1,
     });
+    expect(automatedResult).toEqual(result);
     expect(employeeRiskLevel(result.employees[0])).toBe("review");
   });
 

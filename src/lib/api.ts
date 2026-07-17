@@ -1,3 +1,4 @@
+import type { AvayaFileKind, AvayaReportResult } from "@/lib/avayaReportProcessor";
 
 export type EmployeeAdjustment = {
   confirmedAdjustment?: number;
@@ -222,8 +223,29 @@ export type OperaSearchResponse = {
   archive: BookingPhoneArchiveStatus;
 };
 
+export type SyncedAvayaReport = AvayaReportResult & {
+  reportId: string;
+  syncedAt: string;
+  sources: Array<{
+    kind: AvayaFileKind;
+    fileName: string;
+    sha256: string;
+    size: number;
+    uploadedAt: string;
+  }>;
+};
+
+export type AvayaSyncStatus = {
+  report: SyncedAvayaReport | null;
+  sync: {
+    configured: boolean;
+    updatedAt: string | null;
+  };
+};
+
 const API_BASE = "/.netlify/functions";
 const OPERA_SEARCH_API = "/api/admin/opera-search";
+const AVAYA_SYNC_API = "/api/avaya/sync";
 
 const getToken = (): string | null => (typeof window === "undefined" ? null : sessionStorage.getItem("admin_token"));
 
@@ -340,6 +362,13 @@ export const api = {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "تعذر تحميل حالة أرشيف الحجوزات");
     return data as OperaSearchStatus;
+  },
+
+  async getLatestAvayaReport() {
+    const res = await fetch(AVAYA_SYNC_API, { headers: authHeaders(), cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "تعذر تحميل آخر مزامنة من Avaya");
+    return data as AvayaSyncStatus;
   },
 
   async searchOperaReservations(payload: OperaSearchRequest) {

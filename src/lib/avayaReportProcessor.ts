@@ -27,7 +27,7 @@ export type AvayaReportResult = {
   sourceCounts: Record<AvayaFileKind, number>;
 };
 
-type InboundEntry = {
+export type InboundEntry = {
   key: string;
   employeeId: string;
   name: string;
@@ -37,7 +37,7 @@ type InboundEntry = {
   inboundDurationSeconds: number;
 };
 
-type DurationEntry = {
+export type DurationEntry = {
   key: string;
   employeeId: string;
   name: string;
@@ -45,9 +45,14 @@ type DurationEntry = {
   events: number;
 };
 
-type ParsedAvayaSource =
+export type ParsedAvayaSource =
   | { kind: "inbound"; rangeStart: string; rangeEnd: string; entries: InboundEntry[] }
   | { kind: "dnd" | "timecard"; rangeStart: string; rangeEnd: string; entries: DurationEntry[] };
+
+export type AvayaWorkbookInput = {
+  name: string;
+  bytes: Uint8Array;
+};
 
 const REPORT_TITLES: Record<AvayaFileKind, string> = {
   inbound: "User Inbound Summary",
@@ -96,22 +101,32 @@ export const classifyAvayaWorkbook = (workbook: ExcelJS.Workbook): AvayaFileKind
   return null;
 };
 
-const loadWorkbook = async (file: File) => {
+const loadWorkbookBytes = async (bytes: Uint8Array) => {
+  if (!bytes.byteLength || bytes.byteLength > 15 * 1024 * 1024) {
+    throw new Error("ملف Avaya أكبر من حدود المعالجة الآمنة.");
+  }
   const { default: ExcelRuntime } = await import("exceljs");
   const workbook = new ExcelRuntime.Workbook();
-  const bytes = new Uint8Array(await file.arrayBuffer());
   await workbook.xlsx.load(bytes as never);
   const totalRows = workbook.worksheets.reduce((total, worksheet) => total + worksheet.rowCount, 0);
   if (workbook.worksheets.length > 100 || totalRows > 100_000) throw new Error("ملف Avaya أكبر من حدود المعالجة الآمنة.");
   return workbook;
 };
 
-const parseWorkbookFile = async (file: File): Promise<ParsedAvayaSource> => {
-  const workbook = await loadWorkbook(file);
+export const parseAvayaWorkbookBytes = async (
+  bytes: Uint8Array,
+  fileName = "Avaya.xlsx",
+): Promise<ParsedAvayaSource> => {
+  const workbook = await loadWorkbookBytes(bytes);
   const kind = classifyAvayaWorkbook(workbook);
-  if (!kind) throw new Error(`الملف ${file.name} ليس من تقارير Avaya المدعومة.`);
+  if (!kind) throw new Error(`الملف ${fileName} ليس من تقارير Avaya المدعومة.`);
   if (kind === "inbound") return { kind, ...parseInbound(workbook) };
   return { kind, ...parseDurationWorkbook(workbook, kind) };
+};
+
+const parseWorkbookFile = async (file: File): Promise<ParsedAvayaSource> => {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  return parseAvayaWorkbookBytes(bytes, file.name);
 };
 
 const parseAvayaFile = async (file: File): Promise<ParsedAvayaSource> => {
@@ -209,12 +224,10 @@ export const mergeAvayaEntries = (
   return Array.from(merged.values()).sort((a, b) => b.missedCalls - a.missedCalls || b.answeredCalls - a.answeredCalls);
 };
 
-export const analyzeAvayaFiles = async (files: File[]): Promise<AvayaReportResult> => {
-  if (files.length !== 3) throw new Error("اختر تقارير Avaya الثلاثة المطلوبة.");
-  const parsed: Array<{ file: File; source: ParsedAvayaSource }> = [];
-  // PDF.js can consume considerable memory on mobile, so the three reports are intentionally read in sequence.
-  for (const file of files) parsed.push({ file, source: await parseAvayaFile(file) });
-  const byKind = new Map<AvayaFileKind, { file: File; source: ParsedAvayaSource }>();
+const mergeParsedSources = (
+  parsed: Array<{ name: string; source: ParsedAvayaSource }>,
+): AvayaReportResult => {
+  const byKind = new Map<AvayaFileKind, { name: string; source: ParsedAvayaSource }>();
   parsed.forEach((item) => {
     const kind = item.source.kind;
     if (byKind.has(kind)) throw new Error(`تم اختيار تقرير ${REPORT_TITLES[kind]} أكثر من مرة.`);
@@ -240,6 +253,25 @@ export const analyzeAvayaFiles = async (files: File[]): Promise<AvayaReportResul
     warnings,
     sourceCounts: { inbound: inbound.entries.length, dnd: dnd.entries.length, timecard: timecard.entries.length },
   };
+};
+
+export const analyzeAvayaWorkbookInputs = async (
+  inputs: AvayaWorkbookInput[],
+): Promise<AvayaReportResult> => {
+  if (inputs.length !== 3) throw new Error("اختر تقارير Avaya الثلاثة المطلوبة.");
+  const parsed: Array<{ name: string; source: ParsedAvayaSource }> = [];
+  for (const input of inputs) {
+    parsed.push({ name: input.name, source: await parseAvayaWorkbookBytes(input.bytes, input.name) });
+  }
+  return mergeParsedSources(parsed);
+};
+
+export const analyzeAvayaFiles = async (files: File[]): Promise<AvayaReportResult> => {
+  if (files.length !== 3) throw new Error("اختر تقارير Avaya الثلاثة المطلوبة.");
+  const parsed: Array<{ name: string; source: ParsedAvayaSource }> = [];
+  // PDF.js can consume considerable memory on mobile, so the three reports are intentionally read in sequence.
+  for (const file of files) parsed.push({ name: file.name, source: await parseAvayaFile(file) });
+  return mergeParsedSources(parsed);
 };
 
 const riskLevel = (employee: AvayaEmployeeResult) => {
@@ -299,8 +331,8 @@ export const createAvayaExportWorkbook = async (report: AvayaReportResult, logoB
     const employee = report.employees[rowNumber - 9];
     const row = sheet.getRow(rowNumber);
     row.height = 23;
-    row.eachCell((cell) => {
-      cell.alignment = { vertical: "middle", horizontal: cell.col === 1 ? "left" : "center" };
+    row.eachCell((cell, columnNumber) => {
+      cell.alignment = { vertical: "middle", horizontal: columnNumber === 1 ? "left" : "center" };
       cell.border = { bottom: { style: "thin", color: { argb: "FFD7DDD9" } } };
     });
     sheet.getCell(rowNumber, 1).font = { bold: true, color: { argb: "FF064E3B" } };
