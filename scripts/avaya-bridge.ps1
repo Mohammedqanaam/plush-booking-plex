@@ -33,6 +33,37 @@ function Save-BridgeState {
     Move-Item -LiteralPath $temporaryPath -Destination $Path -Force
 }
 
+function Invoke-BridgeUpload {
+    param(
+        [string]$Uri,
+        [hashtable]$Headers,
+        [string]$Body
+    )
+
+    for ($attempt = 1; $attempt -le 3; $attempt += 1) {
+        try {
+            $response = Invoke-RestMethod -Uri $Uri -Method Post -ContentType "application/json" `
+                -Headers $Headers -Body $Body -TimeoutSec 60
+            if (-not $response.ok) {
+                throw "The server did not accept the workbook."
+            }
+            return $response
+        }
+        catch {
+            $statusCode = $null
+            $responseProperty = $_.Exception.PSObject.Properties["Response"]
+            $errorResponse = if ($responseProperty) { $responseProperty.Value } else { $null }
+            $statusProperty = if ($errorResponse) { $errorResponse.PSObject.Properties["StatusCode"] } else { $null }
+            if ($statusProperty) {
+                $statusCode = [int]$statusProperty.Value
+            }
+            $transient = $null -eq $statusCode -or $statusCode -in @(404, 408, 429) -or $statusCode -ge 500
+            if (-not $transient -or $attempt -eq 3) { throw }
+            Start-Sleep -Seconds ([int][Math]::Pow(2, $attempt - 1))
+        }
+    }
+}
+
 if (-not (Test-Path -LiteralPath $ConfigPath)) {
     throw "Bridge configuration was not found: $ConfigPath"
 }
@@ -97,13 +128,9 @@ foreach ($file in $files) {
             contentBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($file.FullName))
         } | ConvertTo-Json -Compress
 
-        $response = Invoke-RestMethod -Uri $endpoint -Method Post -ContentType "application/json" -Headers @{
+        $response = Invoke-BridgeUpload -Uri $endpoint -Headers @{
             Authorization = "Bearer $token"
-        } -Body $payload -TimeoutSec 60
-
-        if (-not $response.ok) {
-            throw "The server did not accept the workbook."
-        }
+        } -Body $payload
 
         $processedHashes += $hash
         $processedLookup[$hash] = $true
