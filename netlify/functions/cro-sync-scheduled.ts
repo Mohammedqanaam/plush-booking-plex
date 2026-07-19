@@ -16,8 +16,10 @@ export default async (req: Request, context: Context) => {
     return new Response(null, { status: 204 });
   }
 
-  const stopAfter = Date.parse(`${automation.to}T23:59:59Z`) + (2 * 24 * 60 * 60 * 1000);
-  if (Date.now() > stopAfter) return new Response(null, { status: 204 });
+  if (automation.mode === "fixed") {
+    const stopAfter = Date.parse(`${automation.to}T23:59:59Z`) + (2 * 24 * 60 * 60 * 1000);
+    if (Date.now() > stopAfter) return new Response(null, { status: 204 });
+  }
 
   const current = await getCroSyncStatus();
   if (isActiveCroSync(current)) return new Response(null, { status: 202 });

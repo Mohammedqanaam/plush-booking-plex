@@ -18,6 +18,15 @@ type EmployeeIdentity = {
 type ParserHelpers = {
   employeeIdentity: (value: unknown) => EmployeeIdentity;
   durationToSeconds: (value: unknown) => number;
+  avayaTimestamp: (value: unknown) => number | null;
+  summarizeTimecardSessions: (sessions: Array<{ start: number; end: number | null }>) => {
+    shiftStartTimestamp: number | null;
+    shiftEndTimestamp: number | null;
+    shiftSpanSeconds: number;
+    disconnectedDurationSeconds: number;
+    reconnectionCount: number;
+    hasOpenSession: boolean;
+  };
 };
 
 type PdfInboundEntry = EmployeeIdentity & {
@@ -30,6 +39,12 @@ type PdfInboundEntry = EmployeeIdentity & {
 type PdfDurationEntry = EmployeeIdentity & {
   seconds: number;
   events: number;
+  shiftStartTimestamp?: number | null;
+  shiftEndTimestamp?: number | null;
+  shiftSpanSeconds?: number;
+  disconnectedDurationSeconds?: number;
+  reconnectionCount?: number;
+  hasOpenSession?: boolean;
 };
 
 export type ParsedAvayaPdf =
@@ -77,6 +92,7 @@ const linesForPage = (page: AvayaPdfPage): PdfLine[] => {
 };
 
 const DATE_PATTERN = /\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+\d{1,2}:\d{2}:\d{2}\s+[AP]M\b/i;
+const EVENT_DATE_PATTERN = /\b[A-Za-z]+\s+\d{1,2},\s+\d{4}\s+\d{1,2}:\d{2}:\d{2}\s+[AP]M\b/gi;
 
 const reportRange = (pages: AvayaPdfPage[]) => {
   const dates: string[] = [];
@@ -143,6 +159,7 @@ const employeeFromLine = (line: PdfLine, helpers: ParserHelpers) => {
 
 const parseDurations = (pages: AvayaPdfPage[], kind: "dnd" | "timecard", helpers: ParserHelpers): PdfDurationEntry[] => {
   const entries = new Map<string, PdfDurationEntry>();
+  const timecardSessions = new Map<string, Array<{ start: number; end: number | null }>>();
   let current: EmployeeIdentity | null = null;
 
   const ensure = (identity: EmployeeIdentity) => {
@@ -172,10 +189,22 @@ const parseDurations = (pages: AvayaPdfPage[], kind: "dnd" | "timecard", helpers
       const entry = ensure(current);
       entry.seconds += seconds;
       entry.events += 1;
+      if (kind === "timecard") {
+        const [loggedIn, loggedOut] = line.text.match(EVENT_DATE_PATTERN) || [];
+        const start = helpers.avayaTimestamp(loggedIn);
+        const end = helpers.avayaTimestamp(loggedOut);
+        if (start !== null) {
+          const sessions = timecardSessions.get(current.key) || [];
+          sessions.push({ start, end });
+          timecardSessions.set(current.key, sessions);
+        }
+      }
     });
   });
 
-  return Array.from(entries.values());
+  return Array.from(entries.values()).map((entry) => kind === "timecard"
+    ? Object.assign(entry, helpers.summarizeTimecardSessions(timecardSessions.get(entry.key) || []))
+    : entry);
 };
 
 export const parseAvayaPdfPages = (pages: AvayaPdfPage[], helpers: ParserHelpers): ParsedAvayaPdf => {

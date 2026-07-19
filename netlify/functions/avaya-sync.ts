@@ -3,6 +3,7 @@ import { getDeployStore, getStore } from "@netlify/blobs";
 import { createHash, timingSafeEqual } from "node:crypto";
 import {
   analyzeAvayaWorkbookInputs,
+  normalizeAvayaEmployeeResult,
   parseAvayaWorkbookBytes,
   type AvayaFileKind,
   type AvayaReportResult,
@@ -87,8 +88,12 @@ async function getLatest(req: Request, context: Context) {
 
   const store = avayaStore(context);
   const report = (await store.get("latest", { type: "json" })) as StoredAvayaReport | null;
+  const normalizedReport = report ? {
+    ...report,
+    employees: report.employees.map(normalizeAvayaEmployeeResult),
+  } : null;
   return json({
-    report,
+    report: normalizedReport,
     sync: {
       configured: Boolean(Netlify.env.get("AVAYA_SYNC_KEY")),
       updatedAt: report?.syncedAt || null,

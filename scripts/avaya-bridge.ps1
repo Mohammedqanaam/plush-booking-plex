@@ -85,9 +85,22 @@ if (-not (Test-Path -LiteralPath $secretPath -PathType Leaf)) {
     throw "The encrypted bridge secret is missing."
 }
 
-$secureToken = (Get-Content -Raw -LiteralPath $secretPath).Trim() | ConvertTo-SecureString
-$credential = New-Object System.Management.Automation.PSCredential("avaya-sync", $secureToken)
-$token = $credential.GetNetworkCredential().Password
+$secretValue = (Get-Content -Raw -LiteralPath $secretPath).Trim()
+if ([string]$config.secretProtection -eq "LocalMachine") {
+    $protectedBytes = [Convert]::FromBase64String($secretValue)
+    $plainBytes = [Security.Cryptography.ProtectedData]::Unprotect(
+        $protectedBytes,
+        $null,
+        [Security.Cryptography.DataProtectionScope]::LocalMachine
+    )
+    $token = [Text.Encoding]::UTF8.GetString($plainBytes)
+    [Array]::Clear($plainBytes, 0, $plainBytes.Length)
+}
+else {
+    $secureToken = $secretValue | ConvertTo-SecureString
+    $credential = New-Object System.Management.Automation.PSCredential("avaya-sync", $secureToken)
+    $token = $credential.GetNetworkCredential().Password
+}
 if ([string]::IsNullOrWhiteSpace($token)) {
     throw "The encrypted bridge secret could not be decrypted for this Windows user."
 }

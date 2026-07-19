@@ -12,8 +12,16 @@ export type AvayaEmployeeResult = {
   inboundDurationSeconds: number;
   dndDurationSeconds: number;
   loggedInDurationSeconds: number;
+  rawLoggedInDurationSeconds: number;
+  excessDurationSeconds: number;
   dndEvents: number;
   loginSessions: number;
+  shiftStartTimestamp: number | null;
+  shiftEndTimestamp: number | null;
+  shiftSpanSeconds: number;
+  disconnectedDurationSeconds: number;
+  reconnectionCount: number;
+  hasOpenSession: boolean;
   hasInbound: boolean;
   hasDnd: boolean;
   hasTimecard: boolean;
@@ -43,6 +51,12 @@ export type DurationEntry = {
   name: string;
   seconds: number;
   events: number;
+  shiftStartTimestamp?: number | null;
+  shiftEndTimestamp?: number | null;
+  shiftSpanSeconds?: number;
+  disconnectedDurationSeconds?: number;
+  reconnectionCount?: number;
+  hasOpenSession?: boolean;
 };
 
 export type ParsedAvayaSource =
@@ -59,6 +73,8 @@ const REPORT_TITLES: Record<AvayaFileKind, string> = {
   dnd: "Agent Realtime Feature Trace new",
   timecard: "Agent Time Card",
 };
+
+export const MAX_SHIFT_SECONDS = 9 * 60 * 60;
 
 const normalizeText = (value: unknown) => String(value ?? "").replace(/\s+/g, " ").trim();
 
@@ -90,6 +106,92 @@ export const formatDuration = (seconds: number) => {
   const minutes = Math.floor((safe % 3600) / 60);
   const remaining = safe % 60;
   return `${hours}:${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
+};
+
+export const actualLoggedInDuration = (employee: Pick<AvayaEmployeeResult, "loggedInDurationSeconds"> & Partial<Pick<AvayaEmployeeResult, "rawLoggedInDurationSeconds">>) => (
+  employee.rawLoggedInDurationSeconds ?? employee.loggedInDurationSeconds ?? 0
+);
+
+export const approvedLoggedInDuration = (employee: Pick<AvayaEmployeeResult, "loggedInDurationSeconds"> & Partial<Pick<AvayaEmployeeResult, "rawLoggedInDurationSeconds">>) => (
+  Math.min(actualLoggedInDuration(employee), MAX_SHIFT_SECONDS)
+);
+
+export const shiftOverlapDuration = (employee: Pick<AvayaEmployeeResult, "loggedInDurationSeconds"> & Partial<Pick<AvayaEmployeeResult, "rawLoggedInDurationSeconds" | "excessDurationSeconds">>) => (
+  employee.excessDurationSeconds ?? Math.max(0, actualLoggedInDuration(employee) - MAX_SHIFT_SECONDS)
+);
+
+export const normalizeAvayaEmployeeResult = (employee: AvayaEmployeeResult): AvayaEmployeeResult => {
+  const rawDuration = actualLoggedInDuration(employee);
+  return {
+    ...employee,
+    rawLoggedInDurationSeconds: rawDuration,
+    loggedInDurationSeconds: Math.min(rawDuration, MAX_SHIFT_SECONDS),
+    excessDurationSeconds: Math.max(0, rawDuration - MAX_SHIFT_SECONDS),
+    shiftStartTimestamp: employee.shiftStartTimestamp ?? null,
+    shiftEndTimestamp: employee.shiftEndTimestamp ?? null,
+    shiftSpanSeconds: employee.shiftSpanSeconds || 0,
+    disconnectedDurationSeconds: employee.disconnectedDurationSeconds || 0,
+    reconnectionCount: employee.reconnectionCount ?? Math.max(0, (employee.loginSessions || 0) - 1),
+    hasOpenSession: employee.hasOpenSession ?? false,
+  };
+};
+
+const AVAYA_MONTHS: Record<string, number> = {
+  jan: 0, january: 0,
+  feb: 1, february: 1,
+  mar: 2, march: 2,
+  apr: 3, april: 3,
+  may: 4,
+  jun: 5, june: 5,
+  jul: 6, july: 6,
+  aug: 7, august: 7,
+  sep: 8, sept: 8, september: 8,
+  oct: 9, october: 9,
+  nov: 10, november: 10,
+  dec: 11, december: 11,
+};
+
+export const avayaTimestamp = (value: unknown): number | null => {
+  const text = normalizeText(value);
+  const match = text.match(/(?:^|,\s*)([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s+([AP]M)$/i);
+  if (!match) return null;
+  const month = AVAYA_MONTHS[match[1].toLocaleLowerCase("en")];
+  if (month === undefined) return null;
+  let hour = Number(match[4]) % 12;
+  if (match[7].toLocaleUpperCase("en") === "PM") hour += 12;
+  const timestamp = Date.UTC(Number(match[3]), month, Number(match[2]), hour, Number(match[5]), Number(match[6]));
+  return Number.isFinite(timestamp) ? timestamp : null;
+};
+
+export const formatAvayaClock = (timestamp: number | null | undefined) => {
+  if (timestamp === null || timestamp === undefined || !Number.isFinite(timestamp)) return "—";
+  const date = new Date(timestamp);
+  return `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}:${String(date.getUTCSeconds()).padStart(2, "0")}`;
+};
+
+export type AvayaTimecardSession = { start: number; end: number | null };
+
+export const summarizeTimecardSessions = (input: AvayaTimecardSession[]) => {
+  const sessions = [...input].sort((left, right) => left.start - right.start);
+  const shiftStartTimestamp = sessions[0]?.start ?? null;
+  const closedEnds = sessions.flatMap((session) => session.end === null ? [] : [session.end]);
+  const shiftEndTimestamp = closedEnds.length ? Math.max(...closedEnds) : null;
+  let disconnectedDurationSeconds = 0;
+  let previousEnd: number | null = null;
+  sessions.forEach((session) => {
+    if (previousEnd !== null && session.start > previousEnd) disconnectedDurationSeconds += Math.round((session.start - previousEnd) / 1000);
+    if (session.end !== null) previousEnd = previousEnd === null ? session.end : Math.max(previousEnd, session.end);
+  });
+  return {
+    shiftStartTimestamp,
+    shiftEndTimestamp,
+    shiftSpanSeconds: shiftStartTimestamp !== null && shiftEndTimestamp !== null
+      ? Math.max(0, Math.round((shiftEndTimestamp - shiftStartTimestamp) / 1000))
+      : 0,
+    disconnectedDurationSeconds,
+    reconnectionCount: Math.max(0, sessions.length - 1),
+    hasOpenSession: sessions.some((session) => session.end === null),
+  };
 };
 
 export const classifyAvayaWorkbook = (workbook: ExcelJS.Workbook): AvayaFileKind | null => {
@@ -134,7 +236,7 @@ const parseAvayaFile = async (file: File): Promise<ParsedAvayaSource> => {
   if (extension === "xlsx") return parseWorkbookFile(file);
   if (extension === "pdf") {
     const { loadAndParseAvayaPdf } = await import("./avayaPdfParser");
-    return loadAndParseAvayaPdf(file, { employeeIdentity, durationToSeconds }) as Promise<ParsedAvayaSource>;
+    return loadAndParseAvayaPdf(file, { employeeIdentity, durationToSeconds, avayaTimestamp, summarizeTimecardSessions }) as Promise<ParsedAvayaSource>;
   }
   throw new Error(`الملف ${file.name} غير مدعوم. استخدم PDF أو XLSX.`);
 };
@@ -170,6 +272,7 @@ const parseDurationWorkbook = (workbook: ExcelJS.Workbook, kind: "dnd" | "timeca
     if (!identity.name) continue;
     let seconds = 0;
     let events = 0;
+    const sessions: AvayaTimecardSession[] = [];
     for (let rowNumber = 5; rowNumber <= worksheet.rowCount; rowNumber += 1) {
       if (kind === "dnd" && normalizeText(worksheet.getCell(rowNumber, 2).text) !== "Do Not Disturb") continue;
       const durationCell = worksheet.getCell(rowNumber, kind === "dnd" ? 5 : 4);
@@ -177,8 +280,18 @@ const parseDurationWorkbook = (workbook: ExcelJS.Workbook, kind: "dnd" | "timeca
       if (duration <= 0) continue;
       seconds += duration;
       events += 1;
+      if (kind === "timecard") {
+        const start = avayaTimestamp(worksheet.getCell(rowNumber, 2).text || worksheet.getCell(rowNumber, 2).value);
+        const end = avayaTimestamp(worksheet.getCell(rowNumber, 3).text || worksheet.getCell(rowNumber, 3).value);
+        if (start !== null) sessions.push({ start, end });
+      }
     }
-    entries.push({ ...identity, seconds, events });
+    entries.push({
+      ...identity,
+      seconds,
+      events,
+      ...(kind === "timecard" ? summarizeTimecardSessions(sessions) : {}),
+    });
   }
   const firstSheet = workbook.worksheets[0];
   return {
@@ -207,8 +320,16 @@ export const mergeAvayaEntries = (
       inboundDurationSeconds: 0,
       dndDurationSeconds: 0,
       loggedInDurationSeconds: 0,
+      rawLoggedInDurationSeconds: 0,
+      excessDurationSeconds: 0,
       dndEvents: 0,
       loginSessions: 0,
+      shiftStartTimestamp: null,
+      shiftEndTimestamp: null,
+      shiftSpanSeconds: 0,
+      disconnectedDurationSeconds: 0,
+      reconnectionCount: 0,
+      hasOpenSession: false,
       hasInbound: false,
       hasDnd: false,
       hasTimecard: false,
@@ -219,9 +340,26 @@ export const mergeAvayaEntries = (
 
   inbound.forEach((entry) => Object.assign(ensure(entry), entry, { hasInbound: true }));
   dnd.forEach((entry) => Object.assign(ensure(entry), { dndDurationSeconds: entry.seconds, dndEvents: entry.events, hasDnd: true }));
-  timecard.forEach((entry) => Object.assign(ensure(entry), { loggedInDurationSeconds: entry.seconds, loginSessions: entry.events, hasTimecard: true }));
+  timecard.forEach((entry) => {
+    const approvedSeconds = Math.min(entry.seconds, MAX_SHIFT_SECONDS);
+    Object.assign(ensure(entry), {
+      loggedInDurationSeconds: approvedSeconds,
+      rawLoggedInDurationSeconds: entry.seconds,
+      excessDurationSeconds: Math.max(0, entry.seconds - approvedSeconds),
+      loginSessions: entry.events,
+      shiftStartTimestamp: entry.shiftStartTimestamp ?? null,
+      shiftEndTimestamp: entry.shiftEndTimestamp ?? null,
+      shiftSpanSeconds: entry.shiftSpanSeconds ?? 0,
+      disconnectedDurationSeconds: entry.disconnectedDurationSeconds ?? 0,
+      reconnectionCount: entry.reconnectionCount ?? Math.max(0, entry.events - 1),
+      hasOpenSession: entry.hasOpenSession ?? false,
+      hasTimecard: true,
+    });
+  });
 
-  return Array.from(merged.values()).sort((a, b) => b.missedCalls - a.missedCalls || b.answeredCalls - a.answeredCalls);
+  return Array.from(merged.values())
+    .map(normalizeAvayaEmployeeResult)
+    .sort((a, b) => b.missedCalls - a.missedCalls || b.answeredCalls - a.answeredCalls);
 };
 
 const mergeParsedSources = (
@@ -245,6 +383,8 @@ const mergeParsedSources = (
   const employees = mergeAvayaEntries(inbound.entries, dnd.entries, timecard.entries);
   const incomplete = employees.filter((employee) => !employee.hasInbound || !employee.hasDnd || !employee.hasTimecard).length;
   if (incomplete) warnings.push(`${incomplete} موظفًا لديهم بيانات ناقصة في أحد التقارير.`);
+  const overlapping = employees.filter((employee) => employee.excessDurationSeconds > 0).length;
+  if (overlapping) warnings.push(`${overlapping} موظفًا تجاوز مجموع جلساتهم 9 ساعات؛ عُزلت المدة الزائدة كتداخل شفت ولم تدخل في مدة العمل المعتمدة.`);
 
   return {
     rangeStart: inbound.rangeStart,
@@ -276,8 +416,10 @@ export const analyzeAvayaFiles = async (files: File[]): Promise<AvayaReportResul
 
 const riskLevel = (employee: AvayaEmployeeResult) => {
   if (!employee.hasInbound || !employee.hasDnd || !employee.hasTimecard) return "incomplete";
-  if (employee.missedCalls >= 20 || employee.avgRingingSeconds >= 12 || employee.dndDurationSeconds > 3600 || employee.loggedInDurationSeconds < 7 * 3600) return "high";
-  if (employee.missedCalls >= 10 || employee.avgRingingSeconds >= 10 || employee.loggedInDurationSeconds < 8 * 3600) return "review";
+  if (shiftOverlapDuration(employee) > 0) return "overlap";
+  const approvedDuration = approvedLoggedInDuration(employee);
+  if (employee.missedCalls >= 20 || employee.avgRingingSeconds >= 12 || employee.dndDurationSeconds > 3600 || approvedDuration < 7 * 3600) return "high";
+  if (employee.missedCalls >= 10 || employee.avgRingingSeconds >= 10 || approvedDuration < 8 * 3600) return "review";
   return "good";
 };
 
@@ -289,28 +431,34 @@ export const createAvayaExportWorkbook = async (report: AvayaReportResult, logoB
   workbook.creator = "RES Dashboard";
   workbook.created = new Date();
   const sheet = workbook.addWorksheet("تقرير المكالمات", { views: [{ state: "frozen", ySplit: 8, rightToLeft: false }] });
-  sheet.mergeCells("A1:F5");
+  sheet.mergeCells("A1:L5");
   if (logoBytes?.byteLength) {
     const logoId = workbook.addImage({ buffer: logoBytes as never, extension: "jpeg" });
-    sheet.addImage(logoId, { tl: { col: 2.45, row: 0.1 }, ext: { width: 105, height: 105 } });
+    sheet.addImage(logoId, { tl: { col: 5.1, row: 0.1 }, ext: { width: 105, height: 105 } });
   }
-  sheet.mergeCells("A6:F6");
+  sheet.mergeCells("A6:L6");
   sheet.getCell("A6").value = "تقرير مكالمات الحجز المركزي";
-  sheet.mergeCells("A7:F7");
+  sheet.mergeCells("A7:L7");
   sheet.getCell("A7").value = `${report.rangeStart} — ${report.rangeEnd}`;
-  sheet.getRow(8).values = ["User", "Avg Ringing Duration", "Answered Calls", "Missed Calls", "DND Total Duration", "Logged In Duration"];
+  sheet.getRow(8).values = ["User", "Shift Start", "Shift End", "Shift Span", "Approved Work (Max 9h)", "Shift Overlap", "Session Gaps", "Reconnects", "Avg Ringing", "Answered", "Missed", "DND Duration"];
   report.employees.forEach((employee) => {
     sheet.addRow([
       employee.name,
+      formatAvayaClock(employee.shiftStartTimestamp),
+      employee.hasOpenSession ? "Online" : formatAvayaClock(employee.shiftEndTimestamp),
+      formatDuration(employee.shiftSpanSeconds),
+      formatDuration(approvedLoggedInDuration(employee)),
+      formatDuration(shiftOverlapDuration(employee)),
+      formatDuration(employee.disconnectedDurationSeconds || 0),
+      employee.reconnectionCount ?? Math.max(0, (employee.loginSessions || 0) - 1),
       formatDuration(employee.avgRingingSeconds),
       employee.answeredCalls,
       employee.missedCalls,
       formatDuration(employee.dndDurationSeconds),
-      formatDuration(employee.loggedInDurationSeconds),
     ]);
   });
 
-  sheet.columns = [{ width: 30 }, { width: 22 }, { width: 18 }, { width: 16 }, { width: 22 }, { width: 22 }];
+  sheet.columns = [{ width: 28 }, { width: 14 }, { width: 14 }, { width: 15 }, { width: 22 }, { width: 17 }, { width: 16 }, { width: 12 }, { width: 16 }, { width: 13 }, { width: 12 }, { width: 16 }];
   for (let rowNumber = 1; rowNumber <= 5; rowNumber += 1) sheet.getRow(rowNumber).height = 20;
   sheet.getRow(6).height = 32;
   sheet.getRow(7).height = 24;
@@ -336,12 +484,14 @@ export const createAvayaExportWorkbook = async (report: AvayaReportResult, logoB
       cell.border = { bottom: { style: "thin", color: { argb: "FFD7DDD9" } } };
     });
     sheet.getCell(rowNumber, 1).font = { bold: true, color: { argb: "FF064E3B" } };
-    if (employee.avgRingingSeconds >= 10) sheet.getCell(rowNumber, 2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
-    if (employee.missedCalls >= 20) sheet.getCell(rowNumber, 4).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFD9DE" } };
-    if (employee.dndDurationSeconds > 3600) sheet.getCell(rowNumber, 5).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFE9C2" } };
-    if (employee.loggedInDurationSeconds < 7 * 3600) sheet.getCell(rowNumber, 6).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFD9DE" } };
+    if (approvedLoggedInDuration(employee) < 7 * 3600) sheet.getCell(rowNumber, 5).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFD9DE" } };
+    if (shiftOverlapDuration(employee) > 0) sheet.getCell(rowNumber, 6).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFD6EE" } };
+    if (employee.disconnectedDurationSeconds > 0) sheet.getCell(rowNumber, 7).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFE9C2" } };
+    if (employee.avgRingingSeconds >= 10) sheet.getCell(rowNumber, 9).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
+    if (employee.missedCalls >= 20) sheet.getCell(rowNumber, 11).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFD9DE" } };
+    if (employee.dndDurationSeconds > 3600) sheet.getCell(rowNumber, 12).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFE9C2" } };
   }
-  sheet.autoFilter = { from: "A8", to: `F${sheet.rowCount}` };
+  sheet.autoFilter = { from: "A8", to: `L${sheet.rowCount}` };
   sheet.pageSetup = { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9, margins: { left: 0.25, right: 0.25, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } };
   sheet.headerFooter.oddFooter = "مجموعة بودل للضيافة — تقرير داخلي";
   return workbook;
