@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import BookingReports from "@/pages/BookingReports";
 import { api, type PublicBookingReport } from "@/lib/api";
@@ -44,5 +44,23 @@ describe("public read-only reports", () => {
     expect(await screen.findByText("حالة الحجوزات")).toBeDefined();
     expect(screen.getByText("ملخص الحجوزات ونتائج الموظفين.")).toBeDefined();
     expect(screen.getByText(/عرض فقط دون بيانات الضيوف/)).toBeDefined();
+  });
+
+  it("runs a viewer-requested refresh in place without exposing internal settings", async () => {
+    vi.spyOn(api, "getPublicBookingReport").mockResolvedValue(report);
+    vi.spyOn(api, "requestPublicBookingSync").mockResolvedValue({
+      ok: true,
+      accepted: false,
+      state: "fresh",
+      updatedAt: report.updatedAt,
+      message: "بيانات التقرير محدثة بالفعل.",
+    });
+    render(<MemoryRouter><BookingReports /></MemoryRouter>);
+
+    fireEvent.click(await screen.findByRole("button", { name: "مزامنة الحجوزات" }));
+
+    await waitFor(() => expect(api.requestPublicBookingSync).toHaveBeenCalledTimes(1));
+    expect(screen.getByText("بيانات التقرير محدثة بالفعل.")).toBeDefined();
+    expect(screen.queryByText(/M\.ALDOSARI|CRO_PASSWORD|CRO_USERNAME/)).toBeNull();
   });
 });

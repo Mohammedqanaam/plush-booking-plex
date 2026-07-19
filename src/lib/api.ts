@@ -47,6 +47,14 @@ export type PublicBookingReport = {
   }>;
 };
 
+export type PublicBookingSyncStatus = {
+  ok: boolean;
+  accepted: boolean;
+  state: "idle" | "queued" | "running" | "success" | "fresh" | "error" | "unavailable";
+  updatedAt: string | null;
+  message: string;
+};
+
 export type ContactRequest = {
   id: string;
   requestNo: string;
@@ -246,6 +254,8 @@ export type AvayaSyncStatus = {
 const API_BASE = "/.netlify/functions";
 const OPERA_SEARCH_API = "/api/admin/opera-search";
 const AVAYA_SYNC_API = "/api/avaya/sync";
+const PUBLIC_REPORT_SYNC_API = "/api/reports/sync";
+const publicReportSyncHeaders = { "X-Report-Sync": "booking-reports" };
 
 const getToken = (): string | null => (typeof window === "undefined" ? null : sessionStorage.getItem("admin_token"));
 
@@ -405,9 +415,29 @@ export const api = {
   },
 
   async getPublicBookingReport() {
-    const res = await fetch(`${API_BASE}/bookings?view=summary`);
+    const res = await fetch(`${API_BASE}/bookings?view=summary`, { cache: "no-store" });
     if (!res.ok) throw new Error("تعذر تحميل التقرير");
     return res.json() as Promise<PublicBookingReport>;
+  },
+
+  async getPublicBookingSyncStatus() {
+    const res = await fetch(PUBLIC_REPORT_SYNC_API, {
+      headers: publicReportSyncHeaders,
+      cache: "no-store",
+    });
+    const data = await res.json().catch(() => ({})) as Partial<PublicBookingSyncStatus> & { error?: string };
+    if (!res.ok) throw new Error(data.error || "تعذر التحقق من حالة التحديث");
+    return data as PublicBookingSyncStatus;
+  },
+
+  async requestPublicBookingSync() {
+    const res = await fetch(PUBLIC_REPORT_SYNC_API, {
+      method: "POST",
+      headers: publicReportSyncHeaders,
+    });
+    const data = await res.json().catch(() => ({})) as Partial<PublicBookingSyncStatus> & { error?: string };
+    if (!res.ok) throw new Error(data.error || "تعذر بدء تحديث التقرير");
+    return data as PublicBookingSyncStatus;
   },
 
   async createContactRequest(payload: { brand: string; branchName: string; guestName: string; guestPhone: string; reason: string }) {

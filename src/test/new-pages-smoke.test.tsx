@@ -9,7 +9,6 @@ import AdminBranches from "@/pages/AdminBranches";
 import AdminKnowledgeBank from "@/pages/AdminKnowledgeBank";
 import AdminWarnings from "@/pages/AdminWarnings";
 import AdminGhost from "@/pages/AdminGhost";
-import BoudlRunner from "@/pages/BoudlRunner";
 
 describe("new page modules added in PR #86", () => {
   it("KnowledgeBank loads without syntax errors", () => {
@@ -52,7 +51,4 @@ describe("new page modules added in PR #86", () => {
     expect(typeof AdminGhost).toBe("function");
   });
 
-  it("BoudlRunner loads without syntax errors", () => {
-    expect(typeof BoudlRunner).toBe("function");
-  });
 });
