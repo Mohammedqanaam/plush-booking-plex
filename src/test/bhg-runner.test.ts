@@ -35,13 +35,13 @@ describe("BHG Runner", () => {
     expect(game).toContain("/images/narcissus-riyadh.png");
   });
 
-  it("makes the 500-booking challenge winnable and labels its prize as virtual", () => {
+  it("makes the 500-booking challenge winnable without advertising a phone prize", () => {
     const game = fs.readFileSync(path.join(process.cwd(), "src/pages/BoudlRunner.tsx"), "utf8");
     expect(game).toContain("const CONTEST_GOAL = 500");
     expect(game).toContain("world.bookings >= CONTEST_GOAL");
     expect(game).toContain("winChallenge()");
     expect(game).toContain("PRESSURE_THRESHOLDS = [100, 250, 400, 475]");
-    expect(game).toContain("افتراضي داخل اللعبة");
-    expect(game).toContain("ليست جائزة حقيقية");
+    expect(game).toContain("إنجاز ٥٠٠ حجز");
+    expect(game).not.toMatch(/iPhone|iphone|آيفون|ايفون|runner-virtual-phone/);
   });
 });
