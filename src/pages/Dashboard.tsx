@@ -1,4 +1,4 @@
-import { ArrowLeft, BarChart3, BookOpenCheck, Building2, MapPin, OctagonAlert, PhoneCall, Search, Wind, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpenCheck, Building2, MapPin, OctagonAlert, PhoneCall, Search, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { branches } from "@/data/branches";
@@ -41,13 +41,6 @@ const publicEntries: PublicEntry[] = [
     icon: BookOpenCheck,
     description: "الغرف والمرافق والوجبات والقاعات.",
     tone: "teal",
-  },
-  {
-    to: "/runner",
-    label: "BHG Runner",
-    icon: Wind,
-    description: "اجمع الحجوزات واهرب من المكالمات.",
-    tone: "violet",
   },
   {
     to: "/complaints",

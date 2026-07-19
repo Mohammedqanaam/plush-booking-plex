@@ -25,7 +25,7 @@ export const currentSaudiMonthRange = (now = new Date()) => {
 };
 
 export type CroSyncState = "idle" | "queued" | "running" | "success" | "error";
-export type CroSyncSource = "manual" | "automatic";
+export type CroSyncSource = "manual" | "automatic" | "viewer";
 
 export type CroSyncStatus = {
   state: CroSyncState;

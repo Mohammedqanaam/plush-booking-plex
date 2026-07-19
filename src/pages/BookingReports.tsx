@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { BarChart3, CalendarDays, LockKeyhole, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { BarChart3, CalendarDays, LockKeyhole, RefreshCw, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { api, type PublicBookingReport } from "@/lib/api";
@@ -19,18 +19,78 @@ const BookingReports = () => {
   const [sortBy, setSortBy] = useState<SortKey>("confirmed");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [syncError, setSyncError] = useState(false);
 
   const section: ReportSection = searchParams.get("section") === "employees" ? "employees" : "summary";
 
-  useEffect(() => {
-    api.getPublicBookingReport()
+  const loadReport = useCallback((silent = false) => {
+    if (!silent) setLoading(true);
+    return api.getPublicBookingReport()
       .then((data) => {
         setReport(data);
         setError("");
       })
       .catch(() => setError("تعذر تحميل التقرير حاليًا."))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!silent) setLoading(false);
+      });
   }, []);
+
+  useEffect(() => {
+    void loadReport();
+  }, [loadReport]);
+
+  useEffect(() => {
+    if (!syncing) return undefined;
+
+    let stopped = false;
+    const finish = async (message: string, failed = false) => {
+      if (stopped) return;
+      stopped = true;
+      setSyncing(false);
+      setSyncError(failed);
+      setSyncMessage(message);
+      if (!failed) await loadReport(true);
+    };
+    const poll = async () => {
+      try {
+        const status = await api.getPublicBookingSyncStatus();
+        if (status.state === "success" || status.state === "fresh") {
+          await finish("تم تحديث بيانات التقرير.");
+        } else if (status.state === "error" || status.state === "unavailable") {
+          await finish("تعذر إكمال التحديث حاليًا. حاول لاحقًا.", true);
+        }
+      } catch {
+        // A temporary status check failure must not interrupt the server-side job.
+      }
+    };
+
+    const interval = window.setInterval(() => void poll(), 4_000);
+    return () => {
+      stopped = true;
+      window.clearInterval(interval);
+    };
+  }, [loadReport, syncing]);
+
+  const startSync = async () => {
+    setSyncing(true);
+    setSyncError(false);
+    setSyncMessage("جاري تحديث بيانات التقرير في الخلفية…");
+    try {
+      const status = await api.requestPublicBookingSync();
+      setSyncMessage(status.message);
+      if (status.state === "success" || status.state === "fresh") {
+        setSyncing(false);
+        await loadReport(true);
+      }
+    } catch {
+      setSyncing(false);
+      setSyncError(true);
+      setSyncMessage("تعذر بدء التحديث حاليًا. حاول لاحقًا.");
+    }
+  };
 
   const employees = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("ar");
@@ -60,6 +120,23 @@ const BookingReports = () => {
         <LockKeyhole className="h-[18px] w-[18px]" strokeWidth={1.8} />
         <span>عرض فقط دون بيانات الضيوف أو أدوات تعديل.</span>
       </div>
+
+      <section className="page-surface flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" aria-label="تحديث تقرير الحجوزات">
+        <div className="min-w-0">
+          <h2 className="section-title">تحديث البيانات</h2>
+          <p className="mt-1 text-xs leading-6 text-muted-foreground">يتم التحديث في الخلفية دون مغادرة الصفحة أو إظهار أي إعدادات داخلية.</p>
+          {syncMessage ? <p role="status" className={`mt-2 text-xs font-semibold ${syncError ? "text-destructive" : "text-primary"}`}>{syncMessage}</p> : null}
+        </div>
+        <button
+          type="button"
+          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/8 px-4 text-sm font-bold text-primary disabled:cursor-wait disabled:opacity-60"
+          onClick={() => void startSync()}
+          disabled={syncing}
+        >
+          <RefreshCw className={`h-[18px] w-[18px] ${syncing ? "animate-spin" : ""}`} strokeWidth={1.9} />
+          {syncing ? "جاري التحديث" : "مزامنة الحجوزات"}
+        </button>
+      </section>
 
       {loading ? <div className="page-surface text-sm text-muted-foreground">جاري تحميل التقرير…</div> : null}
       {error ? <div className="rounded-2xl border border-destructive/25 bg-destructive/5 p-4 text-sm text-destructive">{error}</div> : null}
