@@ -1177,7 +1177,7 @@ const BoudlRunner = () => {
           <span><Crown className="h-4 w-4" /> تحدي ٥٠٠ حجز</span>
           <div><i style={{ width: `${contestProgress}%` }} /></div>
           <strong>{bookings.toLocaleString("ar-SA")} / ٥٠٠</strong>
-          <small>آيفون 17 افتراضي داخل اللعبة للمرح فقط — ليست جائزة حقيقية.</small>
+          <small>تحدٍّ ترفيهي داخل اللعبة — لا توجد جوائز أو عروض.</small>
         </div>
         <div className="runner-stage runner-stage--perspective">
           <canvas
@@ -1217,9 +1217,9 @@ const BoudlRunner = () => {
               <span className="runner-win-crown"><Crown className="h-9 w-9" /></span>
               <span className="runner-overlay__score">٥٠٠</span>
               <h2>فزت بتحدي الحجوزات!</h2>
-              <p>الجهاز افتراضي داخل اللعبة؛ أما الإنجاز والكومبو فحقيقيان جدًا.</p>
-              <div className="runner-virtual-phone"><span>17</span><small>VIRTUAL TROPHY</small></div>
-              <small className="runner-prize-note">هذه مكافأة ترفيهية داخل اللعبة وليست جائزة أو عرضًا حقيقيًا.</small>
+              <p>أنهيت التحدي وحافظت على الكومبو حتى آخر حجز.</p>
+              <div className="runner-rewards"><span><Trophy /> إنجاز ٥٠٠ حجز</span></div>
+              <small className="runner-prize-note">هذا إنجاز ترفيهي داخل اللعبة وليس جائزة أو عرضًا حقيقيًا.</small>
               <button onClick={startGame}><RotateCcw className="h-5 w-5" /> تحدٍ جديد</button>
             </div>
           ) : null}
