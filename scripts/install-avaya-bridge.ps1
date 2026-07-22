@@ -90,7 +90,8 @@ if (-not $UserMode) {
 }
 
 $powerShell = Join-Path $PSHOME "powershell.exe"
-$action = New-ScheduledTaskAction -Execute $powerShell -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$installedScript`" -ConfigPath `"$configPath`""
+$actionArguments = "-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$installedScript`" -ConfigPath `"$configPath`""
+$action = New-ScheduledTaskAction -Execute $powerShell -Argument $actionArguments
 $repeatTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
     -RepetitionInterval (New-TimeSpan -Minutes $IntervalMinutes) `
     -RepetitionDuration (New-TimeSpan -Days 3650)
