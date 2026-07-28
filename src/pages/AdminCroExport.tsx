@@ -8,9 +8,7 @@ import {
   Download,
   ExternalLink,
   Loader2,
-  LockKeyhole,
   RefreshCw,
-  ShieldCheck,
   Wifi,
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
@@ -228,7 +226,7 @@ const AdminCroExport = () => {
 
   return (
     <div className="page-wrap-narrow">
-      <PageHeader title="مزامنة الحجوزات" subtitle="تحديث آمن وفوري لتقارير الحجز المركزي من CRO." icon={RefreshCw} />
+      <PageHeader title="مزامنة الحجوزات" icon={RefreshCw} />
 
       {message ? <div aria-live="polite" className="rounded-2xl border border-primary/20 bg-primary/8 p-4 text-sm leading-7">{message}</div> : null}
 
@@ -247,7 +245,6 @@ const AdminCroExport = () => {
                   {sync?.automation.configured ? "مفعّلة · كل 30 دقيقة" : "تحتاج إعداد"}
                 </span>
               </div>
-              <p className="mt-1 text-xs leading-6 text-muted-foreground">تعمل خلف الكواليس وتحدّث تقرير الحجوزات دون إبقاء الصفحة مفتوحة.</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:min-w-64">
@@ -269,15 +266,13 @@ const AdminCroExport = () => {
             <span className="text-muted-foreground">آخر تحديث: <strong className="text-foreground">{formatTimestamp(sync?.status.stats?.updatedAt || sync?.status.finishedAt)}</strong></span>
             <span className="text-muted-foreground">الفترة الآلية: <strong className="text-foreground" dir="ltr">{sync?.automation.from || "—"} — {sync?.automation.to || "—"}</strong></span>
           </div>
-          {sync?.status.message ? <p className="mt-2 text-xs leading-6 text-muted-foreground">{sync.status.message}</p> : null}
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <section className="grid grid-cols-3 gap-3">
         <div className="compact-card"><p className="text-xs text-muted-foreground">بيانات الدخول</p><strong className={status?.configured ? "text-emerald-600" : "text-amber-700"}>{status?.configured ? "محفوظة بأمان" : "إدخال مؤقت"}</strong></div>
         <div className="compact-card"><p className="text-xs text-muted-foreground">تصدير CRO</p><strong className={status?.exportConfigured ? "text-emerald-600" : "text-amber-700"}>{status?.exportConfigured ? "جاهز" : "ينقصه ضبط"}</strong></div>
         <div className="compact-card"><p className="text-xs text-muted-foreground">التكرار</p><strong>{sync?.automation.configured ? "كل 30 دقيقة" : "غير مفعّل"}</strong></div>
-        <div className="compact-card"><p className="text-xs text-muted-foreground">الحماية</p><strong className="inline-flex items-center gap-1.5"><LockKeyhole className="h-3.5 w-3.5 text-primary" /> سيرفر فقط</strong></div>
       </section>
 
       {sync?.status.stats ? (
@@ -289,20 +284,15 @@ const AdminCroExport = () => {
       ) : null}
 
       <section className="page-surface space-y-5">
-        <div>
-          <h2 className="section-title">مزامنة يدوية أو أرشفة</h2>
-          <p className="mt-1 text-xs leading-6 text-muted-foreground">
-            «تحديث التقرير الحالي» يحدّث لوحة الموظفين. «أرشفة فترة سابقة» تضيفها إلى البحث برقم الجوال دون استبدال التقرير الحالي.
-          </p>
-        </div>
+        <h2 className="section-title">مزامنة يدوية</h2>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs">
-            <span className="mb-1.5 block text-muted-foreground">يوزر CRO — يُستخدم لهذه العملية فقط</span>
+            <span className="mb-1.5 block text-muted-foreground">مستخدم CRO</span>
             <input dir="ltr" className="h-12 w-full rounded-2xl border bg-secondary/50 px-4 outline-none focus:border-primary/60 focus:ring-4 focus:ring-primary/10" placeholder="اسم المستخدم" value={username} autoComplete="username" onChange={(event) => setUsername(event.target.value)} />
           </label>
           <label className="text-xs">
-            <span className="mb-1.5 block text-muted-foreground">كلمة مرور CRO — تُستخدم لهذه العملية فقط</span>
+            <span className="mb-1.5 block text-muted-foreground">كلمة المرور</span>
             <input dir="ltr" type="password" className="h-12 w-full rounded-2xl border bg-secondary/50 px-4 outline-none focus:border-primary/60 focus:ring-4 focus:ring-primary/10" placeholder="••••••••" value={password} autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} />
           </label>
         </div>
@@ -341,9 +331,6 @@ const AdminCroExport = () => {
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-primary/15 bg-primary/5 p-3 text-xs leading-6 text-muted-foreground">
-          تجلب المزامنة تقرير <span dir="ltr" className="font-semibold">Check-Out</span> عبر السيرفر. لا يُستبدل التقرير الحالي إذا فشل CRO أو أعاد ملفًا فارغًا، ولا تُحفظ بيانات الدخول التي تكتبها في هذه الصفحة.
-        </div>
       </section>
     </div>
   );

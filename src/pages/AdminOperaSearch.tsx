@@ -84,7 +84,6 @@ const AdminOperaSearch = () => {
     <div className="page-wrap">
       <PageHeader
         title="البحث عن حجز برقم الجوال"
-        subtitle="بحث آمن في الحجوزات الحالية والسابقة المؤرشفة من CRO."
         icon={Search}
       />
 
@@ -96,9 +95,6 @@ const AdminOperaSearch = () => {
               <ShieldCheck className="h-4 w-4" /> مشرف فقط · قراءة فقط
             </div>
             <h2 className="text-xl font-black tracking-tight sm:text-2xl">أرشيف حجوزات موحّد</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-              يعتمد البحث على تقارير CRO المتزامنة مع OPERA، ويشمل كل فترة تمت أرشفتها. رقم الجوال يُحوّل داخل السيرفر إلى مفتاح بحث مشفّر ولا يظهر في النتائج.
-            </p>
           </div>
           <Link
             to="/admin/cro-export"
@@ -148,7 +144,6 @@ const AdminOperaSearch = () => {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="section-title">رقم جوال الضيف</h2>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">يُقبل الرقم السعودي مع الصفر أو بدونه، ويشمل البحث الحجوزات الماضية ضمن الفترات المؤرشفة.</p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">
             <ShieldCheck className="h-3.5 w-3.5" /> لا يعرض بيانات الدفع
@@ -232,7 +227,6 @@ const AdminOperaSearch = () => {
       <section className="page-surface space-y-3">
         <div>
           <h2 className="section-title">الدخول الرسمي إلى OPERA</h2>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">هذه الروابط تفتح النظام الرسمي يدويًا، ولا تُحفظ بيانات الدخول داخل الموقع.</p>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           {OPERA_LINKS.map((item) => (

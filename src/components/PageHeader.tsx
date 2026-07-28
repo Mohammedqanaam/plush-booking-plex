@@ -4,10 +4,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 type PageHeaderProps = {
   title: string;
-  subtitle?: string;
   icon?: LucideIcon;
   actions?: ReactNode;
   showBack?: boolean;
+  onBack?: () => void;
 };
 
 const fallbackForPath = (pathname: string) => {
@@ -16,11 +16,15 @@ const fallbackForPath = (pathname: string) => {
   return "/";
 };
 
-const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: PageHeaderProps) => {
+const PageHeader = ({ title, icon: Icon, actions, showBack = true, onBack: customBack }: PageHeaderProps) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
   const onBack = () => {
+    if (customBack) {
+      customBack();
+      return;
+    }
     if (window.history.length > 1) navigate(-1);
     else navigate(fallbackForPath(pathname));
   };
@@ -46,7 +50,6 @@ const PageHeader = ({ title, subtitle, icon: Icon, actions, showBack = true }: P
               ) : null}
               <span className="truncate">{title}</span>
             </h2>
-            {subtitle ? <p className="text-xs md:text-sm text-muted-foreground mt-1 max-w-2xl leading-6">{subtitle}</p> : null}
           </div>
         </div>
         {actions ? <div className="shrink-0">{actions}</div> : null}

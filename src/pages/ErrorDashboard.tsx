@@ -19,7 +19,7 @@ const ErrorDashboard = () => {
 
   return (
     <div className="page-wrap-narrow">
-      <PageHeader title="مراقبة أخطاء النظام" subtitle="عرض السجلات الفنية المسجلة للمراجعة والمتابعة." icon={ShieldAlert} />
+      <PageHeader title="مراقبة أخطاء النظام" icon={ShieldAlert} />
       {!errors.length ? <div className="page-surface text-sm text-muted-foreground">لا توجد أخطاء مسجلة حاليًا.</div> : null}
       {errors.map((err) => (
         <div key={err.id} className="glass-card p-3">

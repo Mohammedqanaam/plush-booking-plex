@@ -19,7 +19,7 @@ const AdminErrors = () => {
 
   return (
     <div className="page-wrap-narrow">
-      <PageHeader title="لوحة الأخطاء" subtitle="متابعة أخطاء النظام وسجلاتها لحظيًا." icon={ShieldAlert} />
+      <PageHeader title="لوحة الأخطاء" icon={ShieldAlert} />
       {logs.map((log) => (
         <div key={log.id} className="glass-card p-3 text-xs">
           <p><b>{log.source}</b> - {log.message}</p>

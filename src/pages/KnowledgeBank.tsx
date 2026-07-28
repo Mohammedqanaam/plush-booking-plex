@@ -132,13 +132,10 @@ const KnowledgeBank = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="المعلومات" subtitle="اختر فرعًا أو اكتب كلمة." icon={BookOpenCheck} />
+      <PageHeader title="المعلومات" icon={BookOpenCheck} />
 
       <section className="page-surface space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <p>الصفحة للعرض فقط؛ الأسعار والمواعيد المتغيرة تُراجع قبل تأكيدها.</p>
-          {hasCriteria ? <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary">{results.length} نتيجة</span> : null}
-        </div>
+        {hasCriteria ? <div className="flex justify-end"><span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs text-primary">{results.length} نتيجة</span></div> : null}
         <div className="grid md:grid-cols-4 gap-2">
           <div className="relative md:col-span-2">
             <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -172,7 +169,7 @@ const KnowledgeBank = () => {
 
       <div className="grid md:grid-cols-2 gap-3">
         {!hasCriteria ? (
-          <div className="md:col-span-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">ابدأ بالبحث أو اختر علامة أو فرعًا. لن تُعرض مئات السجلات دفعة واحدة.</div>
+          <div className="md:col-span-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">ابدأ بالبحث أو اختر علامة أو فرعًا.</div>
         ) : visibleResults.length ? visibleResults.map((item) => (
           <button key={item.id} className="page-surface min-h-[126px] text-right card-hover" onClick={() => setSelected(item)}>
             <div className="flex items-center justify-between gap-2 mb-2">
@@ -184,7 +181,7 @@ const KnowledgeBank = () => {
         )) : <div className="md:col-span-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">لا توجد نتيجة مطابقة. جرّب كلمة أقصر أو غيّر الفلاتر.</div>}
       </div>
 
-      {results.length > visibleResults.length ? <p className="text-center text-xs text-muted-foreground">تظهر أول {visibleResults.length} نتيجة. استخدم اسم الفرع لتضييق البحث.</p> : null}
+      {results.length > visibleResults.length ? <p className="text-center text-xs text-muted-foreground">{visibleResults.length} من {results.length} نتيجة</p> : null}
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="max-w-2xl glass-card border-primary/20">

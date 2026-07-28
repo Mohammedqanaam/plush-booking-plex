@@ -35,7 +35,6 @@ describe("historical booking search UI", () => {
     render(<MemoryRouter initialEntries={["/admin/opera-search"]}><AdminOperaSearch /></MemoryRouter>);
 
     expect(screen.getByRole("heading", { name: "البحث عن حجز برقم الجوال" })).toBeInTheDocument();
-    expect(screen.getByText("بحث آمن في الحجوزات الحالية والسابقة المؤرشفة من CRO.")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("5xxxxxxxx أو 05xxxxxxxx")).toHaveAttribute("inputmode", "tel");
     await waitFor(() => expect(screen.getByText("٨٤")).toBeInTheDocument());
     expect(screen.getByRole("button", { name: "بحث في كامل الأرشيف" })).toBeEnabled();
