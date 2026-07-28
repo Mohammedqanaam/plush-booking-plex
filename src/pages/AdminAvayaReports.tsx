@@ -175,7 +175,7 @@ const AdminAvayaReports = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="تقارير Avaya" subtitle="ارفع التقارير بصيغة PDF أو XLSX لتحويلها إلى نتيجة موحدة قابلة للمراجعة والتنزيل." icon={FileSpreadsheet} />
+      <PageHeader title="تقارير Avaya" icon={FileSpreadsheet} />
 
       <section className="page-surface mb-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -199,10 +199,7 @@ const AdminAvayaReports = () => {
 
       <section className="page-surface space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="section-title">ملفات التقرير اليومي</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">تتم المعالجة داخل جهازك ولا تُرفع ملفات الموظفين إلى الخادم. اختر PDF الأصلي من Avaya أو XLSX، وتأكد أن التقارير الثلاثة للفترة نفسها.</p>
-          </div>
+          <h2 className="section-title">ملفات التقرير اليومي</h2>
           {Object.keys(files).length ? <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/50 px-3 text-xs font-bold" onClick={reset}><RefreshCcw className="h-4 w-4" /> مسح الملفات</button> : null}
         </div>
 
@@ -292,12 +289,6 @@ const AdminAvayaReports = () => {
               {!visibleEmployees.length ? <div className="p-10 text-center text-sm text-muted-foreground">لا توجد نتائج مطابقة.</div> : null}
             </div>
 
-            <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-4">
-              <p className="rounded-xl bg-secondary/25 p-3">مدة العمل المعتمدة لا تتجاوز 9 ساعات للموظف، وأي زيادة تُعزل كتداخل شفت ولا تدخل في الحساب.</p>
-              <p className="rounded-xl bg-secondary/25 p-3">فترة الدوام من أول دخول إلى آخر خروج، وفواصل الاتصال تُحسب بين الجلسات ولا تُعد مخالفة تلقائيًا.</p>
-              <p className="rounded-xl bg-secondary/25 p-3">متوسط الرنين يُنبّه باللون الأصفر من 10 ثوانٍ.</p>
-              <p className="rounded-xl bg-secondary/25 p-3">أولوية المراجعة عند 20 مكالمة فائتة أو DND أكثر من ساعة.</p>
-            </div>
           </section>
         </div>
       ) : null}

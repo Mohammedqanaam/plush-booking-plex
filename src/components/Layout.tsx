@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { BarChart3, Building2, LayoutDashboard, LockKeyhole, PhoneCall, Search } from "lucide-react";
 import BottomNav from "./BottomNav";
 import RiyadhClock from "./RiyadhClock";
-import { api } from "@/lib/api";
 import ViewerPreferences from "./ViewerPreferences";
 import AnalyticsTracker from "./AnalyticsTracker";
 import BrandFooter from "./BrandFooter";
@@ -17,37 +15,18 @@ const desktopNav = [
 ];
 
 const Layout = () => {
-  const [bannerText, setBannerText] = useState("");
-  const [siteTitle, setSiteTitle] = useState("RES Dashboard");
   const location = useLocation();
   const isAdminArea = location.pathname.startsWith("/admin");
-  const lastUpdatedAt = new Date().toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
-
-  useEffect(() => {
-    api
-      .getSettings()
-      .then((data) => {
-        if (data.bannerText !== undefined) setBannerText(data.bannerText);
-        if (data.siteTitle?.trim()) setSiteTitle(data.siteTitle.trim());
-      })
-      .catch(() => {});
-  }, []);
 
   return (
     <div className="app-shell flex flex-col">
       <AnalyticsTracker />
-      {bannerText && (
-        <div className="bg-primary/10 text-center py-2 px-4 text-xs font-medium text-primary border-b border-primary/20">
-          {bannerText}
-        </div>
-      )}
 
       <header className="safe-area-top sticky top-0 z-40 border-b border-border/15 bg-background/82 backdrop-blur-2xl">
         <div className="content-container h-[60px] flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="min-w-0">
-              <p className="truncate text-[15px] font-bold leading-5">{siteTitle}</p>
-              <p className="hidden truncate text-xs text-muted-foreground sm:block">إدارة الحجز المركزي</p>
+              <p className="truncate text-[15px] font-bold leading-5">إدارة الحجز المركزي</p>
             </div>
           </div>
 
@@ -93,9 +72,8 @@ const Layout = () => {
       </main>
 
       {!isAdminArea ? (
-        <div className="relative hidden md:block">
+        <div className="hidden md:block">
           <BrandFooter />
-          <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">آخر تحديث اليوم {lastUpdatedAt}</span>
         </div>
       ) : null}
 

@@ -41,7 +41,7 @@ const Complaints = () => {
   const subCategories = useMemo(() => MAIN_CATEGORIES[form.mainCategory] || [], [form.mainCategory]);
 
   return <div className="page-wrap">
-    <PageHeader title="تسجيل شكوى" subtitle="أدخل بيانات الضيف والشكوى." icon={OctagonAlert} />
+    <PageHeader title="تسجيل شكوى" icon={OctagonAlert} />
 
     <form className="page-surface grid md:grid-cols-2 gap-3" onSubmit={async (e) => {
       e.preventDefault();

@@ -46,7 +46,7 @@ const HotelSearch = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="البحث" subtitle="اكتب كلمة للوصول إلى المعلومة." icon={Search} />
+      <PageHeader title="البحث" icon={Search} />
 
       <div className="page-surface">
 

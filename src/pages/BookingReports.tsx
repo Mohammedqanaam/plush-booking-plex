@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, CalendarDays, LockKeyhole, RefreshCw, Search } from "lucide-react";
+import { BarChart3, CalendarDays, RefreshCw, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { api, type PublicBookingReport } from "@/lib/api";
@@ -109,24 +109,15 @@ const BookingReports = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="تقارير الحجوزات" subtitle="ملخص الحجوزات ونتائج الموظفين." icon={BarChart3} />
+      <PageHeader title="تقارير الحجوزات" icon={BarChart3} />
 
       <div className="ios-segmented" role="tablist" aria-label="أقسام التقرير">
         <button role="tab" aria-selected={section === "summary"} className={section === "summary" ? "is-active" : ""} onClick={() => setSection("summary")}>الملخص</button>
         <button role="tab" aria-selected={section === "employees"} className={section === "employees" ? "is-active" : ""} onClick={() => setSection("employees")}>نتائج الموظفين</button>
       </div>
 
-      <div className="viewer-note">
-        <LockKeyhole className="h-[18px] w-[18px]" strokeWidth={1.8} />
-        <span>عرض فقط دون بيانات الضيوف أو أدوات تعديل.</span>
-      </div>
-
       <section className="page-surface flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" aria-label="تحديث تقرير الحجوزات">
-        <div className="min-w-0">
-          <h2 className="section-title">تحديث البيانات</h2>
-          <p className="mt-1 text-xs leading-6 text-muted-foreground">يتم التحديث في الخلفية دون مغادرة الصفحة أو إظهار أي إعدادات داخلية.</p>
-          {syncMessage ? <p role="status" className={`mt-2 text-xs font-semibold ${syncError ? "text-destructive" : "text-primary"}`}>{syncMessage}</p> : null}
-        </div>
+        <h2 className="section-title">تحديث البيانات</h2>
         <button
           type="button"
           className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/8 px-4 text-sm font-bold text-primary disabled:cursor-wait disabled:opacity-60"
@@ -136,6 +127,7 @@ const BookingReports = () => {
           <RefreshCw className={`h-[18px] w-[18px] ${syncing ? "animate-spin" : ""}`} strokeWidth={1.9} />
           {syncing ? "جاري التحديث" : "مزامنة الحجوزات"}
         </button>
+        {syncMessage ? <p role="status" className={`text-xs font-semibold sm:order-3 sm:w-full ${syncError ? "text-destructive" : "text-primary"}`}>{syncMessage}</p> : null}
       </section>
 
       {loading ? <div className="page-surface text-sm text-muted-foreground">جاري تحميل التقرير…</div> : null}
@@ -159,10 +151,7 @@ const BookingReports = () => {
 
           <section className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
             <article className="page-surface space-y-5">
-              <div>
-                <h2 className="section-title">حالة الحجوزات</h2>
-                <p className="mt-1 text-xs text-muted-foreground">من إجمالي الحجوزات المصنفة.</p>
-              </div>
+              <h2 className="section-title">حالة الحجوزات</h2>
               <div className="space-y-5">
                 <div>
                   <div className="mb-2 flex items-center justify-between text-sm"><span>مؤكد</span><strong>{report.summary.confirmationRate}%</strong></div>
@@ -195,7 +184,7 @@ const BookingReports = () => {
       {report && section === "employees" ? (
         <section className="page-surface space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <div><h2 className="section-title">نتائج الموظفين</h2><p className="mt-1 text-xs text-muted-foreground">مرتبة حسب الحجوزات المؤكدة.</p></div>
+            <h2 className="section-title">نتائج الموظفين</h2>
             <span className="report-count">{report.summary.employeeCount.toLocaleString("ar-SA")} موظف</span>
           </div>
 

@@ -30,6 +30,13 @@ describe("app shell and web app metadata", () => {
     const layout = fs.readFileSync(path.join(process.cwd(), "src/components/Layout.tsx"), "utf8");
     expect(layout).toContain('to="/admin/login"');
     expect(layout).toContain('aria-label="دخول الإدارة"');
+    expect(layout).not.toContain("bannerText");
+    expect(layout).not.toContain("آخر تحديث اليوم");
+  });
+
+  it("keeps page headings concise", () => {
+    const pageHeader = fs.readFileSync(path.join(process.cwd(), "src/components/PageHeader.tsx"), "utf8");
+    expect(pageHeader).not.toContain("{subtitle ?");
   });
 
   it("adds the Boudl Hospitality Group logo to the public page footer", () => {

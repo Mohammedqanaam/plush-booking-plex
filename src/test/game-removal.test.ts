@@ -11,8 +11,11 @@ describe("retired game", () => {
     expect(app).toContain('<Route path="/runner" element={<Navigate to="/" replace />} />');
     expect(app).toContain('<Route path="/relax" element={<Navigate to="/" replace />} />');
     expect(app).not.toContain("BoudlRunner");
+    expect(app).not.toContain('import("./pages/BoudlPrototype")');
+    expect(app).toContain('<Route path="/boudl-preview/*" element={<Navigate to="/" replace />} />');
     expect(dashboard).not.toContain('to: "/runner"');
     expect(fs.existsSync(path.join(root, "src/pages/BoudlRunner.tsx"))).toBe(false);
+    expect(fs.existsSync(path.join(root, "src/pages/BoudlPrototype.tsx"))).toBe(false);
     expect(fs.existsSync(path.join(root, "netlify/functions/runner-leaderboard.ts"))).toBe(false);
   });
 });

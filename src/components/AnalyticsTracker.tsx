@@ -50,17 +50,24 @@ const AnalyticsTracker = () => {
       }).catch(() => undefined);
     };
 
-    if (lastTrackedPath.current !== path) {
-      lastTrackedPath.current = path;
-      send("pageview");
-    }
-
-    send("heartbeat");
+    const firstEvent = lastTrackedPath.current !== path ? "pageview" : "heartbeat";
+    lastTrackedPath.current = path;
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const idleId = idleWindow.requestIdleCallback
+      ? idleWindow.requestIdleCallback(() => send(firstEvent), { timeout: 1_500 })
+      : window.setTimeout(() => send(firstEvent), 250);
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") send("heartbeat");
     }, 30_000);
 
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+      if (idleWindow.cancelIdleCallback && idleWindow.requestIdleCallback) idleWindow.cancelIdleCallback(idleId);
+      else window.clearTimeout(idleId);
+    };
   }, [location.pathname, location.search]);
 
   return null;

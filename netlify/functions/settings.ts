@@ -21,7 +21,7 @@ type SiteSettings = {
 };
 
 const DEFAULT_SETTINGS: SiteSettings = {
-  siteTitle: "Worm-AI",
+  siteTitle: "إدارة الحجز المركزي",
   bannerText: "",
   reportMonth: "",
   reportYear: "",

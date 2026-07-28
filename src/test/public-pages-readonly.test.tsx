@@ -3,25 +3,26 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Branches from "@/pages/Branches";
 import KnowledgeBank from "@/pages/KnowledgeBank";
-import UploadCenter from "@/pages/UploadCenter";
 import fs from "node:fs";
 import path from "node:path";
 
 describe("public pages are read-only", () => {
-  it("shows read-only guidance in branches page", () => {
+  it("keeps the branches page concise", () => {
     render(<MemoryRouter><Branches /></MemoryRouter>);
-    expect(screen.getByText(/هذه الصفحة للعرض فقط/)).toBeDefined();
+    expect(screen.queryByText(/هذه الصفحة للعرض فقط/)).toBeNull();
+    expect(screen.getByPlaceholderText(/اسم الفرع/)).toBeDefined();
   });
 
-  it("shows read-only guidance in knowledge bank page", () => {
+  it("keeps the knowledge bank concise", () => {
     render(<MemoryRouter><KnowledgeBank /></MemoryRouter>);
-    expect(screen.getByText(/الصفحة للعرض فقط/)).toBeDefined();
+    expect(screen.queryByText(/الصفحة للعرض فقط/)).toBeNull();
+    expect(screen.getByPlaceholderText(/إفطار/)).toBeDefined();
   });
 
-  it("does not render upload file input in public upload center", () => {
-    const { container } = render(<MemoryRouter><UploadCenter /></MemoryRouter>);
-    expect(container.querySelector('input[type="file"]')).toBeNull();
-    expect(screen.getByText(/رفع البيانات أو إعادة تعيينها متاح للمستخدمين المخولين/)).toBeDefined();
+  it("redirects the retired public upload center to admin login", () => {
+    const app = fs.readFileSync(path.join(process.cwd(), "src/App.tsx"), "utf8");
+    expect(app).toContain('<Route path="/upload-center" element={<Navigate to="/admin/login" replace />} />');
+    expect(fs.existsSync(path.join(process.cwd(), "src/pages/UploadCenter.tsx"))).toBe(false);
   });
 
   it("keeps one public booking report and redirects the old employee route", () => {

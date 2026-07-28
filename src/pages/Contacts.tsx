@@ -44,7 +44,7 @@ const Contacts = () => {
 
   return (
     <div className="page-wrap-narrow">
-      <PageHeader title="طلب تواصل" subtitle="أدخل بيانات الضيف والفرع." icon={PhoneCall} />
+      <PageHeader title="طلب تواصل" icon={PhoneCall} />
 
       {submitted ? (
         <div className="page-surface text-center space-y-3 animate-fade-in">

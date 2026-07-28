@@ -93,7 +93,7 @@ const Branches = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="الفروع" subtitle="الأرقام والخدمات في دليل واحد." icon={Building2} />
+      <PageHeader title="الفروع" icon={Building2} />
 
       <section className="grid grid-cols-3 gap-2" aria-label="ملخص الفروع">
         <div className="branch-summary-card">
@@ -123,9 +123,8 @@ const Branches = () => {
             {brands.map((item) => <option key={item} value={item}>{item === "الكل" ? "كل العلامات" : item}</option>)}
           </select>
         </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-          <p>هذه الصفحة للعرض فقط · آخر مطابقة {sourceDate}</p>
-          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1"><Tags className="h-3.5 w-3.5" /> {brands.length - 1} علامات</span>
+        <div className="mt-3 flex flex-wrap items-center justify-end gap-2 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1"><Tags className="h-3.5 w-3.5" /> {brands.length - 1} علامات · {sourceDate}</span>
         </div>
       </section>
 

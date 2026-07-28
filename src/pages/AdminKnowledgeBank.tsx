@@ -18,7 +18,7 @@ const AdminKnowledgeBank = () => {
 
   return (
     <div className="page-wrap">
-      <PageHeader title="إدارة بنك المعلومات" subtitle="عرض منظم لسجلات الفروع والمراجع العامة." icon={BookOpenText} />
+      <PageHeader title="إدارة بنك المعلومات" icon={BookOpenText} />
 
       <div className="page-surface">
         <div className="relative">

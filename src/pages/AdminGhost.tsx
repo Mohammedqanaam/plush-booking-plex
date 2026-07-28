@@ -13,7 +13,6 @@ import {
   Radio,
   RefreshCw,
   Search,
-  ShieldCheck,
   Wifi,
   X,
 } from "lucide-react";
@@ -129,7 +128,6 @@ const AdminGhost = () => {
     <div className="page-wrap ghost-console">
       <PageHeader
         title="Ghost"
-        subtitle="مراقبة الزيارات والطوارئ · وصول إداري محمي"
         icon={Ghost}
         onBack={() => navigate("/admin")}
         actions={<span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-3 py-2 text-[11px] font-bold text-emerald-700"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" /> مباشر</span>}
@@ -137,8 +135,7 @@ const AdminGhost = () => {
 
       <section className="rounded-2xl border border-slate-900/10 bg-slate-950 p-4 text-white shadow-xl shadow-slate-950/10 md:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-400/10 text-emerald-300"><Fingerprint className="h-5 w-5" /></span><div><h2 className="font-bold">معرّف الزيارة الأمني</h2><p className="mt-1 text-xs text-slate-400">معرّف عشوائي ثابت للمتصفح، دون بصمة أجهزة متطفلة أو موقع دقيق.</p></div></div>
-          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] text-slate-300">المسار محمي وغير ظاهر للزوار</span>
+          <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-400/10 text-emerald-300"><Fingerprint className="h-5 w-5" /></span><h2 className="font-bold">معرّف الزيارة الأمني</h2></div>
         </div>
       </section>
 
@@ -155,15 +152,15 @@ const AdminGhost = () => {
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          ["متصل الآن", data?.onlineCount || 0, Radio, "text-emerald-600"],
-          ["زوار اليوم", data?.todayVisitors || 0, Activity, "text-blue-600"],
-          ["زوار فريدون", data?.uniqueVisitors || 0, Fingerprint, "text-violet-600"],
-          ["إجمالي الزيارات", data?.totalViews || 0, Globe2, "text-amber-600"],
-        ].map(([label, value, Icon, color]) => <article className="metric-card" key={label as string}><div className="flex items-center justify-between"><p>{label as string}</p><Icon className={`h-4 w-4 ${color}`} /></div><strong>{Number(value).toLocaleString("ar-SA")}</strong></article>)}
+          { label: "متصل الآن", value: data?.onlineCount || 0, icon: Radio, color: "text-emerald-600" },
+          { label: "زوار اليوم", value: data?.todayVisitors || 0, icon: Activity, color: "text-blue-600" },
+          { label: "زوار فريدون", value: data?.uniqueVisitors || 0, icon: Fingerprint, color: "text-violet-600" },
+          { label: "إجمالي الزيارات", value: data?.totalViews || 0, icon: Globe2, color: "text-amber-600" },
+        ].map(({ label, value, icon: Icon, color }) => <article className="metric-card" key={label}><div className="flex items-center justify-between"><p>{label}</p><Icon className={`h-4 w-4 ${color}`} /></div><strong>{Number(value).toLocaleString("ar-SA")}</strong></article>)}
       </section>
 
       <section className="page-surface space-y-3">
-        <div className="flex items-center justify-between gap-2"><div><h2 className="section-title">المتصلون الآن</h2><p className="mt-1 text-xs text-muted-foreground">نشاط خلال آخر دقيقتين · تحديث كل 30 ثانية</p></div><span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">{data?.onlineCount || 0}</span></div>
+        <div className="flex items-center justify-between gap-2"><h2 className="section-title">المتصلون الآن</h2><span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">{data?.onlineCount || 0}</span></div>
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {(data?.online || []).map((visitor) => <article className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.035] p-3" key={visitor.visitorId}><div className="flex items-center justify-between gap-2"><strong className="font-mono text-xs" dir="ltr">G-{visitor.visitorId.slice(-8)}</strong><span className="h-2 w-2 rounded-full bg-emerald-500" /></div><p className="mt-2 text-xs text-muted-foreground">{visitor.device} · {visitor.browser} {visitor.browserVersion || ""} · {visitor.os}</p><p className="mt-1 text-xs text-muted-foreground"><span dir="ltr">{visitor.ipMasked || "IP محمي"}</span> · {visitor.city}، {visitor.country}</p><p className="mt-2 truncate text-xs font-medium" dir="ltr">{pageLabel(visitor.path)}</p></article>)}
           {!data?.online.length ? <p className="text-xs text-muted-foreground">لا يوجد زائر نشط حاليًا.</p> : null}
@@ -171,7 +168,7 @@ const AdminGhost = () => {
       </section>
 
       <section className="page-surface space-y-3">
-        <div className="flex items-center justify-between gap-2"><div><h2 className="section-title">سجل الزوار</h2><p className="mt-1 text-xs text-muted-foreground">اضغط على السجل لعرض جميع المعلومات المتاحة.</p></div><span className="report-count">{visitors.length.toLocaleString("ar-SA")} سجل</span></div>
+        <div className="flex items-center justify-between gap-2"><h2 className="section-title">سجل الزوار</h2><span className="report-count">{visitors.length.toLocaleString("ar-SA")} سجل</span></div>
         <div className="overflow-x-auto rounded-2xl border border-border/20 custom-scrollbar">
           <table className="min-w-[860px] w-full text-xs">
             <thead><tr><th className="p-3 text-right">الزائر</th><th className="p-3 text-right">IP المحمي</th><th className="p-3 text-right">الموقع التقريبي</th><th className="p-3 text-right">الجهاز</th><th className="p-3 text-center">الزيارات</th><th className="p-3 text-right">آخر ظهور</th></tr></thead>
@@ -180,8 +177,6 @@ const AdminGhost = () => {
         </div>
         {!visitors.length && !loading ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">لا توجد سجلات مطابقة.</div> : null}
       </section>
-
-      <p className="px-1 text-[11px] leading-5 text-muted-foreground"><ShieldCheck className="ml-1 inline h-3.5 w-3.5" />يُعرض IP بصورة مقنّعة، ولا يتم جمع GPS أو الاسم أو الجوال أو Canvas/WebGL. الموقع الجغرافي تقريبي وقد لا يطابق موقع الزائر الفعلي.</p>
 
       {selected ? <VisitorDetails visitor={selected} onClose={() => setSelected(null)} /> : null}
     </div>

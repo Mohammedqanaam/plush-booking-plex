@@ -1,7 +1,3 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
@@ -15,7 +11,6 @@ const HotelSearch = lazy(() => import("./pages/HotelSearch"));
 const Branches = lazy(() => import("./pages/Branches"));
 const KnowledgeBank = lazy(() => import("./pages/KnowledgeBank"));
 const Complaints = lazy(() => import("./pages/Complaints"));
-const UploadCenter = lazy(() => import("./pages/UploadCenter"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminDiscounts = lazy(() => import("./pages/AdminDiscounts"));
 const AdminEnterpriseControl = lazy(() => import("./pages/AdminEnterpriseControl"));
@@ -28,22 +23,16 @@ const AdminWarnings = lazy(() => import("./pages/AdminWarnings"));
 const AdminAvayaReports = lazy(() => import("./pages/AdminAvayaReports"));
 const AdminGhost = lazy(() => import("./pages/AdminGhost"));
 const AdminCroExport = lazy(() => import("./pages/AdminCroExport"));
+const AdminUno = lazy(() => import("./pages/AdminUno"));
 const AdminOperaSearch = lazy(() => import("./pages/AdminOperaSearch"));
-const BoudlPrototype = lazy(() => import("./pages/BoudlPrototype"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <EnterpriseThemeLoader />
-      <Toaster />
-      <Sonner />
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Suspense fallback={<div className="grid min-h-screen place-items-center text-sm text-muted-foreground">جاري تحميل الصفحة…</div>}>
+  <>
+    <EnterpriseThemeLoader />
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Suspense fallback={<div className="grid min-h-screen place-items-center text-sm text-muted-foreground">جاري التحميل…</div>}>
         <Routes>
-          <Route path="/boudl-preview/*" element={<BoudlPrototype />} />
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/employees" element={<Navigate to="/booking-reports?section=employees" replace />} />
@@ -55,7 +44,8 @@ const App = () => (
             <Route path="/complaints" element={<Complaints />} />
             <Route path="/runner" element={<Navigate to="/" replace />} />
             <Route path="/relax" element={<Navigate to="/" replace />} />
-            <Route path="/upload-center" element={<UploadCenter />} />
+            <Route path="/boudl-preview/*" element={<Navigate to="/" replace />} />
+            <Route path="/upload-center" element={<Navigate to="/admin/login" replace />} />
             <Route path="/contact-requests" element={<Contacts />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -64,6 +54,7 @@ const App = () => (
             <Route path="/admin/warnings" element={<ProtectedRoute><AdminWarnings /></ProtectedRoute>} />
             <Route path="/admin/avaya-reports" element={<ProtectedRoute><AdminAvayaReports /></ProtectedRoute>} />
             <Route path="/admin/cro-export" element={<ProtectedRoute><AdminCroExport /></ProtectedRoute>} />
+            <Route path="/admin/uno" element={<ProtectedRoute><AdminUno /></ProtectedRoute>} />
             <Route path="/admin/opera-search" element={<ProtectedRoute><AdminOperaSearch /></ProtectedRoute>} />
             <Route path="/admin/ghost" element={<ProtectedRoute><AdminGhost /></ProtectedRoute>} />
             <Route path="/admin/discounts" element={<ProtectedRoute><AdminDiscounts /></ProtectedRoute>} />
@@ -74,10 +65,9 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+      </Suspense>
+    </BrowserRouter>
+  </>
 );
 
 export default App;

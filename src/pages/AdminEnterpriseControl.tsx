@@ -30,7 +30,7 @@ const AdminEnterpriseControl = () => {
 
   return (
     <div className="page-wrap-narrow">
-      <PageHeader title="مركز التحكم المؤسسي" subtitle="إدارة القوالب، SLA، وإعدادات الثيم المؤسسي." icon={SlidersHorizontal} />
+      <PageHeader title="مركز التحكم المؤسسي" icon={SlidersHorizontal} />
       <div className="glass-card p-4 space-y-3">
         <textarea className="w-full rounded-lg bg-secondary border border-border p-3" rows={6} value={cfg.whatsappTemplate || ""} onChange={(e)=>setCfg({...cfg, whatsappTemplate:e.target.value})} />
         <textarea className="w-full rounded-lg bg-secondary border border-border p-3" rows={8} value={cfg.emailTemplate || ""} onChange={(e)=>setCfg({...cfg, emailTemplate:e.target.value})} />

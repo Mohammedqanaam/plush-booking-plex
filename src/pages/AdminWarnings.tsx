@@ -136,7 +136,7 @@ const AdminWarnings = () => {
   return (
     <div className="page-wrap warning-generator-page">
       <div className="warning-screen-only">
-        <PageHeader title="إنذارات الموظفين" subtitle="إنشاء إنذار رسمي، معاينته وأرشفته وتصديره PDF." icon={FileWarning} onBack={() => navigate("/admin?tab=employees")} />
+        <PageHeader title="إنذارات الموظفين" icon={FileWarning} onBack={() => navigate("/admin?tab=employees")} />
 
         {message ? <div className="rounded-xl border border-primary/20 bg-primary/8 p-3 text-sm" role="status">{message}</div> : null}
 

@@ -55,10 +55,7 @@ const AdminAnalytics = () => {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="font-bold">إحصائيات زيارة الموقع</h2>
-          <p className="mt-1 text-xs text-muted-foreground">المتصل الآن هو المستخدم الذي أرسل نشاطًا خلال آخر دقيقتين.</p>
-        </div>
+        <h2 className="font-bold">إحصائيات زيارة الموقع</h2>
         <div className="flex items-center gap-2">
           <select
             className="h-10 rounded-xl border border-primary/15 bg-secondary/50 px-3 text-sm"
@@ -167,8 +164,6 @@ const AdminAnalytics = () => {
           {!data?.online.length ? <p className="text-xs text-muted-foreground">لا يوجد مستخدم نشط خلال آخر دقيقتين.</p> : null}
         </div>
       </section>
-
-      <p className="text-[11px] text-muted-foreground">لا يتم حفظ عنوان IP أو الاسم أو رقم الجوال؛ يُستخدم معرّف عشوائي للمتصفح فقط لأغراض العد.</p>
     </div>
   );
 };

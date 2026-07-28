@@ -34,7 +34,7 @@ const AdminLogin = () => {
 
   return (
     <div className="page-wrap-narrow">
-      <PageHeader title="دخول المشرف" subtitle="سجّل الدخول للوصول إلى أدوات الإدارة والتحديث." icon={Lock} />
+      <PageHeader title="دخول المشرف" icon={Lock} />
 
       <div className="glass-card p-8 text-center space-y-4">
         <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">

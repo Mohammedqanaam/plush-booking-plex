@@ -3,6 +3,7 @@ import {
   BarChart3,
   BookOpenCheck,
   Building2,
+  Cable,
   CalendarSearch,
   Download,
   Eye,
@@ -78,8 +79,6 @@ const AdminDashboard = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("viewer");
-  const [siteTitle, setSiteTitle] = useState("Res");
-  const [bannerText, setBannerText] = useState("");
   const [reportMonth, setReportMonth] = useState("");
   const [reportYear, setReportYear] = useState("");
   const [complaintEmail, setComplaintEmail] = useState("");
@@ -123,8 +122,6 @@ const AdminDashboard = () => {
   useEffect(() => {
     void loadPublicReport();
     api.getSettings().then((settings) => {
-      setSiteTitle(settings.siteTitle || "Res");
-      setBannerText(settings.bannerText || "");
       setReportMonth(settings.reportMonth || "");
       setReportYear(settings.reportYear || "");
       setHiddenEmployees(normalizeHiddenEmployees(settings.hiddenEmployees || []));
@@ -197,7 +194,6 @@ const AdminDashboard = () => {
     <div className="page-wrap">
       <PageHeader
         title="لوحة الإدارة"
-        subtitle="إدارة آمنة منفصلة عن صفحات الزوار."
         icon={ShieldCheck}
         showBack={false}
         actions={
@@ -207,9 +203,8 @@ const AdminDashboard = () => {
         }
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-primary/15 bg-secondary/20 px-4 py-3 text-xs">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-primary/15 bg-secondary/20 px-4 py-3 text-xs">
         <span className="font-bold">{session?.username} · {ROLE_LABELS[(session?.role as UserRole) || "viewer"]}</span>
-        <span className="text-muted-foreground">تقرير الحجوزات العام متاح للزوار بوضع مشاهدة فقط.</span>
       </div>
 
       <nav className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar" aria-label="أقسام لوحة الإدارة">
@@ -226,44 +221,33 @@ const AdminDashboard = () => {
         <div className="space-y-4">
           <section className="grid grid-cols-2 gap-3 xl:grid-cols-5">
             {[
-              ["الحجوزات", report?.classifiedTotal || 0, FileText],
-              ["المؤكدة", report?.confirmed || 0, ShieldCheck],
-              ["الملغاة", report?.cancelled || 0, BarChart3],
-              ["الموظفون", report?.employeeCount || 0, UsersRound],
-              ["طلبات التواصل", requests.length, MessageSquareMore],
-            ].map(([label, value, Icon]) => (
-              <div key={label as string} className="compact-card">
-                <div className="flex items-center justify-between"><p className="text-xs text-muted-foreground">{label as string}</p><Icon className="h-4 w-4 text-primary" /></div>
+              { label: "الحجوزات", value: report?.classifiedTotal || 0, icon: FileText },
+              { label: "المؤكدة", value: report?.confirmed || 0, icon: ShieldCheck },
+              { label: "الملغاة", value: report?.cancelled || 0, icon: BarChart3 },
+              { label: "الموظفون", value: report?.employeeCount || 0, icon: UsersRound },
+              { label: "طلبات التواصل", value: requests.length, icon: MessageSquareMore },
+            ].map(({ label, value, icon: Icon }) => (
+              <div key={label} className="compact-card">
+                <div className="flex items-center justify-between"><p className="text-xs text-muted-foreground">{label}</p><Icon className="h-4 w-4 text-primary" /></div>
                 <p className="mt-2 kpi-value">{Number(value).toLocaleString("ar-SA")}</p>
               </div>
             ))}
           </section>
 
-          <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="page-surface space-y-3">
+          <section className="page-surface space-y-3">
               <h2 className="section-title">اختصارات الإدارة</h2>
               <div className="grid gap-2 sm:grid-cols-2">
-                {can("upload") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => setTab("bookings")}><Upload className="h-5 w-5 text-primary" /><span><strong className="block">بيانات الحجوزات</strong><small className="text-muted-foreground">رفع الملف ومراجعة الملخص</small></span></button> : null}
-                {can("upload") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/avaya-reports")}><FileSpreadsheet className="h-5 w-5 text-primary" /><span><strong className="block">تقارير Avaya</strong><small className="text-muted-foreground">دمج التقارير وتحليل أداء الموظفين</small></span></button> : null}
-                {session?.role === "admin" || session?.role === "superadmin" ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/opera-search")}><CalendarSearch className="h-5 w-5 text-primary" /><span><strong className="block">البحث برقم الجوال</strong><small className="text-muted-foreground">الحجوزات الحالية والسابقة المؤرشفة</small></span></button> : null}
-                {can("manage_employees") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => setTab("employees")}><UsersRound className="h-5 w-5 text-primary" /><span><strong className="block">إدارة الموظفين</strong><small className="text-muted-foreground">الأسماء والظهور والتعديلات</small></span></button> : null}
-                {can("manage_employees") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/warnings")}><FileWarning className="h-5 w-5 text-primary" /><span><strong className="block">إنذارات الموظفين</strong><small className="text-muted-foreground">إنشاء الإنذار وتصديره وأرشفته</small></span></button> : null}
-                {can("manage_knowledge") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/branches")}><Building2 className="h-5 w-5 text-primary" /><span><strong className="block">إدارة الفروع</strong><small className="text-muted-foreground">معلومات الفروع والخدمات</small></span></button> : null}
-                {can("manage_knowledge") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/knowledge-bank")}><BookOpenCheck className="h-5 w-5 text-primary" /><span><strong className="block">إدارة المعلومات</strong><small className="text-muted-foreground">المحتوى والغرف والمرافق</small></span></button> : null}
-                {can("edit_settings") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/complaints")}><MessageSquareMore className="h-5 w-5 text-primary" /><span><strong className="block">إدارة الشكاوى</strong><small className="text-muted-foreground">المراجعة وتحديث الحالة</small></span></button> : null}
-                {can("edit_settings") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/discounts")}><Tags className="h-5 w-5 text-primary" /><span><strong className="block">إدارة الخصومات</strong><small className="text-muted-foreground">العروض والفترات</small></span></button> : null}
+                {can("upload") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => setTab("bookings")}><Upload className="h-5 w-5 text-primary" /><strong>بيانات الحجوزات</strong></button> : null}
+                {can("upload") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/avaya-reports")}><FileSpreadsheet className="h-5 w-5 text-primary" /><strong>تقارير Avaya</strong></button> : null}
+                {session?.role === "admin" || session?.role === "superadmin" ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/opera-search")}><CalendarSearch className="h-5 w-5 text-primary" /><strong>البحث برقم الجوال</strong></button> : null}
+                {session?.role === "admin" || session?.role === "superadmin" ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/uno")}><Cable className="h-5 w-5 text-primary" /><strong>ربط UNO</strong></button> : null}
+                {can("manage_employees") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => setTab("employees")}><UsersRound className="h-5 w-5 text-primary" /><strong>إدارة الموظفين</strong></button> : null}
+                {can("manage_employees") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/warnings")}><FileWarning className="h-5 w-5 text-primary" /><strong>إنذارات الموظفين</strong></button> : null}
+                {can("manage_knowledge") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/branches")}><Building2 className="h-5 w-5 text-primary" /><strong>إدارة الفروع</strong></button> : null}
+                {can("manage_knowledge") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/knowledge-bank")}><BookOpenCheck className="h-5 w-5 text-primary" /><strong>إدارة المعلومات</strong></button> : null}
+                {can("edit_settings") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/complaints")}><MessageSquareMore className="h-5 w-5 text-primary" /><strong>إدارة الشكاوى</strong></button> : null}
+                {can("edit_settings") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/discounts")}><Tags className="h-5 w-5 text-primary" /><strong>إدارة الخصومات</strong></button> : null}
               </div>
-            </div>
-
-            <div className="page-surface space-y-3">
-              <h2 className="section-title">مستويات الوصول</h2>
-              {[
-                ["زائر", "يشاهد التقارير المجمعة دون تسجيل دخول."],
-                ["مشاهد داخلي", "يشاهد لوحة القياس بعد تسجيل الدخول."],
-                ["محرر بيانات", "يرفع ملف الحجوزات دون إدارة الحسابات."],
-                ["مشرف", "يدير الموظفين والمستخدمين والإعدادات."],
-              ].map(([title, description]) => <div key={title} className="compact-card"><p className="text-sm font-bold">{title}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p></div>)}
-            </div>
           </section>
         </div>
       ) : null}
@@ -281,7 +265,7 @@ const AdminDashboard = () => {
             ].map(([label, value]) => <div key={label as string} className="compact-card"><p className="text-xs text-muted-foreground">{label as string}</p><p className="mt-2 text-2xl font-black">{Number(value).toLocaleString("ar-SA")}</p></div>)}
           </section>
           <section className="page-surface space-y-4">
-            <div><h2 className="section-title">تحديث بيانات الحجوزات</h2><p className="mt-1 text-xs text-muted-foreground">يقبل ملف CSV حتى 5 ميجابايت و50 ألف سجل.</p></div>
+            <h2 className="section-title">تحديث بيانات الحجوزات</h2>
             <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => void handleUpload(event.target.files?.[0])} />
             <div className="flex flex-wrap gap-2">
               <button className="inline-flex h-11 items-center gap-2 rounded-xl gold-gradient px-4 font-bold text-primary-foreground" onClick={() => fileInputRef.current?.click()}><Upload className="h-4 w-4" /> اختيار ملف CSV</button>
@@ -299,7 +283,7 @@ const AdminDashboard = () => {
       {activeTab === "employees" ? (
         <section className="page-surface space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div><h2 className="section-title">إدارة عرض الموظفين</h2><p className="mt-1 text-xs text-muted-foreground">التغييرات تؤثر في صفحة الزوار المجمعة فقط ولا تعدّل السجلات الأصلية.</p></div>
+            <h2 className="section-title">إدارة عرض الموظفين</h2>
             <button className="inline-flex h-10 items-center gap-2 rounded-xl gold-gradient px-4 text-sm font-bold text-primary-foreground" onClick={() => void saveEmployeeSettings()}><Save className="h-4 w-4" /> حفظ التغييرات</button>
           </div>
           <label className="relative block">
@@ -367,17 +351,15 @@ const AdminDashboard = () => {
 
       {activeTab === "settings" ? (
         <section className="page-surface space-y-4">
-          <div><h2 className="section-title">إعدادات الموقع والتقارير</h2><p className="mt-1 text-xs text-muted-foreground">لا تتضمن هذه الصفحة إعدادات الموظفين؛ لها قسم مستقل.</p></div>
+          <h2 className="section-title">إعدادات التقارير</h2>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="text-xs"><span className="mb-1 block text-muted-foreground">عنوان الموقع</span><input className="h-11 w-full rounded-xl border bg-secondary/65 px-3" value={siteTitle} onChange={(event) => setSiteTitle(event.target.value)} /></label>
-            <label className="text-xs"><span className="mb-1 block text-muted-foreground">الشريط العلوي</span><input className="h-11 w-full rounded-xl border bg-secondary/65 px-3" value={bannerText} onChange={(event) => setBannerText(event.target.value)} /></label>
             <label className="text-xs"><span className="mb-1 block text-muted-foreground">شهر التقرير</span><input className="h-11 w-full rounded-xl border bg-secondary/65 px-3" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} /></label>
             <label className="text-xs"><span className="mb-1 block text-muted-foreground">سنة التقرير</span><input className="h-11 w-full rounded-xl border bg-secondary/65 px-3" dir="ltr" value={reportYear} onChange={(event) => setReportYear(event.target.value)} /></label>
             <label className="text-xs"><span className="mb-1 block text-muted-foreground">بريد تنبيهات الشكاوى</span><input className="h-11 w-full rounded-xl border bg-secondary/65 px-3" dir="ltr" value={complaintEmail} onChange={(event) => setComplaintEmail(event.target.value)} /></label>
             <label className="text-xs"><span className="mb-1 block text-muted-foreground">رقم واتساب</span><input className="h-11 w-full rounded-xl border bg-secondary/65 px-3" dir="ltr" value={complaintWhatsappNumber} onChange={(event) => setComplaintWhatsappNumber(event.target.value)} /></label>
             <label className="text-xs md:col-span-2"><span className="mb-1 block text-muted-foreground">رابط تنبيهات الشكاوى</span><input className="h-11 w-full rounded-xl border bg-secondary/65 px-3" dir="ltr" value={complaintEmailWebhook} onChange={(event) => setComplaintEmailWebhook(event.target.value)} /></label>
           </div>
-          <button className="inline-flex h-11 items-center gap-2 rounded-xl gold-gradient px-4 font-bold text-primary-foreground" onClick={async () => { try { await api.updateSettings({ siteTitle, bannerText, reportMonth, reportYear, complaintEmail, complaintEmailWebhook, complaintWhatsappNumber }); await loadPublicReport(); setMessage("تم حفظ الإعدادات."); } catch { setMessage("تعذر حفظ الإعدادات."); } }}><Download className="h-4 w-4" /> حفظ الإعدادات</button>
+          <button className="inline-flex h-11 items-center gap-2 rounded-xl gold-gradient px-4 font-bold text-primary-foreground" onClick={async () => { try { await api.updateSettings({ reportMonth, reportYear, complaintEmail, complaintEmailWebhook, complaintWhatsappNumber }); await loadPublicReport(); setMessage("تم حفظ الإعدادات."); } catch { setMessage("تعذر حفظ الإعدادات."); } }}><Download className="h-4 w-4" /> حفظ الإعدادات</button>
         </section>
       ) : null}
 

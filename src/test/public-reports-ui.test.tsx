@@ -32,9 +32,9 @@ describe("public read-only reports", () => {
     const { container } = render(<MemoryRouter initialEntries={["/booking-reports?section=employees"]}><BookingReports /></MemoryRouter>);
 
     expect(await screen.findByText("موظف تجريبي")).toBeDefined();
-    expect(screen.getByText(/عرض فقط دون بيانات الضيوف/)).toBeDefined();
     expect(container.querySelector('input[type="file"]')).toBeNull();
     expect(screen.queryByText("حفظ التغييرات")).toBeNull();
+    expect(screen.queryByText(/عرض فقط دون بيانات الضيوف/)).toBeNull();
   });
 
   it("shows the booking summary in the same report page", async () => {
@@ -42,8 +42,8 @@ describe("public read-only reports", () => {
     render(<MemoryRouter><BookingReports /></MemoryRouter>);
 
     expect(await screen.findByText("حالة الحجوزات")).toBeDefined();
-    expect(screen.getByText("ملخص الحجوزات ونتائج الموظفين.")).toBeDefined();
-    expect(screen.getByText(/عرض فقط دون بيانات الضيوف/)).toBeDefined();
+    expect(screen.queryByText("ملخص الحجوزات ونتائج الموظفين.")).toBeNull();
+    expect(screen.queryByText(/عرض فقط دون بيانات الضيوف/)).toBeNull();
   });
 
   it("runs a viewer-requested refresh in place without exposing internal settings", async () => {

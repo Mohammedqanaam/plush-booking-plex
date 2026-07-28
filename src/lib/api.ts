@@ -55,6 +55,17 @@ export type PublicBookingSyncStatus = {
   message: string;
 };
 
+export type UnoConnectionStatus = {
+  loginUrl: string;
+  apiConfigured: boolean;
+  testable: boolean;
+  authMode: "none" | "bearer" | "api-key" | "oauth-client";
+  reachable?: boolean;
+  connected?: boolean;
+  checkedAt?: string;
+  statusCode?: number | null;
+};
+
 export type ContactRequest = {
   id: string;
   requestNo: string;
@@ -438,6 +449,22 @@ export const api = {
     const data = await res.json().catch(() => ({})) as Partial<PublicBookingSyncStatus> & { error?: string };
     if (!res.ok) throw new Error(data.error || "تعذر بدء تحديث التقرير");
     return data as PublicBookingSyncStatus;
+  },
+
+  async getUnoConnection() {
+    const res = await fetch("/api/admin/uno", { headers: authHeaders() });
+    if (!res.ok) throw new Error("تعذر تحميل حالة UNO");
+    return res.json() as Promise<UnoConnectionStatus>;
+  },
+
+  async probeUnoConnection() {
+    const res = await fetch("/api/admin/uno", {
+      method: "POST",
+      headers: authHeaders(),
+    });
+    const data = await res.json().catch(() => null) as UnoConnectionStatus | null;
+    if (!data) throw new Error("تعذر فحص اتصال UNO");
+    return data;
   },
 
   async createContactRequest(payload: { brand: string; branchName: string; guestName: string; guestPhone: string; reason: string }) {
