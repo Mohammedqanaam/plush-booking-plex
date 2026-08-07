@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { BarChart3, Building2, LayoutDashboard, LockKeyhole, PhoneCall, Search } from "lucide-react";
 import BottomNav from "./BottomNav";
@@ -5,6 +6,8 @@ import RiyadhClock from "./RiyadhClock";
 import ViewerPreferences from "./ViewerPreferences";
 import AnalyticsTracker from "./AnalyticsTracker";
 import BrandFooter from "./BrandFooter";
+
+const AdminAiChat = lazy(() => import("./AiChat"));
 
 const desktopNav = [
   { to: "/", label: "الرئيسية", icon: LayoutDashboard },
@@ -17,6 +20,7 @@ const desktopNav = [
 const Layout = () => {
   const location = useLocation();
   const isAdminArea = location.pathname.startsWith("/admin");
+  const showAdminAssistant = isAdminArea && location.pathname !== "/admin/login";
 
   return (
     <div className="app-shell flex flex-col">
@@ -25,8 +29,10 @@ const Layout = () => {
       <header className="safe-area-top sticky top-0 z-40 border-b border-border/15 bg-background/82 backdrop-blur-2xl">
         <div className="content-container h-[60px] flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="min-w-0">
-              <p className="truncate text-[15px] font-bold leading-5">إدارة الحجز المركزي</p>
+            <span className="brand-monogram" aria-hidden="true">BHG</span>
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-[14px] font-extrabold text-foreground md:text-[15px]">الحجز المركزي</p>
+              <span className="hidden text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground sm:block">Boudl Hospitality Group</span>
             </div>
           </div>
 
@@ -78,6 +84,11 @@ const Layout = () => {
       ) : null}
 
       {!isAdminArea ? <BottomNav /> : null}
+      {showAdminAssistant ? (
+        <Suspense fallback={null}>
+          <AdminAiChat />
+        </Suspense>
+      ) : null}
     </div>
   );
 };

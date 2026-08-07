@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useDeferredValue, useMemo, useState } from "react";
 import { BedDouble, Building2, PhoneCall, Presentation, Search, ShieldCheck, UtensilsCrossed } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { knowledgeEntries, quickIntents } from "@/data/operations";
@@ -17,21 +17,25 @@ const groupIcons: Record<GroupKey, ReactNode> = {
 };
 
 const groups: GroupKey[] = ["الكل", "سياسات", "فروع", "جهات اتصال", "وجبات", "غرف", "مرافق", "قاعات"];
+const searchableEntries = knowledgeEntries.map((entry) => ({
+  entry,
+  searchText: [entry.title, entry.summary, entry.body, entry.group, ...entry.tags, ...(entry.contacts || []).map((contact) => contact.value)].join(" ").toLowerCase(),
+}));
 
 const HotelSearch = () => {
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<GroupKey>("الكل");
+  const deferredQuery = useDeferredValue(query);
 
-  const normalized = query.trim().toLowerCase();
-  const hasCriteria = normalized.length > 0 || group !== "الكل";
+  const normalized = deferredQuery.trim().toLowerCase();
+  const hasCriteria = query.trim().length > 0 || group !== "الكل";
   const results = useMemo(() => {
-    if (!hasCriteria) return [];
-    const filtered = knowledgeEntries.filter((entry) => {
-      const haystack = [entry.title, entry.summary, entry.body, entry.group, ...entry.tags, ...(entry.contacts || []).map((contact) => contact.value)].join(" ").toLowerCase();
-      const matchesQuery = !normalized || haystack.includes(normalized);
+    if (!normalized && group === "الكل") return [];
+    const filtered = searchableEntries.filter(({ entry, searchText }) => {
+      const matchesQuery = !normalized || searchText.includes(normalized);
       const matchesGroup = group === "الكل" || entry.group === group;
       return matchesQuery && matchesGroup;
-    }).slice(0, 40);
+    }).slice(0, 40).map(({ entry }) => entry);
 
     const grouped = groups
       .filter((g) => g !== "الكل")
@@ -42,7 +46,7 @@ const HotelSearch = () => {
       .filter((bucket) => bucket.items.length > 0);
 
     return grouped;
-  }, [group, hasCriteria, normalized]);
+  }, [group, normalized]);
 
   return (
     <div className="page-wrap">
@@ -99,7 +103,7 @@ const HotelSearch = () => {
               <h3 className="text-sm font-semibold flex items-center gap-2">{groupIcons[bucket.group]} {bucket.group}</h3>
               <div className="grid md:grid-cols-2 gap-3">
                 {bucket.items.map((entry) => (
-                  <article key={entry.id} className="page-surface">
+                  <article key={entry.id} className="page-surface render-lazy">
                     <h4 className="font-semibold">{entry.title}</h4>
                     <p className="text-sm whitespace-pre-line leading-6 text-muted-foreground">{entry.body}</p>
                     <div className="flex flex-wrap gap-1.5">

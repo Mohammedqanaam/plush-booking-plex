@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Cable, ExternalLink, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { Cable, ExternalLink, GitMerge, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { api, type UnoConnectionStatus } from "@/lib/api";
 
@@ -85,6 +86,9 @@ const AdminUno = () => {
         >
           فتح UNO <ExternalLink className="h-4 w-4" />
         </a>
+        <Link className="inline-flex h-11 items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-4 text-sm font-bold text-primary" to="/admin?tab=bookings">
+          دمج تقارير UNO + CRO <GitMerge className="h-4 w-4" />
+        </Link>
         {message ? <span role="status" className={`w-full text-xs font-bold ${failed ? "text-destructive" : "text-emerald-700"}`}>{message}</span> : null}
       </section>
     </div>

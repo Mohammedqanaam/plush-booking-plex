@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { BookOpenCheck, ExternalLink, Filter, Search, Tags } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { branchRecords, branchesByBrand, globalReferences, quickIntents } from "@/data/knowledge";
@@ -26,12 +26,86 @@ const detailLines = (items: Array<[string, string]>) => items
   .filter(([, value]) => isAvailable(value))
   .map(([label, value]) => `${label}: ${value}`);
 
+const baseSearchRows: SearchResult[] = [
+  ...globalReferences.map((row) => ({
+    id: row.id,
+    kind: "سياسات" as ResultCategory,
+    title: row.title,
+    summary: row.summary,
+    details: [
+      row.responseProtocol,
+      `الخطوات:\n- ${row.internalSteps.join("\n- ")}`,
+      row.relatedNotes ? `ملاحظة: ${row.relatedNotes}` : "",
+    ].filter(Boolean).join("\n\n"),
+    tags: [row.category, "مرجع عام"],
+  })),
+  ...branchRecords.flatMap((row) => {
+    const contacts = detailLines([
+      ["الاستقبال", row.receptionPhone],
+      ["الفندق", row.hotelPhone],
+      ["المبيعات", row.salesPhone],
+      ["القاعات", row.hallPhone],
+      ["واتساب", row.whatsappNumber],
+    ]);
+    const meals = detailLines([
+      ["الإفطار", row.breakfastInfo],
+      ["الغداء", row.lunchInfo],
+      ["العشاء", row.dinnerInfo],
+    ]);
+    const facilities = detailLines([
+      ["المسبح", row.poolInfo],
+      ["المطعم", row.restaurantInfo],
+      ["المقهى", row.coffeeShopInfo],
+      ["المواقف", row.parkingInfo],
+      ["السبا", row.spaInfo],
+      ["النادي", row.gymInfo],
+    ]);
+    const halls = row.hallPackages.filter(isAvailable);
+    const sheetSource = row.sourceFiles.find((source) => source.startsWith("http"));
+    const rows: Array<SearchResult | null> = [
+      {
+        id: `${row.id}-overview`, kind: "فروع", title: row.branch, summary: `${row.city} · ${row.region}`,
+        details: `${row.overview}\n${row.notes}`, tags: [row.brand, row.city], brand: row.brand, branch: row.branch,
+        sourceLabel: sheetSource ? "شيت معلومات الفروع" : "ملف الفروع الداخلي", sourceUrl: sheetSource,
+      },
+      contacts.length ? {
+        id: `${row.id}-contacts`, kind: "جهات اتصال", title: `تواصل ${row.branch}`, summary: contacts[0], details: contacts.join("\n"), tags: [row.brand, "تواصل"], brand: row.brand, branch: row.branch,
+        sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
+      } : null,
+      meals.length ? {
+        id: `${row.id}-meals`, kind: "وجبات", title: `وجبات ${row.branch}`, summary: meals[0], details: meals.join("\n"), tags: [row.brand, "وجبات"], brand: row.brand, branch: row.branch,
+        sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
+      } : null,
+      facilities.length ? {
+        id: `${row.id}-facilities`, kind: "مرافق", title: `مرافق ${row.branch}`, summary: facilities[0], details: facilities.join("\n"), tags: [row.brand, "مرافق"], brand: row.brand, branch: row.branch,
+        sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
+      } : null,
+      row.roomTypes.length ? {
+        id: `${row.id}-rooms`, kind: "غرف", title: `غرف ${row.branch}`, summary: row.roomTypes.slice(0, 2).join("، "),
+        details: `${row.roomTypes.map((room) => `• ${room}`).join("\n")}\n\nتحتاج هذه القائمة إلى مطابقة نهائية مع نظام الفندق قبل تأكيدها للضيف.`,
+        tags: [row.brand, "غرف", "تحتاج تحقق"], brand: row.brand, branch: row.branch,
+        sourceLabel: "ملف الغرف الداخلي — يحتاج تحقق", verificationUrl: "https://www.boudl.com/",
+      } : null,
+      halls.length ? {
+        id: `${row.id}-halls`, kind: "قاعات", title: `قاعات ${row.branch}`, summary: halls[0], details: halls.map((hall) => `• ${hall}`).join("\n"), tags: [row.brand, "قاعات"], brand: row.brand, branch: row.branch,
+        sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
+      } : null,
+    ];
+    return rows.filter((item): item is SearchResult => Boolean(item));
+  }),
+];
+const searchRows = baseSearchRows.map((row) => ({
+  ...row,
+  searchText: `${row.title} ${row.summary} ${row.details} ${row.tags.join(" ")}`.toLowerCase(),
+}));
+
 const KnowledgeBank = () => {
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState<"الكل" | "Braira" | "Boudl" | "Aber" | "Narcissus" | "Z'MN">("الكل");
   const [branch, setBranch] = useState("الكل");
   const [category, setCategory] = useState<"الكل" | ResultCategory>("الكل");
   const [selected, setSelected] = useState<SearchResult | null>(null);
+  const deferredQuery = useDeferredValue(query);
 
   const branchOptions = useMemo(() => {
     if (brand === "الكل") return ["الكل", ...branchRecords.map((b) => b.branch)];
@@ -39,93 +113,15 @@ const KnowledgeBank = () => {
   }, [brand]);
 
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const policyRows: SearchResult[] = globalReferences.map((row) => ({
-      id: row.id,
-      kind: "سياسات" as ResultCategory,
-      title: row.title,
-      summary: row.summary,
-      details: [
-        row.responseProtocol,
-        `الخطوات:\n- ${row.internalSteps.join("\n- ")}`,
-        row.relatedNotes ? `ملاحظة: ${row.relatedNotes}` : "",
-      ].filter(Boolean).join("\n\n"),
-      tags: [row.category, "مرجع عام"],
-      brand: undefined,
-      branch: undefined,
-    }));
-
-    const branchRows: SearchResult[] = branchRecords.flatMap((row) => {
-      const contacts = detailLines([
-        ["الاستقبال", row.receptionPhone],
-        ["الفندق", row.hotelPhone],
-        ["المبيعات", row.salesPhone],
-        ["القاعات", row.hallPhone],
-        ["واتساب", row.whatsappNumber],
-      ]);
-      const meals = detailLines([
-        ["الإفطار", row.breakfastInfo],
-        ["الغداء", row.lunchInfo],
-        ["العشاء", row.dinnerInfo],
-      ]);
-      const facilities = detailLines([
-        ["المسبح", row.poolInfo],
-        ["المطعم", row.restaurantInfo],
-        ["المقهى", row.coffeeShopInfo],
-        ["المواقف", row.parkingInfo],
-        ["السبا", row.spaInfo],
-        ["النادي", row.gymInfo],
-      ]);
-      const halls = row.hallPackages.filter(isAvailable);
-      const sheetSource = row.sourceFiles.find((source) => source.startsWith("http"));
-      const rows: Array<SearchResult | null> = [
-        {
-          id: `${row.id}-overview`,
-          kind: "فروع",
-          title: row.branch,
-          summary: `${row.city} · ${row.region}`,
-          details: `${row.overview}\n${row.notes}`,
-          tags: [row.brand, row.city],
-          brand: row.brand,
-          branch: row.branch,
-          sourceLabel: sheetSource ? "شيت معلومات الفروع" : "ملف الفروع الداخلي",
-          sourceUrl: sheetSource,
-        },
-        contacts.length ? {
-          id: `${row.id}-contacts`, kind: "جهات اتصال", title: `تواصل ${row.branch}`, summary: contacts[0], details: contacts.join("\n"), tags: [row.brand, "تواصل"], brand: row.brand, branch: row.branch,
-          sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
-        } : null,
-        meals.length ? {
-          id: `${row.id}-meals`, kind: "وجبات", title: `وجبات ${row.branch}`, summary: meals[0], details: meals.join("\n"), tags: [row.brand, "وجبات"], brand: row.brand, branch: row.branch,
-          sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
-        } : null,
-        facilities.length ? {
-          id: `${row.id}-facilities`, kind: "مرافق", title: `مرافق ${row.branch}`, summary: facilities[0], details: facilities.join("\n"), tags: [row.brand, "مرافق"], brand: row.brand, branch: row.branch,
-          sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
-        } : null,
-        row.roomTypes.length ? {
-          id: `${row.id}-rooms`, kind: "غرف", title: `غرف ${row.branch}`, summary: row.roomTypes.slice(0, 2).join("، "),
-          details: `${row.roomTypes.map((room) => `• ${room}`).join("\n")}\n\nتحتاج هذه القائمة إلى مطابقة نهائية مع نظام الفندق قبل تأكيدها للضيف.`,
-          tags: [row.brand, "غرف", "تحتاج تحقق"], brand: row.brand, branch: row.branch,
-          sourceLabel: "ملف الغرف الداخلي — يحتاج تحقق", verificationUrl: "https://www.boudl.com/",
-        } : null,
-        halls.length ? {
-          id: `${row.id}-halls`, kind: "قاعات", title: `قاعات ${row.branch}`, summary: halls[0], details: halls.map((hall) => `• ${hall}`).join("\n"), tags: [row.brand, "قاعات"], brand: row.brand, branch: row.branch,
-          sourceLabel: "شيت معلومات الفروع", sourceUrl: sheetSource,
-        } : null,
-      ];
-      return rows.filter((item): item is SearchResult => Boolean(item));
-    });
-
-    return [...policyRows, ...branchRows].filter((row) => {
+    const q = deferredQuery.trim().toLowerCase();
+    return searchRows.filter((row) => {
       const matchBrand = brand === "الكل" || row.brand === brand;
       const matchBranch = branch === "الكل" || row.branch === branch;
       const matchCategory = category === "الكل" || row.kind === category;
-      const blob = `${row.title} ${row.summary} ${row.details} ${row.tags.join(" ")}`.toLowerCase();
-      const matchQuery = !q || blob.includes(q);
+      const matchQuery = !q || row.searchText.includes(q);
       return matchBrand && matchBranch && matchCategory && matchQuery;
     });
-  }, [query, brand, branch, category]);
+  }, [deferredQuery, brand, branch, category]);
 
   const hasCriteria = query.trim().length > 0 || brand !== "الكل" || branch !== "الكل" || category !== "الكل";
   const visibleResults = hasCriteria ? results.slice(0, 60) : [];
@@ -171,7 +167,7 @@ const KnowledgeBank = () => {
         {!hasCriteria ? (
           <div className="md:col-span-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">ابدأ بالبحث أو اختر علامة أو فرعًا.</div>
         ) : visibleResults.length ? visibleResults.map((item) => (
-          <button key={item.id} className="page-surface min-h-[126px] text-right card-hover" onClick={() => setSelected(item)}>
+          <button key={item.id} className="page-surface render-lazy min-h-[126px] text-right card-hover" onClick={() => setSelected(item)}>
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-xs px-2 py-1 rounded-full border border-primary/30 text-primary bg-primary/10">{item.kind}</span>
             </div>
