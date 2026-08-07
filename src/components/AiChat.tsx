@@ -13,26 +13,30 @@ const AiChat = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (open) bottomRef.current?.scrollIntoView({ block: "end" });
   }, [messages, open]);
+
+  const appendMessage = (message: Message) => {
+    setMessages((current) => [...current, message].slice(-40));
+  };
 
   const send = async () => {
     const text = input.trim();
     if (!text || loading) return;
 
     const userMsg: Message = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMsg]);
+    appendMessage(userMsg);
     setInput("");
     setLoading(true);
 
     try {
-      const history = messages.map((m) => ({ role: m.role, content: m.content }));
+      const history = messages.slice(-8).map((m) => ({ role: m.role, content: m.content }));
       const data = await api.sendChatMessage(text, sessionId, history);
       if (data.sessionId) setSessionId(data.sessionId);
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply || "..." }]);
+      appendMessage({ role: "assistant", content: data.reply || "..." });
     } catch (err) {
       console.error("[AiChat] sendChatMessage error:", err);
-      setMessages((prev) => [...prev, { role: "assistant", content: "حدث خطأ أثناء الاتصال بالمساعد." }]);
+      appendMessage({ role: "assistant", content: "تعذر الاتصال بالمساعد الآن. حاول مرة أخرى." });
     } finally {
       setLoading(false);
     }
@@ -42,27 +46,28 @@ const AiChat = () => {
     <>
       {/* Floating toggle button */}
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "إغلاق المساعد الذكي" : "فتح المساعد الذكي"}
-        className="fixed bottom-20 left-4 z-50 w-12 h-12 rounded-full gold-gradient text-primary-foreground shadow-lg flex items-center justify-center transition-transform hover:scale-105"
+        className="ai-chat-toggle fixed bottom-4 left-4 z-50 flex h-12 w-12 items-center justify-center rounded-2xl text-primary-foreground"
       >
         {open ? <X className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
       </button>
 
-      {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-36 left-4 z-50 w-80 sm:w-96 max-h-[60vh] flex flex-col rounded-2xl border border-border bg-background/95 backdrop-blur-xl shadow-2xl overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-border gold-gradient text-primary-foreground">
-            <Bot className="w-5 h-5 shrink-0" />
-            <span className="font-semibold text-sm">المساعد الذكي</span>
+        <section className="ai-chat-panel fixed bottom-20 left-4 z-50 flex max-h-[min(620px,72vh)] w-[calc(100vw-2rem)] flex-col overflow-hidden sm:w-[400px]" aria-label="المساعد الذكي">
+          <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3.5 text-white">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/10"><Bot className="w-5 h-5" /></span>
+            <div>
+              <span className="block text-sm font-extrabold">المساعد الذكي</span>
+              <span className="block text-[10px] text-white/60">مساعد الإدارة</span>
+            </div>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 text-sm">
+          <div className="custom-scrollbar flex-1 space-y-2.5 overflow-y-auto bg-background/95 p-3.5 text-sm" aria-live="polite">
             {messages.length === 0 && (
-              <p className="text-center text-muted-foreground text-xs py-6">
-                مرحباً! كيف يمكنني مساعدتك؟
+              <p className="py-7 text-center text-xs leading-6 text-muted-foreground">
+                اسأل عن إجراءات الحجز أو اطلب مساعدة سريعة.
               </p>
             )}
             {messages.map((m, i) => (
@@ -71,10 +76,10 @@ const AiChat = () => {
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] px-3 py-2 rounded-xl whitespace-pre-wrap ${
+                  className={`ai-chat-message max-w-[86%] whitespace-pre-wrap px-3 py-2.5 ${
                     m.role === "user"
-                      ? "gold-gradient text-primary-foreground rounded-br-sm"
-                      : "bg-secondary text-foreground rounded-bl-sm"
+                      ? "ai-chat-message--user"
+                      : "ai-chat-message--assistant"
                   }`}
                 >
                   {m.content}
@@ -83,40 +88,40 @@ const AiChat = () => {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-secondary text-muted-foreground px-3 py-2 rounded-xl rounded-bl-sm text-xs animate-pulse">
-                  جارٍ الكتابة...
+                <div className="ai-chat-message ai-chat-message--assistant px-3 py-2.5 text-xs text-muted-foreground animate-pulse">
+                  جارٍ تجهيز الرد…
                 </div>
               </div>
             )}
             <div ref={bottomRef} />
           </div>
 
-          {/* Input */}
           <form
-            className="flex items-center gap-2 px-3 py-2 border-t border-border"
+            className="flex items-center gap-2 border-t border-border/70 bg-background px-3 py-2.5"
             onSubmit={(e) => {
               e.preventDefault();
               send();
             }}
           >
             <input
-              className="flex-1 h-9 rounded-lg bg-secondary border border-border px-3 text-sm focus:outline-none"
-              placeholder="اكتب رسالتك..."
+              className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-secondary/50 px-3 text-sm"
+              placeholder="اكتب طلبك…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
+              maxLength={4000}
               dir="auto"
             />
             <button
               type="submit"
               disabled={!input.trim() || loading}
               aria-label="إرسال"
-              className="w-9 h-9 rounded-lg gold-gradient text-primary-foreground flex items-center justify-center disabled:opacity-40"
+              className="gold-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-primary-foreground disabled:opacity-40"
             >
               <Send className="w-4 h-4" />
             </button>
           </form>
-        </div>
+        </section>
       )}
     </>
   );

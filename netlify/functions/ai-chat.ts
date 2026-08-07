@@ -49,8 +49,18 @@ export default async (req: Request) => {
 
   const message = String(body.message || "").trim();
   if (!message) return json({ error: "message is required" }, 400);
+  if (message.length > 4_000) return json({ error: "message is too long" }, 413);
 
   const sessionId = String(body.sessionId || `session_${crypto.randomUUID()}`);
+  const recentHistory = Array.isArray(body.history)
+    ? body.history
+        .slice(-8)
+        .map((item) => ({
+          role: item.role === "assistant" ? "assistant" : "user",
+          content: String(item.content || "").slice(0, 4_000),
+        }))
+        .filter((item) => item.content.trim().length > 0)
+    : [];
 
   // Build an MCP JSON-RPC tools/call request (primary format for n8n MCP Server Trigger)
   const mcpRequest = {
@@ -61,8 +71,8 @@ export default async (req: Request) => {
       arguments: {
         chatInput: message,
         sessionId,
-        ...(Array.isArray(body.history) && body.history.length
-          ? { history: body.history }
+        ...(recentHistory.length
+          ? { history: recentHistory }
           : {}),
       },
     },

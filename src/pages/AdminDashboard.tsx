@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,
   BookOpenCheck,
@@ -31,7 +31,9 @@ import { isEmployeeHidden, normalizeEmployeeName, normalizeHiddenEmployees } fro
 import { clearAdminSession, getAdminSession, hasPermission, type PermissionAction, type UserRole } from "@/lib/adminAuth";
 import { processBookings } from "@/lib/bookingProcessor";
 import PageHeader from "@/components/PageHeader";
-import AdminAnalytics from "@/components/admin/AdminAnalytics";
+
+const AdminAnalytics = lazy(() => import("@/components/admin/AdminAnalytics"));
+const ReservationReportMerge = lazy(() => import("@/components/admin/ReservationReportMerge"));
 
 type UserRecord = { username: string; role: UserRole };
 type AdminTab = "overview" | "analytics" | "bookings" | "employees" | "requests" | "users" | "settings" | "profile";
@@ -59,7 +61,9 @@ const AdminDashboard = () => {
   const sessionRole = session?.role;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const bookingsLoadedRef = useRef(false);
+  const settingsLoadedRef = useRef(false);
+  const usersLoadedRef = useRef(false);
 
   const can = (permission: PermissionAction) => !!session && hasPermission(session.role, permission);
   const visibleTabs = useMemo(
@@ -89,7 +93,7 @@ const AdminDashboard = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const employeeStats = useMemo(() => processBookings(bookings), [bookings]);
+  const employeeStats = useMemo(() => activeTab === "employees" ? processBookings(bookings) : [], [activeTab, bookings]);
   const shownEmployees = useMemo(
     () => employeeStats.filter((employee) => !employeeSearch.trim() || employee.agent.toLocaleLowerCase("ar").includes(employeeSearch.trim().toLocaleLowerCase("ar"))),
     [employeeStats, employeeSearch],
@@ -103,14 +107,35 @@ const AdminDashboard = () => {
     }
   };
 
-  const loadBookings = async () => {
+  const loadBookings = useCallback(async () => {
+    bookingsLoadedRef.current = true;
     try {
       const data = await api.getBookings();
       setBookings(Array.isArray(data.bookings) ? data.bookings : []);
     } catch {
+      bookingsLoadedRef.current = false;
       setBookings([]);
     }
-  };
+  }, []);
+
+  const loadSettings = useCallback(async () => {
+    if (settingsLoadedRef.current) return;
+    settingsLoadedRef.current = true;
+    try {
+      const settings = await api.getSettings();
+      setReportMonth(settings.reportMonth || "");
+      setReportYear(settings.reportYear || "");
+      setHiddenEmployees(normalizeHiddenEmployees(settings.hiddenEmployees || []));
+      setEmployeeDisplayNames(settings.employeeDisplayNames || {});
+      setEmployeeAdjustments(settings.employeeAdjustments || {});
+      setComplaintEmail(settings.complaintEmail || "");
+      setComplaintEmailWebhook(settings.complaintEmailWebhook || "");
+      setComplaintWhatsappNumber(settings.complaintWhatsappNumber || "");
+    } catch {
+      settingsLoadedRef.current = false;
+      setMessage("تعذر تحميل بعض الإعدادات.");
+    }
+  }, []);
 
   useEffect(() => {
     const requested = (searchParams.get("tab") || "overview") as AdminTab;
@@ -121,23 +146,34 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     void loadPublicReport();
-    api.getSettings().then((settings) => {
-      setReportMonth(settings.reportMonth || "");
-      setReportYear(settings.reportYear || "");
-      setHiddenEmployees(normalizeHiddenEmployees(settings.hiddenEmployees || []));
-      setEmployeeDisplayNames(settings.employeeDisplayNames || {});
-      setEmployeeAdjustments(settings.employeeAdjustments || {});
-      setComplaintEmail(settings.complaintEmail || "");
-      setComplaintEmailWebhook(settings.complaintEmailWebhook || "");
-      setComplaintWhatsappNumber(settings.complaintWhatsappNumber || "");
-    }).catch(() => setMessage("تعذر تحميل بعض الإعدادات."));
-
-    if (can("manage_users")) api.getUsers().then((data) => setUsers(data.users || [])).catch(() => setUsers([]));
-    if (can("manage_employees") || can("upload")) void loadBookings();
     if (can("view")) api.getContactRequests().then((data) => setRequests(data.requests || [])).catch(() => setRequests([]));
     // Session permissions do not change while this page is mounted.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!sessionRole || bookingsLoadedRef.current) return;
+    const needsBookings = (activeTab === "employees" && hasPermission(sessionRole, "manage_employees"))
+      || (activeTab === "bookings" && hasPermission(sessionRole, "upload"));
+    if (needsBookings) void loadBookings();
+  }, [activeTab, loadBookings, sessionRole]);
+
+  useEffect(() => {
+    if (!sessionRole) return;
+    const needsSettings = activeTab === "employees" || activeTab === "settings";
+    if (needsSettings && hasPermission(sessionRole, activeTab === "employees" ? "manage_employees" : "edit_settings")) {
+      void loadSettings();
+    }
+    if (activeTab === "users" && hasPermission(sessionRole, "manage_users") && !usersLoadedRef.current) {
+      usersLoadedRef.current = true;
+      api.getUsers()
+        .then((data) => setUsers(data.users || []))
+        .catch(() => {
+          usersLoadedRef.current = false;
+          setUsers([]);
+        });
+    }
+  }, [activeTab, loadSettings, sessionRole]);
 
   useEffect(() => {
     if (activeTab !== "requests") return;
@@ -172,19 +208,6 @@ const AdminDashboard = () => {
       setMessage("تم حفظ عرض الموظفين والتعديلات.");
     } catch {
       setMessage("تعذر حفظ إعدادات الموظفين.");
-    }
-  };
-
-  const handleUpload = async (file?: File) => {
-    if (!file) return;
-    try {
-      const data = await api.uploadBookings(await file.text());
-      setMessage(`تم رفع ${Number(data.stats?.total || 0).toLocaleString("ar-SA")} سجل.`);
-      await Promise.all([loadBookings(), loadPublicReport()]);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "فشل رفع الملف.");
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -237,7 +260,7 @@ const AdminDashboard = () => {
           <section className="page-surface space-y-3">
               <h2 className="section-title">اختصارات الإدارة</h2>
               <div className="grid gap-2 sm:grid-cols-2">
-                {can("upload") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => setTab("bookings")}><Upload className="h-5 w-5 text-primary" /><strong>بيانات الحجوزات</strong></button> : null}
+                {can("upload") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => setTab("bookings")}><Upload className="h-5 w-5 text-primary" /><strong>دمج تقارير UNO + CRO</strong></button> : null}
                 {can("upload") ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/avaya-reports")}><FileSpreadsheet className="h-5 w-5 text-primary" /><strong>تقارير Avaya</strong></button> : null}
                 {session?.role === "admin" || session?.role === "superadmin" ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/opera-search")}><CalendarSearch className="h-5 w-5 text-primary" /><strong>البحث برقم الجوال</strong></button> : null}
                 {session?.role === "admin" || session?.role === "superadmin" ? <button className="compact-card flex items-center gap-3 text-right hover:border-primary/40" onClick={() => navigate("/admin/uno")}><Cable className="h-5 w-5 text-primary" /><strong>ربط UNO</strong></button> : null}
@@ -252,7 +275,11 @@ const AdminDashboard = () => {
         </div>
       ) : null}
 
-      {activeTab === "analytics" ? <AdminAnalytics /> : null}
+      {activeTab === "analytics" ? (
+        <Suspense fallback={<div className="page-surface text-sm text-muted-foreground">جاري تحميل التحليلات…</div>}>
+          <AdminAnalytics />
+        </Suspense>
+      ) : null}
 
       {activeTab === "bookings" ? (
         <div className="space-y-4">
@@ -264,19 +291,18 @@ const AdminDashboard = () => {
               ["غير المعروفة", report?.ignored || 0],
             ].map(([label, value]) => <div key={label as string} className="compact-card"><p className="text-xs text-muted-foreground">{label as string}</p><p className="mt-2 text-2xl font-black">{Number(value).toLocaleString("ar-SA")}</p></div>)}
           </section>
-          <section className="page-surface space-y-4">
-            <h2 className="section-title">تحديث بيانات الحجوزات</h2>
-            <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => void handleUpload(event.target.files?.[0])} />
-            <div className="flex flex-wrap gap-2">
-              <button className="inline-flex h-11 items-center gap-2 rounded-xl gold-gradient px-4 font-bold text-primary-foreground" onClick={() => fileInputRef.current?.click()}><Upload className="h-4 w-4" /> اختيار ملف CSV</button>
-              {session?.role === "admin" || session?.role === "superadmin" ? (
-                <button className="h-11 rounded-xl border border-destructive/35 px-4 text-destructive" onClick={async () => {
-                  if (!window.confirm("سيتم حذف جميع بيانات الحجوزات الحالية. هل تريد المتابعة؟")) return;
-                  try { await api.resetBookings(); await Promise.all([loadBookings(), loadPublicReport()]); setMessage("تم حذف بيانات الحجوزات."); } catch { setMessage("تعذر حذف البيانات."); }
-                }}>حذف جميع البيانات</button>
-              ) : null}
-            </div>
-          </section>
+          <Suspense fallback={<div className="page-surface text-sm text-muted-foreground">جاري تحميل مركز التقارير…</div>}>
+            <ReservationReportMerge onApplied={async () => { await Promise.all([loadBookings(), loadPublicReport()]); }} />
+          </Suspense>
+          {session?.role === "admin" || session?.role === "superadmin" ? (
+            <section className="page-surface flex items-center justify-between gap-3">
+              <div><h2 className="section-title">إدارة البيانات</h2><p className="mt-1 text-xs text-muted-foreground">حذف التقرير الحالي فقط عند الحاجة لبدء دورة جديدة.</p></div>
+              <button className="h-10 shrink-0 rounded-xl border border-destructive/35 px-3 text-xs font-bold text-destructive" onClick={async () => {
+                if (!window.confirm("سيتم حذف جميع بيانات الحجوزات الحالية. هل تريد المتابعة؟")) return;
+                try { await api.resetBookings(); await Promise.all([loadBookings(), loadPublicReport()]); setMessage("تم حذف بيانات الحجوزات."); } catch { setMessage("تعذر حذف البيانات."); }
+              }}>حذف البيانات</button>
+            </section>
+          ) : null}
         </div>
       ) : null}
 

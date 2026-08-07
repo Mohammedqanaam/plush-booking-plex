@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { BadgeCheck, Building2, ExternalLink, Hotel, MapPin, Phone, Search, Tags } from "lucide-react";
 import { branches, type Branch, type BranchServices } from "@/data/branches";
 import { HOTEL_INFORMATION_SHEET_URL, HOTEL_INFORMATION_SNAPSHOT_DATE, sheetOperationalHotels } from "@/data/sheetOperationalData";
@@ -22,6 +22,10 @@ const serviceLabels: Record<keyof BranchServices, string> = {
 };
 
 const sourceDate = HOTEL_INFORMATION_SNAPSHOT_DATE.split("-").reverse().join("/");
+const branchSearchIndex = branches.map((branch) => ({
+  branch,
+  searchText: [branch.name, branch.city, branch.brand, ...branch.contacts.map((contact) => contact.value)].join(" ").toLowerCase(),
+}));
 
 const BranchDetails = ({ branch, showHeading = true }: { branch: Branch; showHeading?: boolean }) => {
   const services = Object.entries(branch.services) as Array<[keyof BranchServices, string]>;
@@ -72,18 +76,18 @@ const Branches = () => {
   const [brand, setBrand] = useState("الكل");
   const [selectedId, setSelectedId] = useState("");
   const [visibleCount, setVisibleCount] = useState(12);
+  const deferredSearch = useDeferredValue(search);
 
   const brands = useMemo(() => ["الكل", ...Array.from(new Set(branches.map((branch) => branch.brand)))], []);
   const citiesCount = useMemo(() => new Set(branches.map((branch) => branch.city)).size, []);
   const sourceCoverage = `${branches.length}/${sheetOperationalHotels.length}`;
   const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return branches.filter((branch) => {
+    const query = deferredSearch.trim().toLowerCase();
+    return branchSearchIndex.filter(({ branch, searchText }) => {
       const matchesBrand = brand === "الكل" || branch.brand === brand;
-      const searchable = [branch.name, branch.city, branch.brand, ...branch.contacts.map((contact) => contact.value)].join(" ").toLowerCase();
-      return matchesBrand && (!query || searchable.includes(query));
-    });
-  }, [brand, search]);
+      return matchesBrand && (!query || searchText.includes(query));
+    }).map(({ branch }) => branch);
+  }, [brand, deferredSearch]);
 
   useEffect(() => setVisibleCount(12), [brand, search]);
 

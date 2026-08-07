@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@e965/xlsx": "^0.20.3",
     "@netlify/blobs": "^8.2.0",
     "@netlify/functions": "^5.3.0",
     "@radix-ui/react-accordion": "^1.2.11",

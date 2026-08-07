@@ -7,10 +7,12 @@ import {
   DatabaseZap,
   Download,
   ExternalLink,
+  GitMerge,
   Loader2,
   RefreshCw,
   Wifi,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 
 type CroExportStatus = {
@@ -329,6 +331,9 @@ const AdminCroExport = () => {
               فتح CRO <ExternalLink className="h-4 w-4" />
             </a>
           ) : null}
+          <Link className="inline-flex h-11 items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-4 text-sm font-bold text-primary" to="/admin?tab=bookings">
+            دمج تقارير UNO + CRO <GitMerge className="h-4 w-4" />
+          </Link>
         </div>
 
       </section>
