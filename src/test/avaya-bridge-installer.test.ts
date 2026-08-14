@@ -9,4 +9,14 @@ describe("Avaya bridge installer", () => {
     expect(installer).toContain("-NonInteractive -WindowStyle Hidden");
     expect(installer).toContain("New-ScheduledTaskAction -Execute $powerShell -Argument $actionArguments");
   });
+
+  it("captures only a visible Avaya application window from an interactive session", () => {
+    const capture = readFileSync(resolve(process.cwd(), "scripts/capture-avaya-realtime.ps1"), "utf8");
+
+    expect(capture).toContain("[Environment]::UserInteractive");
+    expect(capture).toContain("GetWindowRect");
+    expect(capture).toContain('MainWindowTitle -like "*$WindowTitle*"');
+    expect(capture).toContain("CopyFromScreen");
+    expect(capture).toContain("[Drawing.Imaging.ImageFormat]::Png");
+  });
 });
